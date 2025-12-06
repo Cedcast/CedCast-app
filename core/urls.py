@@ -22,6 +22,4 @@ urlpatterns = [
     # Hubtel delivery receipt webhook
     path('webhooks/hubtel/', views.hubtel_webhook, name='hubtel_webhook'),
     path('health/', views.health, name='health'),
-    # Temporary internal endpoint to create/update super admin when shell access isn't available.
-    path('internal/create_super_admin/', views.create_super_admin_internal, name='create_super_admin_internal'),
 ]

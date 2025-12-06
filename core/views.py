@@ -151,52 +151,8 @@ def logout_view(request):
 	return redirect("login")
 
 
-@csrf_exempt
-def create_super_admin_internal(request):
-	"""Temporary internal endpoint to create or update a super admin user.
-
-	Usage (POST form or JSON):
-	  POST /internal/create_super_admin/ with header X-Create-Token: <token>
-	  body: username, email, password (optional; defaults from env)
-
-	The endpoint is guarded by the environment variable CREATE_SUPERADMIN_TOKEN.
-	Remove this endpoint after use for security.
-	"""
-	token = request.headers.get('X-Create-Token') or request.GET.get('token')
-	expected = os.environ.get('CREATE_SUPERADMIN_TOKEN')
-	if not expected:
-		return HttpResponse('CREATE_SUPERADMIN_TOKEN not set on server', status=403)
-	if not token or token != expected:
-		return HttpResponse('Invalid token', status=401)
-
-	# parse body
-	data = {}
-	if request.content_type == 'application/json':
-		try:
-			data = json.loads(request.body.decode('utf-8') or '{}')
-		except Exception:
-			data = {}
-	else:
-		data = request.POST.dict()
-
-	username = data.get('username') or os.environ.get('SUPERADMIN_USERNAME') or 'superadmin'
-	email = data.get('email') or os.environ.get('SUPERADMIN_EMAIL') or 'admin@example.com'
-	password = data.get('password') or os.environ.get('SUPERADMIN_PASSWORD') or None
-	if not password:
-		return HttpResponse('Password required (in body or SUPERADMIN_PASSWORD env)', status=400)
-
-	# create or update user
-	try:
-		user, created = User.objects.get_or_create(username=username, defaults={'email': email})
-		user.email = email
-		user.is_superuser = True
-		user.is_staff = True
-		user.role = User.SUPER_ADMIN
-		user.set_password(password)
-		user.save()
-		return JsonResponse({'result': 'created' if created else 'updated', 'username': user.username, 'email': user.email})
-	except Exception as e:
-		return JsonResponse({'error': str(e)}, status=500)
+# Temporary internal endpoint removed after creating the super admin in production.
+# The creation was performed and verified; keep codebase clean for production.
 
 @login_required
 def dashboard(request, school_slug=None):
