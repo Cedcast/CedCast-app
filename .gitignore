@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Django
+*.sqlite3
+media/
+staticfiles/
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# Byte-compiled / logs
+*.log
