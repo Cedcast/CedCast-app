@@ -4,7 +4,7 @@ services:
     name: school-alert-web
     env: python
     plan: free
-    buildCommand: pip install -r requirements_clicksend.txt && python manage.py collectstatic --noinput
+  buildCommand: pip install -r requirements_clicksend.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput
     startCommand: gunicorn school_alert_system.wsgi:application --workers 3 --bind 0.0.0.0:$PORT --log-file -
     envVars:
       - key: DJANGO_SETTINGS_MODULE
