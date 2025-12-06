@@ -23,6 +23,11 @@
                         <span>Organization: {{ organization.name }}</span>
                     </div>
                     <div class="card-body">
+                        <div class="mb-3">
+                            <a href="{% url 'org_upload_contacts' organization.slug %}" class="btn btn-sm btn-outline-primary me-2">Upload Contacts</a>
+                            <a href="{% url 'org_templates' organization.slug %}" class="btn btn-sm btn-outline-secondary me-2">Manage Templates</a>
+                            <a href="{% url 'org_retry_failed' organization.slug %}" class="btn btn-sm btn-outline-danger">Retry Failed</a>
+                        </div>
                         <form method="post" class="row g-3">
                             {% csrf_token %}
                             <div class="col-md-6">
