@@ -5,7 +5,8 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements_clicksend.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput
-    startCommand: gunicorn school_alert_system.wsgi:application --workers 3 --bind 0.0.0.0:$PORT --log-file -
+  # Use the start script so migrations and ensure_superadmin run on boot.
+  startCommand: bash ./scripts/start_gunicorn.sh
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: school_alert_system.settings
