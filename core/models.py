@@ -25,6 +25,16 @@ class SMSTemplate(models.Model):
 	def __str__(self):
 		return f"{self.name} ({self.school.name})"
 
+
+class OrgSMSTemplate(models.Model):
+	organization = models.ForeignKey('Organization', on_delete=models.CASCADE)
+	name = models.CharField(max_length=100)
+	content = models.TextField()
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	def __str__(self):
+		return f"{self.name} ({self.organization.name})"
+
 class School(models.Model):
 	name = models.CharField(max_length=255)
 	logo = models.ImageField(upload_to='school_logos/', blank=True, null=True)
@@ -118,6 +128,11 @@ class OrgAlertRecipient(models.Model):
 	status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('sent', 'Sent'), ('failed', 'Failed')], default='pending')
 	sent_at = models.DateTimeField(blank=True, null=True)
 	error_message = models.TextField(blank=True, null=True)
+	# Provider tracking and retry metadata
+	provider_message_id = models.CharField(max_length=255, blank=True, null=True)
+	provider_status = models.CharField(max_length=100, blank=True, null=True)
+	retry_count = models.IntegerField(default=0)
+	last_retry_at = models.DateTimeField(blank=True, null=True)
 
 	def __str__(self):
 		return f"{self.contact.name} - {self.status}"
