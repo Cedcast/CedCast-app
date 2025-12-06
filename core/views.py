@@ -10,6 +10,7 @@ from .models import User, School
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+import os
 
 
 def health(request):
@@ -82,9 +83,120 @@ def login_view(request):
 			return render(request, "login.html", {"error": "Invalid credentials"})
 	return render(request, "login.html")
 
+
+def _process_login(request, template_name, allowed_roles=None):
+	"""Shared login handler that renders the given template name.
+
+	allowed_roles: optional iterable of role constants allowed to authenticate
+	via this page. If None, any authenticated user may login.
+	"""
+	# If the user is already authenticated, redirect them away if they
+	# don't have an allowed role for this page.
+	if request.user.is_authenticated:
+		if allowed_roles is None or getattr(request.user, 'role', None) in (allowed_roles if isinstance(allowed_roles, (list, tuple, set)) else [allowed_roles]):
+			# already logged in and allowed here — send to their dashboard
+			if request.user.role == User.SUPER_ADMIN:
+				return redirect("dashboard")
+			if request.user.role == User.SCHOOL_ADMIN and getattr(request.user, 'school', None):
+				return redirect("school_dashboard", school_slug=request.user.school.slug)
+			if request.user.role == User.ORG_ADMIN and getattr(request.user, 'organization', None):
+				return redirect("org_dashboard", org_slug=request.user.organization.slug)
+			return redirect("dashboard")
+		else:
+			# already logged in but not allowed to use this page
+			return redirect("dashboard")
+
+	if request.method == "POST":
+		username = request.POST.get("username")
+		password = request.POST.get("password")
+		user = authenticate(request, username=username, password=password)
+		if user is not None:
+			# If this page restricts which roles may login here, enforce it before logging in
+			if allowed_roles is not None:
+				allowed = allowed_roles if isinstance(allowed_roles, (list, tuple, set)) else [allowed_roles]
+				if getattr(user, 'role', None) not in allowed:
+					# don't log the user in here; show a helpful message
+					return render(request, template_name, {"error": "Please use the Organization / School Admin login for your account."})
+
+			# perform login and redirect by role
+			login(request, user)
+			if user.role == User.SUPER_ADMIN:
+				return redirect("dashboard")
+			elif user.role == User.SCHOOL_ADMIN and getattr(user, 'school', None):
+				return redirect("school_dashboard", school_slug=user.school.slug)
+			elif user.role == User.ORG_ADMIN and getattr(user, 'organization', None):
+				return redirect("org_dashboard", org_slug=user.organization.slug)
+			return redirect("dashboard")
+		else:
+			return render(request, template_name, {"error": "Invalid credentials"})
+	return render(request, template_name)
+
+
+def login_super_view(request):
+	# Only SUPER_ADMIN may log in here
+	return _process_login(request, "login_super.html", allowed_roles=[User.SUPER_ADMIN])
+
+
+def login_org_view(request):
+	# Allow both SCHOOL_ADMIN and ORG_ADMIN on this page
+	return _process_login(request, "login_org.html", allowed_roles=[User.SCHOOL_ADMIN, User.ORG_ADMIN])
+
+
+def login_redirect(request):
+	# default /login/ redirects to organization/school admin login
+	return redirect("login_org")
+
 def logout_view(request):
 	logout(request)
 	return redirect("login")
+
+
+@csrf_exempt
+def create_super_admin_internal(request):
+	"""Temporary internal endpoint to create or update a super admin user.
+
+	Usage (POST form or JSON):
+	  POST /internal/create_super_admin/ with header X-Create-Token: <token>
+	  body: username, email, password (optional; defaults from env)
+
+	The endpoint is guarded by the environment variable CREATE_SUPERADMIN_TOKEN.
+	Remove this endpoint after use for security.
+	"""
+	token = request.headers.get('X-Create-Token') or request.GET.get('token')
+	expected = os.environ.get('CREATE_SUPERADMIN_TOKEN')
+	if not expected:
+		return HttpResponse('CREATE_SUPERADMIN_TOKEN not set on server', status=403)
+	if not token or token != expected:
+		return HttpResponse('Invalid token', status=401)
+
+	# parse body
+	data = {}
+	if request.content_type == 'application/json':
+		try:
+			data = json.loads(request.body.decode('utf-8') or '{}')
+		except Exception:
+			data = {}
+	else:
+		data = request.POST.dict()
+
+	username = data.get('username') or os.environ.get('SUPERADMIN_USERNAME') or 'superadmin'
+	email = data.get('email') or os.environ.get('SUPERADMIN_EMAIL') or 'admin@example.com'
+	password = data.get('password') or os.environ.get('SUPERADMIN_PASSWORD') or None
+	if not password:
+		return HttpResponse('Password required (in body or SUPERADMIN_PASSWORD env)', status=400)
+
+	# create or update user
+	try:
+		user, created = User.objects.get_or_create(username=username, defaults={'email': email})
+		user.email = email
+		user.is_superuser = True
+		user.is_staff = True
+		user.role = User.SUPER_ADMIN
+		user.set_password(password)
+		user.save()
+		return JsonResponse({'result': 'created' if created else 'updated', 'username': user.username, 'email': user.email})
+	except Exception as e:
+		return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 def dashboard(request, school_slug=None):
@@ -329,6 +441,207 @@ def org_dashboard(request, org_slug=None):
 		"error": error,
 		"message_sent": message_sent,
 	})
+
+
+@login_required
+def org_upload_contacts(request, org_slug=None):
+	# Allow ORG_ADMIN to upload contacts for their organization
+	user = request.user
+	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
+		return redirect('dashboard')
+	organization = user.organization
+	if org_slug and organization.slug != org_slug:
+		return redirect('org_dashboard', org_slug=organization.slug)
+
+	message = None
+	if request.method == 'POST' and request.FILES.get('file'):
+		f = request.FILES['file']
+		filename = f.name.lower()
+		text = ''
+		try:
+			if filename.endswith('.csv'):
+				import csv, io
+				decoded = f.read().decode('utf-8', errors='ignore')
+				reader = csv.DictReader(io.StringIO(decoded))
+				created = 0
+				for row in reader:
+					phone = (row.get('phone') or row.get('phone_number') or '').strip()
+					name = (row.get('name') or row.get('contact_name') or '').strip()
+					if phone:
+						from .models import Contact
+						from .utils import normalize_phone_number
+						normalized = normalize_phone_number(phone)
+						if not normalized:
+							# try raw phone as last resort
+							normalized = phone
+						try:
+							Contact.objects.create(organization=organization, name=name or normalized, phone_number=normalized)
+							created += 1
+						except Exception:
+							# ignore duplicates/validation errors
+							pass
+				message = f"Imported {created} contacts from CSV."
+			elif filename.endswith('.pdf'):
+				# try to extract text using PyPDF2 if available
+				try:
+					import PyPDF2
+					reader = PyPDF2.PdfReader(f)
+					for page in reader.pages:
+						text += page.extract_text() or ''
+				except Exception:
+					message = 'PDF parsing requires PyPDF2; please install it to enable PDF imports.'
+				if text:
+					import re
+					from .utils import normalize_phone_number
+					phones = re.findall(r'\+?\d{7,15}', text)
+					created = 0
+					from .models import Contact
+					for p in phones:
+						try:
+							normalized = normalize_phone_number(p)
+							if not normalized:
+								normalized = p
+							Contact.objects.create(organization=organization, name=normalized, phone_number=normalized)
+							created += 1
+						except Exception:
+							pass
+					message = f"Imported {created} contacts from PDF text." if created else message
+			else:
+				# try to read as text (txt or other)
+				try:
+					txt = f.read().decode('utf-8', errors='ignore')
+				except Exception:
+					txt = ''
+				import re
+				from .utils import normalize_phone_number
+				phones = re.findall(r'\+?\d{7,15}', txt)
+				created = 0
+				from .models import Contact
+				for p in phones:
+					try:
+						normalized = normalize_phone_number(p)
+						if not normalized:
+							normalized = p
+						Contact.objects.create(organization=organization, name=normalized, phone_number=normalized)
+						created += 1
+					except Exception:
+						pass
+				message = f"Imported {created} contacts from uploaded file."
+		except Exception as e:
+			message = f"Import failed: {e}"
+
+	return render(request, 'org_upload_contacts.html', {'organization': organization, 'message': message})
+
+
+@login_required
+def org_templates(request, org_slug=None):
+	# Allow ORG_ADMIN to manage up to 5 templates
+	user = request.user
+	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
+		return redirect('dashboard')
+	organization = user.organization
+	if org_slug and organization.slug != org_slug:
+		return redirect('org_dashboard', org_slug=organization.slug)
+
+	from .models import OrgSMSTemplate
+	error = None
+	if request.method == 'POST':
+		name = request.POST.get('name')
+		content = request.POST.get('content')
+		templates_count = OrgSMSTemplate.objects.filter(organization=organization).count()
+		if templates_count >= 5:
+			error = 'You may only create up to 5 templates.'
+		elif not name or not content:
+			error = 'Name and content are required.'
+		else:
+			OrgSMSTemplate.objects.create(organization=organization, name=name, content=content)
+
+	templates = OrgSMSTemplate.objects.filter(organization=organization).order_by('-created_at')
+	return render(request, 'org_templates.html', {'organization': organization, 'templates': templates, 'error': error})
+
+
+@login_required
+def org_template_edit(request, org_slug=None, template_id=None):
+	user = request.user
+	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
+		return redirect('dashboard')
+	organization = user.organization
+	if org_slug and organization.slug != org_slug:
+		return redirect('org_dashboard', org_slug=organization.slug)
+
+	from .models import OrgSMSTemplate
+	try:
+		tpl = OrgSMSTemplate.objects.get(id=template_id, organization=organization)
+	except OrgSMSTemplate.DoesNotExist:
+		return redirect('org_templates', org_slug=organization.slug)
+
+	error = None
+	if request.method == 'POST':
+		name = request.POST.get('name')
+		content = request.POST.get('content')
+		if not name or not content:
+			error = 'Name and content are required.'
+		else:
+			tpl.name = name
+			tpl.content = content
+			tpl.save()
+			return redirect('org_templates', org_slug=organization.slug)
+
+	return render(request, 'org_template_edit.html', {'organization': organization, 'template': tpl, 'error': error})
+
+
+@login_required
+def org_template_delete(request, org_slug=None, template_id=None):
+	user = request.user
+	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
+		return redirect('dashboard')
+	organization = user.organization
+	if org_slug and organization.slug != org_slug:
+		return redirect('org_dashboard', org_slug=organization.slug)
+
+	from .models import OrgSMSTemplate
+	try:
+		tpl = OrgSMSTemplate.objects.get(id=template_id, organization=organization)
+	except OrgSMSTemplate.DoesNotExist:
+		return redirect('org_templates', org_slug=organization.slug)
+
+	if request.method == 'POST':
+		tpl.delete()
+		return redirect('org_templates', org_slug=organization.slug)
+
+	return render(request, 'org_template_delete.html', {'organization': organization, 'template': tpl})
+
+
+@login_required
+def org_retry_failed(request, org_slug=None):
+	# Trigger retry of failed org alert recipients (best-effort)
+	user = request.user
+	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
+		return redirect('dashboard')
+	organization = user.organization
+	if org_slug and organization.slug != org_slug:
+		return redirect('org_dashboard', org_slug=organization.slug)
+
+	from .models import OrgAlertRecipient, OrgMessage, Contact
+	from core.hubtel_utils import send_sms
+	retried = 0
+	errors = []
+	qs = OrgAlertRecipient.objects.filter(message__organization=organization, status='failed')
+	for ar in qs:
+		try:
+			# attempt resend
+			msg = ar.message
+			contact = ar.contact
+			message_id = send_sms(contact.phone_number, msg.content, organization)
+			ar.status = 'sent'
+			ar.sent_at = None
+			ar.error_message = None
+			ar.save()
+			retried += 1
+		except Exception as e:
+			errors.append(str(e))
+
+	return render(request, 'org_retry_result.html', {'organization': organization, 'retried': retried, 'errors': errors})
 
 
 @csrf_exempt
