@@ -30,9 +30,11 @@ export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-school_alert_system.sett
 echo "Starting gunicorn: bind=$BIND workers=$NUM_WORKERS"
 echo "Running DB migrations (if any) and ensuring superadmin from env vars..."
 # Run migrations and (optionally) create/update a superadmin from env vars before starting gunicorn.
-# This is safe to run on every boot; it will be a no-op if there are no migrations or the env vars are not set.
-python manage.py migrate --noinput || true
+# On production we want migration failures to be visible in the logs so they can be addressed.
+# Do not swallow migration errors; allow the process to fail so Render will show the error.
+python manage.py migrate --noinput --verbosity 2
 # Ensure superadmin if env vars provided. The management command will skip if vars are missing.
+# keep ensure_superadmin non-fatal so a misconfigured admin env doesn't block startup
 python manage.py ensure_superadmin || true
 
 # Optional one-time import of dump.json (useful on hosts without a shell like Render free tier).
