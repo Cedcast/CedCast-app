@@ -81,12 +81,49 @@ WSGI_APPLICATION = 'school_alert_system.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+from django.core.exceptions import ImproperlyConfigured
+
+# Production-first database configuration: prefer DATABASE_URL (Postgres).
+# Behavior:
+# - If DATABASE_URL is set, use dj_database_url to parse it (Postgres, etc.).
+# - If DATABASE_URL is not set and DEBUG is True (local dev), fall back to sqlite.
+# - If DATABASE_URL is not set and DEBUG is False (production), raise an error so
+#   deployments fail fast and you don't accidentally run with sqlite in production.
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    try:
+        import dj_database_url
+
+        conn_max_age = int(os.environ.get('CONN_MAX_AGE', '600'))
+        ssl_req_str = os.environ.get('DB_SSL_REQUIRE')
+        if ssl_req_str is None:
+            ssl_req = True
+        else:
+            ssl_req = ssl_req_str.strip().lower() in {'1', 'true', 'yes', 'on'}
+        DATABASES = {
+            'default': dj_database_url.parse(
+                DATABASE_URL,
+                conn_max_age=conn_max_age,
+                ssl_require=ssl_req,
+            )
+        }
+    except Exception as exc:  # pragma: no cover - should be visible at startup
+        raise ImproperlyConfigured(f"dj_database_url is required when DATABASE_URL is set: {exc}")
+else:
+    # No DATABASE_URL provided
+    if DEBUG:
+        # Local development: sqlite fallback
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+    else:
+        # Production must provide DATABASE_URL
+        raise ImproperlyConfigured(
+            "DATABASE_URL is not set. For production deployments set DATABASE_URL to your Postgres connection string."
+        )
 
 
 # Password validation
