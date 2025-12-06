@@ -1,0 +1,21 @@
+[Unit]
+Description=Gunicorn instance to serve CedCast Django app
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/home/packnet777/SCHOOL PROJECT
+Environment=DJANGO_SETTINGS_MODULE=school_alert_system.settings
+Environment=PATH=/home/packnet777/SCHOOL PROJECT/.venv/bin:/usr/bin
+ExecStart=/home/packnet777/SCHOOL PROJECT/scripts/start_gunicorn.sh
+
+[Install]
+WantedBy=multi-user.target
+
+# Notes:
+# - Replace User/Group/WorkingDirectory with the correct values for your host.
+# - Copy this file to /etc/systemd/system/gunicorn.service and run:
+#     sudo systemctl daemon-reload
+#     sudo systemctl start gunicorn
+#     sudo systemctl enable gunicorn
