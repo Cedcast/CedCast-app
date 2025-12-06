@@ -32,6 +32,7 @@
                                     <thead class="table-light">
                                         <tr>
                                             <th>School Name</th>
+                                            <th>Sender ID</th>
                                             <th>Total Messages</th>
                                             <th>Sent Messages</th>
                                             <th>Total Recipients</th>
@@ -44,6 +45,7 @@
                                         {% for stat in school_stats %}
                                         <tr>
                                             <td>{{ stat.school.name }}</td>
+                                            <td>{{ stat.school.sender_id|default:'—' }}</td>
                                             <td>{{ stat.total_messages }}</td>
                                             <td>{{ stat.sent_messages }}</td>
                                             <td>{{ stat.total_recipients }}</td>
@@ -77,6 +79,7 @@
                                         <tr>
                                             <th>Name</th>
                                             <th>Type</th>
+                                            <th>Sender ID</th>
                                             <th>Total Messages</th>
                                             <th>Sent Messages</th>
                                             <th>Total Recipients</th>
@@ -90,6 +93,7 @@
                                         <tr>
                                             <td>{{ stat.organization.name }}</td>
                                             <td>{{ stat.organization.org_type }}</td>
+                                        <td>{{ stat.organization.sender_id|default:'—' }}</td>
                                             <td>{{ stat.total_messages }}</td>
                                             <td>{{ stat.sent_messages }}</td>
                                             <td>{{ stat.total_recipients }}</td>
@@ -135,16 +139,16 @@
                                     <input type="file" name="logo" class="form-control" accept="image/*">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="clicksend_username" class="form-label">ClickSend Username</label>
+                                    <label for="clicksend_username" class="form-label">Hubtel Client ID (optional — legacy ClickSend username also accepted)</label>
                                     <input type="text" name="clicksend_username" class="form-control">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="clicksend_api_key" class="form-label">ClickSend API Key</label>
+                                    <label for="clicksend_api_key" class="form-label">Hubtel Client Secret (optional — legacy ClickSend API key also accepted)</label>
                                     <input type="password" name="clicksend_api_key" class="form-control">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="sender_id" class="form-label">Sender ID (optional)</label>
-                                    <input type="text" name="sender_id" class="form-control" placeholder="e.g., CEDCAST" maxlength="20">
+                                    <label for="sender_id" class="form-label">Sender ID or Number (optional)</label>
+                                    <input type="text" name="sender_id" class="form-control" placeholder="e.g., CEDCAST or +233501234567" maxlength="30">
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100">Enroll Tenant</button>
                             </form>
