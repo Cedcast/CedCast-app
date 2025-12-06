@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Castiel Multipurpose Edu Systems</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+            <div class="container-fluid">
+            <a class="navbar-brand" href="#">Castiel Multipurpose Edu Systems</a>
+                <div class="d-flex">
+                    <a href="/logout/" class="btn btn-outline-light">Logout</a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">Enrolled Schools & Stats</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>School Name</th>
+                                            <th>Total Messages</th>
+                                            <th>Sent Messages</th>
+                                            <th>Total Recipients</th>
+                                            <th>Delivered</th>
+                                            <th>Failed</th>
+                                            <th>Delivery Rate (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for stat in school_stats %}
+                                        <tr>
+                                            <td>{{ stat.school.name }}</td>
+                                            <td>{{ stat.total_messages }}</td>
+                                            <td>{{ stat.sent_messages }}</td>
+                                            <td>{{ stat.total_recipients }}</td>
+                                            <td>{{ stat.sent_recipients }}</td>
+                                            <td>{{ stat.failed_recipients }}</td>
+                                            <td>{{ stat.delivery_rate|floatformat:2 }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="7" class="text-center">No schools enrolled yet.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">Enrolled Organizations & Stats</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Total Messages</th>
+                                            <th>Sent Messages</th>
+                                            <th>Total Recipients</th>
+                                            <th>Delivered</th>
+                                            <th>Failed</th>
+                                            <th>Delivery Rate (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for stat in org_stats %}
+                                        <tr>
+                                            <td>{{ stat.organization.name }}</td>
+                                            <td>{{ stat.organization.org_type }}</td>
+                                            <td>{{ stat.total_messages }}</td>
+                                            <td>{{ stat.sent_messages }}</td>
+                                            <td>{{ stat.total_recipients }}</td>
+                                            <td>{{ stat.sent_recipients }}</td>
+                                            <td>{{ stat.failed_recipients }}</td>
+                                            <td>{{ stat.delivery_rate|floatformat:2 }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="8" class="text-center">No organizations enrolled yet.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-md-8 col-lg-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-secondary text-white">
+                            <h4 class="mb-0">Enroll New Tenant</h4>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="entity_type" class="form-label">Entity Type</label>
+                                    <select name="entity_type" class="form-select">
+                                        <option value="school">School</option>
+                                        <option value="organization">Organization (Pharmacy / Company)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Name</label>
+                                    <input type="text" name="name" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="logo" class="form-label">Logo</label>
+                                    <input type="file" name="logo" class="form-control" accept="image/*">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="clicksend_username" class="form-label">ClickSend Username</label>
+                                    <input type="text" name="clicksend_username" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="clicksend_api_key" class="form-label">ClickSend API Key</label>
+                                    <input type="password" name="clicksend_api_key" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="sender_id" class="form-label">Sender ID (optional)</label>
+                                    <input type="text" name="sender_id" class="form-control" placeholder="e.g., CASTIEL" maxlength="20">
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Enroll Tenant</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+</body>
+</html>

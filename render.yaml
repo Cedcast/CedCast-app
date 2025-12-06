@@ -1,0 +1,15 @@
+# Minimal Render service configuration for the Django app
+services:
+  - type: web
+    name: school-alert-web
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements_clicksend.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn school_alert_system.wsgi:application --workers 3 --bind 0.0.0.0:$PORT --log-file -
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: school_alert_system.settings
+      - key: DEBUG
+        value: 'False'
+      - key: HUBTEL_DRY_RUN
+        value: 'false'
