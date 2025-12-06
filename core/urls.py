@@ -14,4 +14,5 @@ urlpatterns = [
     path('<slug:org_slug>/org/dashboard/', views.org_dashboard, name='org_dashboard'),
     # Hubtel delivery receipt webhook
     path('webhooks/hubtel/', views.hubtel_webhook, name='hubtel_webhook'),
+    path('health/', views.health, name='health'),
 ]

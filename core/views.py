@@ -11,6 +11,11 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 
+
+def health(request):
+	"""Simple health check endpoint for Render and load balancers."""
+	return HttpResponse("OK", status=200)
+
 @login_required
 def send_sms_view(request, school_slug=None):
 	user = request.user
