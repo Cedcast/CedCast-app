@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ organization.name }} - Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg" style="background: {{ organization.primary_color }};">
+        <div class="container-fluid">
+            <a class="navbar-brand text-white" href="#">{{ organization.name }}</a>
+            <div class="d-flex">
+                <a href="/logout/" class="btn btn-outline-light">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-4 shadow">
+                    <div class="card-header" style="background: {{ organization.primary_color }}; color:#fff;">
+                        <span>Organization: {{ organization.name }}</span>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" class="row g-3">
+                            {% csrf_token %}
+                            <div class="col-md-6">
+                                <label class="form-label">Add Contact - Name</label>
+                                <input type="text" class="form-control" name="contact_name" placeholder="e.g., Jane Doe">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Add Contact - Phone</label>
+                                <input type="text" class="form-control" name="contact_phone" placeholder="e.g., +233501234567">
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success">Add Contact</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4 shadow">
+                    <div class="card-header bg-secondary text-white">Contacts</div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                            {% for c in organization.contacts.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>{{ c.name }} — {{ c.phone_number }}</span>
+                                </li>
+                            {% empty %}
+                                <li class="list-group-item">No contacts yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4 shadow">
+                    <div class="card-header bg-secondary text-white">Schedule SMS</div>
+                    <div class="card-body">
+                        {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+                        {% if message_sent %}<div class="alert alert-success">Message scheduled.</div>{% endif %}
+                        <form method="post" action="{% url 'org_dashboard' organization.slug %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label">Message Content</label>
+                                <input type="text" class="form-control" name="sms_body" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Scheduled Time</label>
+                                <input type="datetime-local" class="form-control" name="scheduled_time" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Send to (comma-separated phone numbers, leave blank for all)</label>
+                                <input type="text" class="form-control" name="recipients">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Schedule</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">Scheduled & Sent Messages</div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                            {% for message in messages %}
+                                <li class="list-group-item">
+                                    <strong>{{ message.content }}</strong><br>
+                                    Scheduled: {{ message.scheduled_time|date:'Y-m-d H:i' }}<br>
+                                    Status: {% if message.sent %}Sent{% else %}Pending{% endif %}<br>
+                                    Recipients:
+                                    <ul>
+                                        {% for ar in message.recipients_status.all %}
+                                            <li>{{ ar.contact.name }} ({{ ar.contact.phone_number }}): {{ ar.status }}{% if ar.sent_at %} at {{ ar.sent_at|date:'Y-m-d H:i' }}{% endif %}{% if ar.error_message %} <span class="text-danger">Error: {{ ar.error_message }}</span>{% endif %}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% empty %}
+                                <li class="list-group-item">No messages yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

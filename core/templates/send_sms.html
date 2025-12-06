@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Castiel Multipurpose Edu Systems</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; }
+        .container { max-width: 500px; margin: 40px auto; background: #fff; color: #222; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 32px 24px; }
+        textarea { width: 100%; height: 100px; padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 16px; font-size: 1rem; }
+        .success { color: green; margin-bottom: 16px; }
+        .error { color: red; margin-bottom: 16px; }
+    </style>
+</head>
+<body style="background: {{ school.primary_color|default:'#f5f5f5' }}; color: {{ school.secondary_color|default:'#222' }};">
+    <div class="container">
+    <h1 style="color: {{ school.primary_color }};">Send SMS to Parents</h1>
+        {% if message_sent %}
+            <div class="success">
+                {% if sent_class %}
+                    SMS sent to all parents of <strong>{{ sent_class }}</strong>!
+                {% else %}
+                    SMS sent to all parents!
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if error %}
+            <div class="error">Error: {{ error }}</div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="student_class">Select Class (optional):</label>
+                <select name="student_class" class="form-control">
+                    <option value="">All Classes</option>
+                    <option value="Creche">Creche</option>
+                    <option value="Nursery">Nursery</option>
+                    <option value="KG1">KG1</option>
+                    <option value="KG2">KG2</option>
+                    <option value="Primary1">Primary 1</option>
+                    <option value="Primary2">Primary 2</option>
+                    <option value="Primary3">Primary 3</option>
+                    <option value="Primary4">Primary 4</option>
+                    <option value="Primary5">Primary 5</option>
+                    <option value="Primary6">Primary 6</option>
+                    <option value="JHS1">JHS 1</option>
+                    <option value="JHS2">JHS 2</option>
+                    <option value="JHS3">JHS 3</option>
+                </select>
+            </div>
+            <label for="sms_body">Message:</label>
+            <textarea name="sms_body" required></textarea>
+            <button type="submit" style="background: {{ school.primary_color }}; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 1rem; cursor: pointer;">Send SMS</button>
+        </form>
+    <a href="{% url 'school_dashboard' school.slug %}">Back to Dashboard</a>
+    </div>
+</body>
+</html>

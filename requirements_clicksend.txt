@@ -1,0 +1,16 @@
+# Huibtel/local SMS helper requirements
+# The project now uses a local Huibtel-compatible HTTP API. If your Huibtel service
+# needs external clients, add them here. The Django app itself uses `requests` to
+# call the local service.
+requests>=2.0.0
+
+# Django and existing dependencies
+Django>=4.0.0
+python-dotenv>=0.19.0
+colorthief>=0.2.1
+Pillow>=9.0.0
+whitenoise>=6.0.0
+gunicorn>=20.0.0
+
+# Remove these Twilio dependencies after migration is complete
+# twilio>=7.0.0
