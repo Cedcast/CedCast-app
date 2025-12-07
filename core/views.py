@@ -115,8 +115,8 @@ def _process_login(request, template_name, allowed_roles=None):
 			if allowed_roles is not None:
 				allowed = allowed_roles if isinstance(allowed_roles, (list, tuple, set)) else [allowed_roles]
 				if getattr(user, 'role', None) not in allowed:
-					# don't log the user in here; show a helpful message
-					return render(request, template_name, {"error": "Please use the Organization / School Admin login for your account."})
+							# don't log the user in here; show a helpful message
+							return render(request, template_name, {"error": "Please use the Organization / School Admin login for your account."})
 
 			# perform login and redirect by role
 			login(request, user)

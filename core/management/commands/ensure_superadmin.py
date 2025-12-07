@@ -47,6 +47,14 @@ class Command(BaseCommand):
             # Prefer exact username match, otherwise try email
             if username:
                 user = User.objects.filter(username=username).first()
+                # Ensure role is set to SUPER_ADMIN for this account when appropriate
+                try:
+                    if hasattr(User, 'SUPER_ADMIN') and getattr(user, 'role', None) != User.SUPER_ADMIN:
+                        user.role = User.SUPER_ADMIN
+                        updated = True
+                except Exception:
+                    # If custom user model doesn't use 'role', ignore
+                    pass
             if not user and email:
                 user = User.objects.filter(email=email).first()
 
@@ -74,12 +82,24 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS("User flags/metadata updated."))
             else:
                 if is_super:
-                    User.objects.create_superuser(username=username, email=email or "", password=password)
+                    # create_superuser may not set custom role attributes; create then ensure role
+                    user = User.objects.create_superuser(username=username, email=email or "", password=password)
+                    try:
+                        if hasattr(User, 'SUPER_ADMIN'):
+                            user.role = User.SUPER_ADMIN
+                            user.save()
+                    except Exception:
+                        pass
                     self.stdout.write(self.style.SUCCESS(f"Created superuser '{username}'"))
                 else:
                     user = User.objects.create_user(username=username, email=email or "", password=password)
                     user.is_staff = is_staff
                     user.is_superuser = is_super
+                    try:
+                        if hasattr(User, 'SUPER_ADMIN') and is_super:
+                            user.role = User.SUPER_ADMIN
+                    except Exception:
+                        pass
                     user.save()
                     self.stdout.write(self.style.SUCCESS(f"Created user '{username}'"))
 
