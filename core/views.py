@@ -964,7 +964,13 @@ def org_send_sms(request, org_slug=None):
 			# If action is send_now, attempt to send immediately (synchronous)
 			if action == 'send_now':
 				from django.utils import timezone as _tz
-				from core import hubtel_utils, clicksend_utils
+				from core import hubtel_utils
+				try:
+					from core import clicksend_utils
+				except Exception:
+					# clicksend_client may not be installed in some deployments;
+					# defer failure until (and unless) it's actually used as a fallback.
+					clicksend_utils = None
 				processed = 0
 				for ar in msg.recipients_status.all():
 					phone = ar.contact.phone_number
@@ -974,10 +980,15 @@ def org_send_sms(request, org_slug=None):
 						try:
 							sent_id = hubtel_utils.send_sms(phone, sms_body, org)
 						except Exception as e_hub:
-							try:
-								sent_id = clicksend_utils.send_sms(phone, sms_body, org)
-							except Exception as e_click:
-								raise Exception(f"Hubtel error: {e_hub}; ClickSend error: {e_click}")
+							# If ClickSend integration is available, try it as a fallback.
+							if clicksend_utils is not None:
+								try:
+									sent_id = clicksend_utils.send_sms(phone, sms_body, org)
+								except Exception as e_click:
+									raise Exception(f"Hubtel error: {e_hub}; ClickSend error: {e_click}")
+							else:
+								# No ClickSend client installed; surface the original Hubtel error.
+								raise Exception(f"Hubtel error: {e_hub}; ClickSend not available")
 						ar.provider_message_id = str(sent_id)
 						ar.status = 'sent'
 						ar.sent_at = _tz.now()

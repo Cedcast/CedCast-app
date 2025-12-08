@@ -116,6 +116,11 @@ python manage.py migrate --noinput --verbosity 2
 # keep ensure_superadmin non-fatal so a misconfigured admin env doesn't block startup
 python manage.py ensure_superadmin || true
 
+# Ensure deploy users (superadmin and org admin)
+python manage.py ensure_deploy_users --org-slug "${DEFAULT_ORG_SLUG:-packnet}" \
+  --super-username "${SUPERADMIN_USERNAME:-superadmin}" --super-password "${SUPERADMIN_PASSWORD:-Packnet#ChangeMe1}" \
+  --org-username "${ORGADMIN_USERNAME:-packnet_admin}" --org-password "${ORGADMIN_PASSWORD:-Packnet#ChangeMe1}"
+
 # Optional one-time import of dump.json (useful on hosts without a shell like Render free tier).
 # To trigger: set IMPORT_DUMP=true and ensure DATABASE_URL is set in the environment. The script
 # will import dump.json once and create a marker file `.dump_imported` to avoid re-importing.

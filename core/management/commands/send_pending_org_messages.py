@@ -34,7 +34,11 @@ class Command(BaseCommand):
         self.stdout.write(f"Processing {total} pending recipients (dry_run={dry_run})")
 
         # Try to use ClickSend first, fallback to Hubtel if configured
-        from core import clicksend_utils, hubtel_utils
+        from core import hubtel_utils
+        try:
+            from core import clicksend_utils
+        except Exception:
+            clicksend_utils = None
 
         processed = 0
         for ar in qs:
@@ -58,10 +62,13 @@ class Command(BaseCommand):
                     sent_id = hubtel_utils.send_sms(phone, content, tenant)
                 except Exception as e_hub:
                     logger.warning("Hubtel send failed for %s: %s", phone, e_hub)
-                    try:
-                        sent_id = clicksend_utils.send_sms(phone, content, tenant)
-                    except Exception as e_click:
-                        raise Exception(f"Hubtel error: {e_hub}; ClickSend error: {e_click}")
+                    if clicksend_utils is not None:
+                        try:
+                            sent_id = clicksend_utils.send_sms(phone, content, tenant)
+                        except Exception as e_click:
+                            raise Exception(f"Hubtel error: {e_hub}; ClickSend error: {e_click}")
+                    else:
+                        raise Exception(f"Hubtel error: {e_hub}; ClickSend not available")
 
                 # success
                 ar.provider_message_id = str(sent_id)

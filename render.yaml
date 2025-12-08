@@ -5,8 +5,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements_clicksend.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput
-  # Use the start script so migrations and ensure_superadmin run on boot.
-  startCommand: bash ./scripts/start_gunicorn.sh
+    startCommand: bash ./scripts/start_gunicorn.sh
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: school_alert_system.settings
@@ -14,3 +13,15 @@ services:
         value: 'False'
       - key: HUBTEL_DRY_RUN
         value: 'false'
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPERADMIN_USERNAME
+        value: superadmin
+      - key: SUPERADMIN_PASSWORD
+        sync: false
+      - key: ORGADMIN_USERNAME
+        value: packnet_admin
+      - key: ORGADMIN_PASSWORD
+        sync: false
+      - key: DEFAULT_ORG_SLUG
+        value: packnet
