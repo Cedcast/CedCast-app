@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    <title>{% if action == 'create' %}Create{% else %}Edit{% endif %} Global Template - CedCast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">CedCast</a>
+            <div class="d-flex">
+                <a href="{% url 'global_templates' %}" class="btn btn-outline-light me-2">Back</a>
+                <a href="/logout/" class="btn btn-outline-light">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h3>{% if action == 'create' %}Create{% else %}Edit{% endif %} Global Template</h3>
+        {% if notice %}
+            <div class="alert alert-info">{{ notice }}</div>
+        {% endif %}
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Template Name</label>
+                        <input type="text" name="name" class="form-control" value="{{ template.name|default:'' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Organization</label>
+                        <input id="org-filter" class="form-control mb-2" placeholder="Type to filter organizations...">
+                        <select name="organization" id="organization-select" class="form-select" size="6">
+                            {% for org in orgs %}
+                                <option value="{{ org.id }}" {% if template and template.organization.id == org.id %}selected{% endif %} {% if prefill.organization == org.id %}selected{% endif %}>{{ org.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Tip: type in the filter box to narrow organizations (select box is filterable).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Content</label>
+                        <textarea name="content" class="form-control" rows="6">{{ template.content|default:'' }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    var filter = document.getElementById('org-filter');
+    var select = document.getElementById('organization-select');
+    if(filter && select){
+        filter.addEventListener('input', function(){
+            var q = this.value.toLowerCase();
+            for(var i=0;i<select.options.length;i++){
+                var opt = select.options[i];
+                var text = opt.text.toLowerCase();
+                opt.style.display = text.indexOf(q) === -1 ? 'none' : '';
+            }
+        });
+    }
+});
+</script>

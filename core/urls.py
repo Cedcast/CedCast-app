@@ -21,9 +21,24 @@ urlpatterns = [
     path('<slug:org_slug>/org/templates/<int:template_id>/edit/', views.org_template_edit, name='org_template_edit'),
     path('<slug:org_slug>/org/templates/<int:template_id>/delete/', views.org_template_delete, name='org_template_delete'),
     path('<slug:org_slug>/org/retry-failed/', views.org_retry_failed, name='org_retry_failed'),
+    path('<slug:org_slug>/org/send/', views.org_send_sms, name='org_send_sms'),
+    path('<slug:org_slug>/org/groups/', views.org_groups_view, name='org_groups'),
+    path('<slug:org_slug>/org/messages/scheduled/', views.org_scheduled_messages, name='org_scheduled_messages'),
+    path('<slug:org_slug>/org/messages/sent/', views.org_sent_messages, name='org_sent_messages'),
+    path('<slug:org_slug>/org/message-logs/', views.org_message_logs, name='org_message_logs'),
+    path('<slug:org_slug>/org/users/', views.org_users_view, name='org_users'),
+    path('<slug:org_slug>/org/settings/', views.org_settings_view, name='org_settings'),
     # Hubtel delivery receipt webhook
     path('webhooks/hubtel/', views.hubtel_webhook, name='hubtel_webhook'),
     path('health/', views.health, name='health'),
+    # Super-admin pages (use 'super/' prefix to avoid colliding with Django admin)
+    path('super/enroll/', views.enroll_tenant_view, name='enroll_tenant'),
+    path('super/system-logs/', views.system_logs_view, name='system_logs'),
+    path('super/global-templates/', views.global_templates_view, name='global_templates'),
+    path('super/global-templates/create/', views.create_global_template_view, name='create_global_template'),
+    path('super/global-templates/<int:template_id>/edit/', views.edit_global_template_view, name='edit_global_template'),
+    path('super/onboarding/', views.onboarding_view, name='onboarding'),
+    path('super/orgs/<slug:org_slug>/edit/', views.super_edit_org_view, name='super_edit_org'),
     # Password reset (uses Django auth views with our templates)
     path('password_reset/', auth_views.PasswordResetView.as_view(
         template_name='registration/password_reset_form.html',

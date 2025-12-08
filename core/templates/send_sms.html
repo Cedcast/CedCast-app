@@ -11,15 +11,15 @@
         .error { color: red; margin-bottom: 16px; }
     </style>
 </head>
-<body style="background: {{ school.primary_color|default:'#f5f5f5' }}; color: {{ school.secondary_color|default:'#222' }};">
+<body style="background: {{ tenant_primary_color|default:school.primary_color|default:'#f5f5f5' }}; color: {{ tenant_secondary_color|default:school.secondary_color|default:'#222' }};">
     <div class="container">
-    <h1 style="color: {{ school.primary_color }};">Send SMS to Parents</h1>
+    <h1 style="color: {{ tenant_primary_color|default:school.primary_color }};">Send SMS to Contacts</h1>
         {% if message_sent %}
             <div class="success">
                 {% if sent_class %}
-                    SMS sent to all parents of <strong>{{ sent_class }}</strong>!
+                    SMS sent to all contacts of <strong>{{ sent_class }}</strong>!
                 {% else %}
-                    SMS sent to all parents!
+                    SMS sent to all contacts!
                 {% endif %}
             </div>
         {% endif %}
@@ -29,7 +29,7 @@
         <form method="post">
             {% csrf_token %}
             <div class="mb-3">
-                <label for="student_class">Select Class (optional):</label>
+                <label for="student_class">Select Group (optional):</label>
                 <select name="student_class" class="form-control">
                     <option value="">All Classes</option>
                     <option value="Creche">Creche</option>
@@ -49,7 +49,7 @@
             </div>
             <label for="sms_body">Message:</label>
             <textarea name="sms_body" required></textarea>
-            <button type="submit" style="background: {{ school.primary_color }}; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 1rem; cursor: pointer;">Send SMS</button>
+            <button type="submit" style="background: {{ tenant_primary_color|default:school.primary_color }}; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 1rem; cursor: pointer;">Send SMS</button>
         </form>
     <a href="{% url 'school_dashboard' school.slug %}">Back to Dashboard</a>
     </div>

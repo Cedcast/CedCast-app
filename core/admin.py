@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import School, User, Parent, Message
 from .models import AlertRecipient
+from .models import SupportTicket
 
 @admin.register(School)
 class SchoolAdmin(admin.ModelAdmin):
@@ -10,9 +11,9 @@ class SchoolAdmin(admin.ModelAdmin):
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
 	list_display = ("username", "role", "school", "is_superuser", "is_staff")
-	fieldsets = UserAdmin.fieldsets + (
+	fieldsets = list(UserAdmin.fieldsets) + [
 		("Role & School", {"fields": ("role", "school")}),
-	)
+	]
 
 @admin.register(Parent)
 class ParentAdmin(admin.ModelAdmin):
@@ -28,3 +29,4 @@ class AlertRecipientAdmin(admin.ModelAdmin):
 	list_display = ("parent", "message", "status", "provider_message_id", "provider_status", "sent_at")
 	search_fields = ("provider_message_id", "parent__phone_number", "message__content")
 	list_filter = ("status",)
+admin.site.register(SupportTicket)

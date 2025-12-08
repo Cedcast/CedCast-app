@@ -3,6 +3,7 @@ from clicksend_client import SMSApi, SmsMessage, SmsMessageCollection
 from clicksend_client.rest import ApiException
 from core.models import School
 from django.conf import settings
+from core.utils.crypto_utils import decrypt_value
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,16 +24,14 @@ def send_sms(to_number, message_body, school: School):
     Raises:
         Exception: If ClickSend credentials not configured or API call fails
     """
-    # Dry-run mode: simulate sending in non-production by default
-    dry_run = getattr(settings, 'CLICKSEND_DRY_RUN', False)
-    if dry_run:
-        fake_id = f"dryrun-{hash((to_number, message_body)) & 0xffffffff:x}"
-        logger.info("[DRY-RUN] SMS to %s: %s (id=%s)", to_number, message_body, fake_id)
-        return fake_id
+    # NOTE: dry-run simulation removed so dev server will perform live sends.
+    # To re-enable dry-run, restore checks here (CLICKSEND_DRY_RUN).
 
     # Get ClickSend credentials
-    username = getattr(settings, 'CLICKSEND_USERNAME', None) or school.clicksend_username
-    api_key = getattr(settings, 'CLICKSEND_API_KEY', None) or school.clicksend_api_key
+    username_raw = getattr(settings, 'CLICKSEND_USERNAME', None) or school.clicksend_username
+    api_key_raw = getattr(settings, 'CLICKSEND_API_KEY', None) or school.clicksend_api_key
+    username = decrypt_value(username_raw) if username_raw else None
+    api_key = decrypt_value(api_key_raw) if api_key_raw else None
     
     if not (username and api_key):
         raise Exception("ClickSend credentials not configured.")
@@ -47,7 +46,8 @@ def send_sms(to_number, message_body, school: School):
     
     # Prepare SMS message
     # Optional sender ID support (ClickSend 'from')
-    sender_id = getattr(school, 'sender_id', None)
+    sender_id_raw = getattr(school, 'sender_id', None)
+    sender_id = decrypt_value(sender_id_raw) if sender_id_raw else None
     sms_message = SmsMessage(
         source="django",
         body=message_body,
@@ -91,11 +91,7 @@ def get_sms_delivery_status(message_id, school: School):
     Returns:
         dict: Delivery status information
     """
-    # In dry-run, return a mocked delivered status
-    dry_run = getattr(settings, 'CLICKSEND_DRY_RUN', False)
-    if dry_run:
-        logger.info("[DRY-RUN] Delivery status for %s: DELIVERED", message_id)
-        return {'status': 'SUCCESS', 'data': {'message_id': message_id, 'status': 'DELIVERED'}}
+    # For local dev we now query ClickSend for real status; remove dry-run mocks.
 
     # Get ClickSend credentials
     username = getattr(settings, 'CLICKSEND_USERNAME', None) or school.clicksend_username

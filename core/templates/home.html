@@ -17,7 +17,7 @@
     </nav>
     <div class="container text-center py-5">
     <h1 class="mb-4">Welcome to CedCast SMS platform</h1>
-        <p class="lead mb-4">A modern platform for school SMS alerts, parent communication, and more.</p>
+    <p class="lead mb-4">A modern SaaS platform for multi-tenant SMS alerts, contact communication, and more.</p>
         <a href="/login/" class="btn btn-primary btn-lg me-2">Login</a>
         {% if request.user.is_authenticated and request.user.role == 'super_admin' %}
             <a href="/admin/" class="btn btn-outline-secondary btn-lg">Admin Panel</a>

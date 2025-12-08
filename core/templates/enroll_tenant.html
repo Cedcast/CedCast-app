@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    <title>Enroll Tenant — Super Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container { max-width: 900px; }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <a href="{% url 'dashboard' %}" class="btn btn-link">← Back to dashboard</a>
+        <div class="card shadow mt-2">
+            <div class="card-header bg-primary text-white">Enroll New Tenant</div>
+            <div class="card-body">
+                {% if notice %}<div class="alert alert-success">{{ notice }}</div>{% endif %}
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Entity Type</label>
+                            <select name="entity_type" class="form-select">
+                                <option value="school">Tenant (School)</option>
+                                <option value="organization">Organization</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Name</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Address</label>
+                            <textarea name="address" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Primary Phone</label>
+                            <input type="text" name="phone_primary" class="form-control" placeholder="e.g., +233501234567">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Secondary Phone</label>
+                            <input type="text" name="phone_secondary" class="form-control" placeholder="optional">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Admin Email (optional)</label>
+                            <input type="email" name="admin_email" class="form-control" placeholder="admin@example.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Desired Sender ID (optional)</label>
+                            <input type="text" name="sender_id" class="form-control" placeholder="e.g., CEDCAST or +233501234567">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Create Tenant</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

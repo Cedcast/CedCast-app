@@ -55,7 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'core.middleware.CurrentSchoolMiddleware',
+    'core.middleware.CurrentTenantMiddleware',
 ]
 
 ROOT_URLCONF = 'school_alert_system.urls'
@@ -70,6 +70,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # Expose tenant branding and convenience variables to all templates
+                'core.context_processors.tenant_branding',
             ],
         },
     },
@@ -230,6 +232,10 @@ HUBTEL_DRY_RUN = _env_bool('HUBTEL_DRY_RUN', default=False)
 HUBTEL_DEFAULT_SENDER = os.environ.get('HUBTEL_DEFAULT_SENDER')
 # Webhook secret used to verify incoming Hubtel delivery receipts (HMAC-SHA256)
 HUBTEL_WEBHOOK_SECRET = os.environ.get('HUBTEL_WEBHOOK_SECRET')
+
+# Optional Google reCAPTCHA settings
+RECAPTCHA_SITE_KEY = os.environ.get('RECAPTCHA_SITE_KEY')
+RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
 
 # Legacy Twilio/ClickSend credentials (kept for backwards compat but Hubtel is preferred)
 # TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')

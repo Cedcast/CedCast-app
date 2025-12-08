@@ -9,28 +9,30 @@
 </head>
 <body>
     <div class="container py-4">
-        <h1 class="mb-4">Welcome, School Admin</h1>
+    <h1 class="mb-4">Welcome, Tenant Admin</h1>
         <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-                <span>School: {{ school.name }}</span>
-                {% if school.logo %}
-                    <img src="{{ school.logo.url }}" alt="School Logo" style="height:40px; max-width:120px; object-fit:contain; background:#fff; border-radius:6px; margin-left:16px;">
+                <span>Tenant: {{ tenant_name or school.name }}</span>
+                {% if tenant_logo_url %}
+                    <img src="{{ tenant_logo_url }}" alt="Tenant Logo" style="height:40px; max-width:120px; object-fit:contain; background:#fff; border-radius:6px; margin-left:16px;">
+                {% elif school.logo %}
+                    <img src="{{ school.logo.url }}" alt="Tenant Logo" style="height:40px; max-width:120px; object-fit:contain; background:#fff; border-radius:6px; margin-left:16px;">
                 {% endif %}
             </div>
             <div class="card-body">
                 <form method="post" enctype="multipart/form-data" class="row g-3 mb-3">
                     {% csrf_token %}
                     <div class="col-md-4">
-                        <label for="logo" class="form-label">School Logo:</label>
+                        <label for="logo" class="form-label">Tenant Logo:</label>
                         <input type="file" name="logo" class="form-control">
                     </div>
                     <div class="col-md-4">
                         <label for="primary_color" class="form-label">Primary Color:</label>
-                        <input type="color" name="primary_color" class="form-control form-control-color" value="{{ school.primary_color }}">
+                        <input type="color" name="primary_color" class="form-control form-control-color" value="{{ tenant_primary_color or school.primary_color }}">
                     </div>
                     <div class="col-md-4">
                         <label for="secondary_color" class="form-label">Secondary Color:</label>
-                        <input type="color" name="secondary_color" class="form-control form-control-color" value="{{ school.secondary_color }}">
+                        <input type="color" name="secondary_color" class="form-control form-control-color" value="{{ tenant_secondary_color or school.secondary_color }}">
                     </div>
                     <div class="col-12">
                         <button type="submit" class="btn btn-info">Update Branding</button>
@@ -39,7 +41,7 @@
             </div>
         </div>
         <div class="parent-list">
-            <h3>Parents & Wards</h3>
+            <h3>Contacts & Profiles</h3>
             <ul>
                 {% for parent in school.parent_set.all %}
                     <li>
@@ -59,17 +61,17 @@
                 {% endfor %}
             </ul>
         </div>
-        <h3>Add Parent & Ward</h3>
+        <h3>Add Contact & Profile</h3>
         <form method="post">
             {% csrf_token %}
-            <label for="name">Parent Name:</label>
+            <label for="name">Contact Name:</label>
             <input type="text" name="parent_name" required>
             <label for="phone_number">Phone Number:</label>
-            <input type="text" name="parent_phone" required placeholder="e.g. +233501234567">
-            <small style="color: #888;">Phone number must start with +233 (Ghana). Example: +233501234567</small>
-            <label for="ward_name">Ward's Name:</label>
+            <input type="text" name="parent_phone" required placeholder="Include country code, e.g. +233501234567">
+            <small style="color: #888;">Include country code. Example: +233501234567</small>
+            <label for="ward_name">Profile Name:</label>
             <input type="text" name="ward_name" required>
-            <button type="submit">Add Parent & Ward</button>
+            <button type="submit">Add Contact & Profile</button>
         </form>
         <h3>Schedule SMS Alert</h3>
     <form method="post" action="{% url 'school_dashboard' school.slug %}">

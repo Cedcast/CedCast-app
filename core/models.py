@@ -38,6 +38,9 @@ class OrgSMSTemplate(models.Model):
 class School(models.Model):
 	name = models.CharField(max_length=255)
 	logo = models.ImageField(upload_to='school_logos/', blank=True, null=True)
+	address = models.TextField(blank=True, null=True)
+	phone_primary = models.CharField(max_length=20, blank=True, null=True)
+	phone_secondary = models.CharField(max_length=20, blank=True, null=True)
 	primary_color = models.CharField(max_length=7, default="#000000")  # HEX color
 	secondary_color = models.CharField(max_length=7, default="#FFFFFF")
 	slug = models.SlugField(max_length=100, unique=True, blank=True, null=True)
@@ -149,13 +152,25 @@ class Organization(models.Model):
 	org_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default="company")
 	slug = models.SlugField(max_length=100, unique=True)
 	logo = models.ImageField(upload_to='org_logos/', blank=True, null=True)
+	address = models.TextField(blank=True, null=True)
+	phone_primary = models.CharField(max_length=20, blank=True, null=True)
+	phone_secondary = models.CharField(max_length=20, blank=True, null=True)
 	primary_color = models.CharField(max_length=7, default="#0d6efd")
 	secondary_color = models.CharField(max_length=7, default="#6c757d")
 	# ClickSend per-tenant credentials & sender id
 	clicksend_username = models.CharField(max_length=100, blank=True, null=True)
 	clicksend_api_key = models.CharField(max_length=100, blank=True, null=True)
 	sender_id = models.CharField(max_length=20, blank=True, null=True)
+	# Hubtel per-tenant credentials (optional)
+	hubtel_api_url = models.CharField(max_length=255, blank=True, null=True)
+	hubtel_client_id = models.CharField(max_length=255, blank=True, null=True)
+	hubtel_client_secret = models.CharField(max_length=255, blank=True, null=True)
+	hubtel_api_key = models.CharField(max_length=255, blank=True, null=True)
+	hubtel_sender_id = models.CharField(max_length=50, blank=True, null=True)
 	created_at = models.DateTimeField(auto_now_add=True)
+	# administrative flags
+	is_active = models.BooleanField(default=True)
+	onboarded = models.BooleanField(default=False)
 
 	def __str__(self):
 		return f"{self.name} ({self.org_type})"
@@ -178,3 +193,45 @@ class Contact(models.Model):
 
 	def __str__(self):
 		return f"{self.name} ({self.phone_number})"
+
+
+class ContactGroup(models.Model):
+	"""Groups of contacts inside an Organization for easy targeting."""
+	organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='groups')
+	name = models.CharField(max_length=100)
+	contacts = models.ManyToManyField(Contact, blank=True, related_name='groups')
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	def __str__(self):
+		return f"{self.name} ({self.organization.name})"
+
+
+class StatsViewer(models.Model):
+	"""Optional mapping granting a user read-only 'stats' access to an Organization.
+
+	This allows org admins to invite users who may only view dashboards and reports
+	without being granted the ORG_ADMIN role across the app.
+	"""
+	user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='stats_views')
+	organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='stats_viewers')
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		unique_together = ('user', 'organization')
+
+	def __str__(self):
+		return f"{self.user.username} (stats) @ {self.organization.name}"
+
+
+class SupportTicket(models.Model):
+	"""Support tickets created by org admins to contact CedCast super-admins."""
+	organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='support_tickets')
+	created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True)
+	subject = models.CharField(max_length=200)
+	message = models.TextField()
+	status = models.CharField(max_length=20, default='open')  # open, closed
+	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
+	def __str__(self):
+		return f"[{self.organization.slug}] {self.subject} ({self.status})"

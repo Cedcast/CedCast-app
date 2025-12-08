@@ -16,108 +16,129 @@
     </nav>
 
     <div class="container py-4">
+        {% if hubtel_dry_run or clicksend_dry_run %}
+        <div class="mb-3">
+            <div class="alert alert-warning">
+                <strong>Test mode:</strong>
+                {% if hubtel_dry_run %} Hubtel is in dry-run mode — messages will not be sent.{% endif %}
+                {% if clicksend_dry_run %} {% if hubtel_dry_run %}<br>{% endif %} ClickSend is in dry-run mode — messages will not be sent.{% endif %}
+            </div>
+        </div>
+        {% endif %}
         <div class="row">
-            <div class="col-12">
-                <div class="card mb-4 shadow">
-                    <div class="card-header" style="background: {{ organization.primary_color }}; color:#fff;">
-                        <span>Organization: {{ organization.name }}</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <a href="{% url 'org_upload_contacts' organization.slug %}" class="btn btn-sm btn-outline-primary me-2">Upload Contacts</a>
-                            <a href="{% url 'org_templates' organization.slug %}" class="btn btn-sm btn-outline-secondary me-2">Manage Templates</a>
-                            <a href="{% url 'org_retry_failed' organization.slug %}" class="btn btn-sm btn-outline-danger">Retry Failed</a>
+            <div class="col-md-3 mb-3">
+                <div class="card shadow-sm">
+                    <div class="card-body p-2">
+                        <h5 class="card-title">{{ organization.name }}</h5>
+                        <div class="list-group list-group-flush">
+                            <a href="{% url 'org_dashboard' organization.slug %}" class="list-group-item list-group-item-action">Dashboard</a>
+                            <a href="{% url 'org_send_sms' organization.slug %}" class="list-group-item list-group-item-action">Send Messages</a>
+                            <a href="{% url 'org_upload_contacts' organization.slug %}" class="list-group-item list-group-item-action">Contacts</a>
+                            <a href="{% url 'org_groups' organization.slug %}" class="list-group-item list-group-item-action">Groups</a>
+                            <a href="{% url 'org_templates' organization.slug %}" class="list-group-item list-group-item-action">Templates</a>
+                            <a href="{% url 'org_message_logs' organization.slug %}" class="list-group-item list-group-item-action">Message Logs</a>
+                            <a href="{% url 'org_users' organization.slug %}" class="list-group-item list-group-item-action">Users</a>
+                            <a href="{% url 'org_settings' organization.slug %}" class="list-group-item list-group-item-action">Settings</a>
                         </div>
-                        <form method="post" class="row g-3">
-                            {% csrf_token %}
-                            <div class="col-md-6">
-                                <label class="form-label">Add Contact - Name</label>
-                                <input type="text" class="form-control" name="contact_name" placeholder="e.g., Jane Doe">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div class="row mb-3">
+                    <div class="col-sm-6 col-md-3 mb-2">
+                        <div class="card text-center shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Contacts</h6>
+                                <h3 class="card-title">{{ contacts_count|default:0 }}</h3>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Add Contact - Phone</label>
-                                <input type="text" class="form-control" name="contact_phone" placeholder="e.g., +233501234567">
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3 mb-2">
+                        <div class="card text-center shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Templates</h6>
+                                <h3 class="card-title">{{ templates_count|default:0 }}</h3>
                             </div>
-                            <div class="col-12">
-                                <button type="submit" class="btn btn-success">Add Contact</button>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3 mb-2">
+                        <div class="card text-center shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Sent Today</h6>
+                                <h3 class="card-title">{{ msgs_sent_today|default:0 }}</h3>
                             </div>
-                        </form>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3 mb-2">
+                        <div class="card text-center shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Delivery Rate</h6>
+                                <h3 class="card-title">{{ delivery_rate|floatformat:1 }}%</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-2">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-secondary text-white">Quick Actions</div>
+                            <div class="card-body">
+                                <a href="{% url 'org_upload_contacts' organization.slug %}" class="btn btn-sm btn-outline-primary me-2">Upload Contacts</a>
+                                <a href="{% url 'org_templates' organization.slug %}" class="btn btn-sm btn-outline-secondary me-2">Manage Templates</a>
+                                <a href="{% url 'org_retry_failed' organization.slug %}" class="btn btn-sm btn-outline-danger">Retry Failed</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-secondary text-white">Add Contact</div>
+                            <div class="card-body">
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <input name="contact_name" class="form-control" placeholder="Full name" />
+                                        </div>
+                                        <div class="col-6">
+                                            <input name="contact_phone" class="form-control" placeholder="Phone (include +233)" />
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-primary btn-sm" type="submit">Add Contact</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-secondary text-white">Messages (Last 7 days)</div>
+                            <div class="card-body">
+                                <p>Sent this week: <strong>{{ msgs_sent_week|default:0 }}</strong></p>
+                                <p>Sent this month: <strong>{{ msgs_sent_month|default:0 }}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                                <div class="card shadow">
+                                    <div class="card-header bg-secondary text-white">Messages</div>
+                                    <div class="card-body text-center">
+                                        <p class="mb-2">View scheduled or previously sent messages in full detail.</p>
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="{% url 'org_scheduled_messages' organization.slug %}" class="btn btn-outline-primary">Scheduled Messages</a>
+                                            <a href="{% url 'org_sent_messages' organization.slug %}" class="btn btn-primary">Sent Messages</a>
+                                        </div>
+                                    </div>
+                                </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card mb-4 shadow">
-                    <div class="card-header bg-secondary text-white">Contacts</div>
-                    <div class="card-body">
-                        <ul class="list-group">
-                            {% for c in organization.contacts.all %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>{{ c.name }} — {{ c.phone_number }}</span>
-                                </li>
-                            {% empty %}
-                                <li class="list-group-item">No contacts yet.</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card mb-4 shadow">
-                    <div class="card-header bg-secondary text-white">Schedule SMS</div>
-                    <div class="card-body">
-                        {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-                        {% if message_sent %}<div class="alert alert-success">Message scheduled.</div>{% endif %}
-                        <form method="post" action="{% url 'org_dashboard' organization.slug %}">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label class="form-label">Message Content</label>
-                                <input type="text" class="form-control" name="sms_body" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Scheduled Time</label>
-                                <input type="datetime-local" class="form-control" name="scheduled_time" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Send to (comma-separated phone numbers, leave blank for all)</label>
-                                <input type="text" class="form-control" name="recipients">
-                            </div>
-                            <button type="submit" class="btn btn-primary">Schedule</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow">
-                    <div class="card-header bg-secondary text-white">Scheduled & Sent Messages</div>
-                    <div class="card-body">
-                        <ul class="list-group">
-                            {% for message in messages %}
-                                <li class="list-group-item">
-                                    <strong>{{ message.content }}</strong><br>
-                                    Scheduled: {{ message.scheduled_time|date:'Y-m-d H:i' }}<br>
-                                    Status: {% if message.sent %}Sent{% else %}Pending{% endif %}<br>
-                                    Recipients:
-                                    <ul>
-                                        {% for ar in message.recipients_status.all %}
-                                            <li>{{ ar.contact.name }} ({{ ar.contact.phone_number }}): {{ ar.status }}{% if ar.sent_at %} at {{ ar.sent_at|date:'Y-m-d H:i' }}{% endif %}{% if ar.error_message %} <span class="text-danger">Error: {{ ar.error_message }}</span>{% endif %}</li>
-                                        {% endfor %}
-                                    </ul>
-                                </li>
-                            {% empty %}
-                                <li class="list-group-item">No messages yet.</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
 </body>
 </html>

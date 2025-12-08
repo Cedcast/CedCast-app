@@ -1,0 +1,30 @@
+digraph CedCast {
+  rankdir=LR;
+  node [shape=box, style=rounded, fontsize=11, fontname="Helvetica"];
+
+  Browser [label="Browser\n(Org Admin / Super Admin)", shape=oval];
+  Django [label="Django Web App\n(school_alert_system)\n- core app (models/views/templates)\n- provider utils: hubtel/clicksend/twilio\n- crypto utils\n- management commands", shape=box];
+  DB [label="Database\n(OrgMessage, OrgAlertRecipient, Organization, Contact)", shape=cylinder];
+  Worker [label="Worker / Management Command\nsend_pending_org_messages", shape=box];
+  Hubtel [label="Hubtel (primary)\nHTTP API", shape=box];
+  ClickSend [label="ClickSend (fallback)\nHTTP API", shape=box];
+  Webhook [label="Webhook Receiver\n(optional)\nUpdates delivery status", shape=box];
+
+  Browser -> Django [label="HTTPS (form post) \nSend Now / Schedule", fontsize=10];
+  Django -> DB [label="read/write models", fontsize=10];
+  Django -> Worker [label="schedule / spawn (deferred)", style=dashed, fontsize=10];
+
+  Worker -> Django [label="calls provider utils (Hubtel -> ClickSend)", fontsize=10];
+  Django -> Hubtel [label="hubtel_utils.send_sms()\n(decrypted tenant creds)", fontsize=10];
+  Django -> ClickSend [label="clicksend_utils.send_sms()\n(fallback)", fontsize=10];
+
+  Hubtel -> Webhook [label="delivery receipts (optional)", style=dotted, fontsize=10];
+  Webhook -> Django [label="update OrgAlertRecipient.provider_status", style=dotted, fontsize=10];
+
+  subgraph cluster_secret {
+    label="Secrets";
+    style=dashed;
+    crypto [label="crypto_utils\nencrypt_value/decrypt_value", shape=box];
+    crypto -> Django [style=invis];
+  }
+}

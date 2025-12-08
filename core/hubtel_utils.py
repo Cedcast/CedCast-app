@@ -1,6 +1,8 @@
 import logging
+import os
 from django.conf import settings
 from core.models import School
+from core.utils.crypto_utils import decrypt_value
 
 logger = logging.getLogger(__name__)
 
@@ -17,17 +19,28 @@ def send_sms(to_number, message_body, tenant: School):
     Returns:
         str: message id (real or fake in dry-run)
     """
+    # NOTE: removed dry-run simulation so dev server will perform live sends.
+    # If you want to temporarily simulate sends, set HUBTEL_DRY_RUN handling back here.
+
     # Always perform a live send via Hubtel
 
-    api_url = getattr(settings, 'HUBTEL_API_URL', None)
-    # Hubtel authentication: client id + client secret (preferred)
-    client_id = getattr(settings, 'HUBTEL_CLIENT_ID', None)
-    client_secret = getattr(settings, 'HUBTEL_CLIENT_SECRET', None) or getattr(settings, 'HUBTEL_API_KEY', None)
+    # Prefer tenant-specific Hubtel configuration if provided (set during onboarding)
+    api_url = getattr(tenant, 'hubtel_api_url', None) or getattr(settings, 'HUBTEL_API_URL', None)
+    client_id_raw = getattr(tenant, 'hubtel_client_id', None) or getattr(settings, 'HUBTEL_CLIENT_ID', None)
+    client_secret_raw = getattr(tenant, 'hubtel_client_secret', None) or getattr(settings, 'HUBTEL_CLIENT_SECRET', None) or getattr(settings, 'HUBTEL_API_KEY', None)
+    client_id = decrypt_value(client_id_raw) if client_id_raw else None
+    client_secret = decrypt_value(client_secret_raw) if client_secret_raw else None
 
     if not api_url:
-        raise Exception("Hubtel API URL not configured (HUBTEL_API_URL)")
+        raise Exception("Hubtel API URL not configured (HUBTEL_API_URL or tenant.hubtel_api_url)")
 
-    sender_id = getattr(tenant, 'sender_id', None)
+    # Prefer a Hubtel-specific sender id if provided, otherwise fall back to generic sender_id
+    sender_id_raw = getattr(tenant, 'hubtel_sender_id', None) or getattr(tenant, 'sender_id', None)
+    # decrypt if encrypted (use module-level decrypt_value; avoid re-importing which makes it a local var)
+    try:
+        sender_id = decrypt_value(sender_id_raw) if sender_id_raw else None
+    except Exception:
+        sender_id = sender_id_raw
 
     # Use requests if available
     try:

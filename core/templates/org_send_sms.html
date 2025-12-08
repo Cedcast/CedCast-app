@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% load static %}
+    <title>{{ organization.name }} - Send Messages</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container py-4">
+        {% if hubtel_dry_run or clicksend_dry_run %}
+        <div class="mb-3">
+            <div class="alert alert-warning">
+                <strong>Test mode:</strong>
+                {% if hubtel_dry_run %} Hubtel is in dry-run mode — messages will not be sent.{% endif %}
+                {% if clicksend_dry_run %} {% if hubtel_dry_run %}<br>{% endif %} ClickSend is in dry-run mode — messages will not be sent.{% endif %}
+            </div>
+        </div>
+        {% endif %}
+        <a href="{% url 'org_dashboard' organization.slug %}" class="btn btn-link">← Back</a>
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">Send / Schedule Message</div>
+            <div class="card-body">
+                {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+                {% if success %}<div class="alert alert-success">{{ success }}</div>{% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Use a template (optional)</label>
+                        <select name="template_id" id="template_id" class="form-select">
+                            <option value="">-- None --</option>
+                            {% for t in templates %}
+                                <option value="{{ t.id }}" data-content="{{ t.content|escape }}">{{ t.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Pick a saved template or leave as None to type a custom message below.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea name="sms_body" id="sms_body" class="form-control" rows="3" required>{{ sms_body }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Schedule time (optional)</label>
+                        <input type="datetime-local" name="scheduled_time" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select Groups</label>
+                        <div>
+                            {% for g in groups %}
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="groups" id="g{{ g.id }}" value="{{ g.id }}">
+                                    <label class="form-check-label" for="g{{ g.id }}">{{ g.name }}</label>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted">No groups yet.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Or pick individual contacts</label>
+                        <select name="contacts" class="form-select" multiple size="6">
+                            {% for c in contacts %}
+                                <option value="{{ c.id }}">{{ c.name }} — {{ c.phone_number }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% if recaptcha_site_key %}
+                    <div class="mb-3">
+                        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+                        <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" name="action" value="send_now" class="btn btn-primary">Send Now</button>
+                        <button type="submit" name="action" value="schedule" class="btn btn-outline-secondary">Schedule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function(){
+            const sel = document.getElementById('template_id');
+            const body = document.getElementById('sms_body');
+            if(sel && body){
+                sel.addEventListener('change', function(){
+                    const opt = sel.options[sel.selectedIndex];
+                    const content = opt && opt.getAttribute('data-content');
+                    if(content){
+                        // Unescape HTML entities lightly
+                        body.value = content.replace(/\r?\n/g, '\n');
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
