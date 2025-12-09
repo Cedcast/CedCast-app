@@ -111,6 +111,8 @@ fi
 # Run migrations and (optionally) create/update a superadmin from env vars before starting gunicorn.
 # On production we want migration failures to be visible in the logs so they can be addressed.
 # Do not swallow migration errors; allow the process to fail so Render will show the error.
+# Ensure a default superadmin email is present if not provided in the environment
+export CREATE_SUPERADMIN_EMAIL="${CREATE_SUPERADMIN_EMAIL:-kwame@cedcast.com}"
 python manage.py migrate --noinput --verbosity 2
 # Ensure superadmin if env vars provided. The management command will skip if vars are missing.
 # keep ensure_superadmin non-fatal so a misconfigured admin env doesn't block startup
