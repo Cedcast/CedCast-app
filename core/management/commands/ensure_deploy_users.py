@@ -69,10 +69,17 @@ class Command(BaseCommand):
         )
         if created_super:
             self.stdout.write(self.style.SUCCESS(f"Created superadmin '{super_username}'"))
-        if super_password:
-            super_user.set_password(super_password)
-            super_user.save()
-            self.stdout.write(self.style.SUCCESS(f"Updated password for superadmin '{super_username}'"))
+        # Only set the password when the user was just created, or when a deploy
+        # operator explicitly forces a password reset via env var.
+        force_reset = os.environ.get('FORCE_DEPLOY_USER_PASSWORD', 'false').lower() in ('1', 'true', 'yes')
+        if created_super or force_reset:
+            if super_password:
+                super_user.set_password(super_password)
+                super_user.save()
+                self.stdout.write(self.style.SUCCESS(f"Set password for superadmin '{super_username}' (created or forced)"))
+        else:
+            # Do not overwrite existing password on every deploy
+            self.stdout.write(self.style.NOTICE(f"Superadmin '{super_username}' exists; password unchanged"))
 
         # Ensure org admin
         org_admin, created_org = User.objects.get_or_create(
@@ -84,12 +91,20 @@ class Command(BaseCommand):
         )
         # Attach to organization
         org_admin.organization = org
-        if org_password:
-            org_admin.set_password(org_password)
+        # Only set org admin password on creation or when forced
+        if created_org:
+            if org_password:
+                org_admin.set_password(org_password)
+        else:
+            if force_reset and org_password:
+                org_admin.set_password(org_password)
         org_admin.save()
         if created_org:
             self.stdout.write(self.style.SUCCESS(f"Created org admin '{org_username}' for '{org_slug}'"))
         else:
-            self.stdout.write(self.style.SUCCESS(f"Ensured org admin '{org_username}' exists for '{org_slug}'"))
+            if force_reset:
+                self.stdout.write(self.style.SUCCESS(f"Updated password for org admin '{org_username}' (forced)"))
+            else:
+                self.stdout.write(self.style.SUCCESS(f"Ensured org admin '{org_username}' exists for '{org_slug}'"))
 
         self.stdout.write(self.style.SUCCESS("Deploy users ensured successfully."))
