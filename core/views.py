@@ -430,6 +430,8 @@ def create_global_template_view(request):
 		return redirect('dashboard')
 	from .models import OrgSMSTemplate, Organization
 	notice = None
+	# Ensure generated_credentials is always defined (avoid UnboundLocalError on GET)
+	generated_credentials = None
 	orgs = Organization.objects.all().order_by('name')
 	# Support prefilling when copying an existing template via ?copy_from=<id>
 	copy_from = request.GET.get('copy_from')
