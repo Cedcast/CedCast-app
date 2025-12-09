@@ -458,7 +458,7 @@ def create_global_template_view(request):
 				LogEntry.objects.log_action(
 					user_id=request.user.id,
 					content_type_id=ct.id,
-					object_id=tmpl.id,
+					object_id=getattr(tmpl, 'id', None),
 					object_repr=str(tmpl),
 					action_flag=1,
 					change_message='Created global template',
@@ -483,6 +483,7 @@ def edit_global_template_view(request, template_id):
 		return redirect('global_templates')
 	orgs = Organization.objects.all().order_by('name')
 	notice = None
+	generated_credentials = None
 	if request.method == 'POST':
 		tmpl.name = request.POST.get('name')
 		org_id = request.POST.get('organization')
@@ -500,7 +501,7 @@ def edit_global_template_view(request, template_id):
 			LogEntry.objects.log_action(
 				user_id=request.user.id,
 				content_type_id=ct.id,
-				object_id=tmpl.id,
+					object_id=getattr(tmpl, 'id', None),
 				object_repr=str(tmpl),
 				action_flag=2,
 				change_message='Updated global template',
@@ -540,7 +541,7 @@ def onboarding_view(request):
 					LogEntry.objects.log_action(
 						user_id=request.user.id,
 						content_type_id=ct.id,
-						object_id=org.id,
+						object_id=getattr(org, 'id', None),
 						object_repr=str(org),
 						action_flag=2,  # change
 						change_message=f"Configured sender_id={org.sender_id}",
@@ -559,7 +560,7 @@ def onboarding_view(request):
 					LogEntry.objects.log_action(
 						user_id=request.user.id,
 						content_type_id=ct.id,
-						object_id=org.id,
+						object_id=getattr(org, 'id', None),
 						object_repr=str(org),
 						action_flag=2,
 						change_message="Suspended organization via onboarding UI",
@@ -577,7 +578,7 @@ def onboarding_view(request):
 					LogEntry.objects.log_action(
 						user_id=request.user.id,
 						content_type_id=ct.id,
-						object_id=org.id,
+						object_id=getattr(org, 'id', None),
 						object_repr=str(org),
 						action_flag=2,
 						change_message="Activated organization via onboarding UI",
@@ -644,7 +645,7 @@ def super_edit_org_view(request, org_slug=None):
 			LogEntry.objects.log_action(
 				user_id=request.user.id,
 				content_type_id=ct.id,
-				object_id=org.id,
+				object_id=getattr(org, 'id', None),
 				object_repr=str(org),
 				action_flag=2,
 				change_message='Updated organization credentials via super admin UI',
@@ -803,30 +804,42 @@ def enroll_tenant_view(request):
 				org.logo = logo_file
 				org.save()
 
-			# create admin account if admin_email provided
-			if admin_email:
+			# create admin account if admin_email provided or when first/last name provided
+			generated_credentials = None
+			if admin_email or (request.POST.get('first_name') or request.POST.get('last_name')):
 				from django.contrib.auth import get_user_model
-				from django.contrib.auth.forms import PasswordResetForm
 				import secrets
 				UserModel = get_user_model()
-				base_username = admin_email.split('@')[0]
+				# try to build a username from first+last or from email localpart
+				first = request.POST.get('first_name') or ''
+				last = request.POST.get('last_name') or ''
+				# Build a sensible base username; fall back to email localpart or 'user'
+				base_username = (first + '.' + last).strip('.').lower() or (admin_email.split('@')[0] if admin_email else 'user')
+
 				username = base_username
 				c = 2
 				while UserModel.objects.filter(username=username).exists():
 					username = f"{base_username}{c}"
 					c += 1
+
 				temp_pw = secrets.token_urlsafe(10)
-				new_user = UserModel.objects.create_user(username=username, email=admin_email, password=temp_pw)
-				setattr(new_user, 'role', User.ORG_ADMIN)
-				setattr(new_user, 'organization', org)
+				new_user = UserModel.objects.create_user(username=username, email=admin_email or '', password=temp_pw)
+				# set role and link to org
+				new_user.role = getattr(User, 'ORG_ADMIN', 'org_admin')
+				new_user.organization = org
+				if first:
+					new_user.first_name = first
+				if last:
+					new_user.last_name = last
 				new_user.save()
 
-				# send password reset so admin can choose their password
-				reset_form = PasswordResetForm({'email': admin_email})
-				if reset_form.is_valid():
-					reset_form.save(request=request, use_https=request.is_secure(), email_template_name='registration/password_reset_email.html')
+				# Do NOT attempt to send password-reset email here to avoid mail backend errors in some deployments.
+				# Instead, surface the generated credentials to the superadmin in the notice so they can share them.
+				generated_credentials = {'username': username, 'password': temp_pw, 'email': admin_email}
 
-			notice = f"Organization '{org.name}' created.{' Admin invite sent.' if admin_email else '' }"
+			notice = f"Organization '{org.name}' created."
+			if generated_credentials:
+				notice += f" Admin account created: username={generated_credentials['username']}"
 
 		else:
 			from .models import School as SchoolModel
@@ -850,30 +863,38 @@ def enroll_tenant_view(request):
 				school.logo = logo_file
 				school.save()
 
-			if admin_email:
+			# create admin for school similarly to org flow, but avoid sending emails here
+			generated_credentials = None
+			if admin_email or (request.POST.get('first_name') or request.POST.get('last_name')):
 				from django.contrib.auth import get_user_model
-				from django.contrib.auth.forms import PasswordResetForm
 				import secrets
 				UserModel = get_user_model()
-				base_username = admin_email.split('@')[0]
+				first = request.POST.get('first_name') or ''
+				last = request.POST.get('last_name') or ''
+				base_username = (first + '.' + last).strip('.').lower() or (admin_email.split('@')[0] if admin_email else 'user')
+
 				username = base_username
 				c = 2
 				while UserModel.objects.filter(username=username).exists():
 					username = f"{base_username}{c}"
 					c += 1
+
 				temp_pw = secrets.token_urlsafe(10)
-				new_user = UserModel.objects.create_user(username=username, email=admin_email, password=temp_pw)
-				setattr(new_user, 'role', User.SCHOOL_ADMIN)
-				setattr(new_user, 'school', school)
+				new_user = UserModel.objects.create_user(username=username, email=admin_email or '', password=temp_pw)
+				new_user.role = getattr(User, 'SCHOOL_ADMIN', 'school_admin')
+				new_user.school = school
+				if first:
+					new_user.first_name = first
+				if last:
+					new_user.last_name = last
 				new_user.save()
+				generated_credentials = {'username': username, 'password': temp_pw, 'email': admin_email}
 
-				reset_form = PasswordResetForm({'email': admin_email})
-				if reset_form.is_valid():
-					reset_form.save(request=request, use_https=request.is_secure(), email_template_name='registration/password_reset_email.html')
+			notice = f"School '{school.name}' created."
+			if generated_credentials:
+				notice += f" Admin account created: username={generated_credentials['username']}"
 
-			notice = f"School '{school.name}' created.{' Admin invite sent.' if admin_email else '' }"
-
-	return render(request, 'enroll_tenant.html', {'notice': notice})
+	return render(request, 'enroll_tenant.html', {'notice': notice, 'generated_credentials': generated_credentials})
 
 
 @login_required
@@ -972,7 +993,7 @@ def org_send_sms(request, org_slug=None):
 					# defer failure until (and unless) it's actually used as a fallback.
 					clicksend_utils = None
 				processed = 0
-				for ar in msg.recipients_status.all():
+				for ar in getattr(msg, 'recipients_status').all():
 					phone = ar.contact.phone_number
 					try:
 						# prefer Hubtel; fallback to ClickSend
@@ -1005,7 +1026,7 @@ def org_send_sms(request, org_slug=None):
 							ar.status = 'pending'
 						ar.save()
 			# mark message.sent if no pending recipients
-			pending_exists = msg.recipients_status.filter(status='pending').exists()
+			pending_exists = getattr(msg, 'recipients_status').filter(status='pending').exists()
 			if not pending_exists:
 				msg.sent = True
 				msg.save()
@@ -1196,18 +1217,13 @@ def org_settings_view(request, org_slug=None):
 					import secrets
 					temp_pw = secrets.token_urlsafe(12)
 					u = UserModel.objects.create_user(username=invite_username, email=invite_email, password=temp_pw)
-					# don't give org admin privileges
-					try:
-						setattr(u, 'role', UserModel.ORG_ADMIN)
-					except Exception:
-						pass
 				if u:
 					u.is_staff = False
 					u.save()
 				# create StatsViewer entry
 				try:
 					StatsViewer.objects.get_or_create(user=u, organization=org)
-					notice = f"Stats viewer '{u.username}' added."
+					notice = f"Stats viewer '{invite_username}' added."
 				except Exception as e:
 					notice = f"Could not add stats viewer: {e}"
 
