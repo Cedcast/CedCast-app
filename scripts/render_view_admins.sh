@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
-"""
-Run this inside your Render shell (or any environment where Django is installed and the project's settings are available).
-
-Usage:
-  ./scripts/render_view_admins.sh            # show superadmins and org admins
-  ./scripts/render_view_admins.sh --reset username1,username2  # reset listed users' passwords and print the new password
-  ./scripts/render_view_admins.sh --reset-all  # reset passwords for all superadmins and org admins (careful)
-
-This script does NOT print existing passwords (they are hashed). When resetting, it sets a random temporary password
-and prints it so you can share it securely with the user.
-"""
+# Run this inside your Render shell (or any environment where Django is installed and the project's settings are available).
+#
+# Usage:
+#   ./scripts/render_view_admins.sh            # show superadmins and org admins
+#   ./scripts/render_view_admins.sh --reset username1,username2  # reset listed users' passwords and print the new password
+#   ./scripts/render_view_admins.sh --reset-all  # reset passwords for all superadmins and org admins (careful)
+#
+# This script does NOT print existing passwords (they are hashed). When resetting, it sets a random temporary password
+# and prints it so you can share it securely with the user.
 
 set -euo pipefail
 
