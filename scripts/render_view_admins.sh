@@ -39,76 +39,57 @@ fi
 PYCODE=$(cat <<'PY'
 from django.contrib.auth import get_user_model
 import secrets
+import os
 User = get_user_model()
 
 def fmt(u):
-    role = getattr(u, 'role', getattr(u, 'get_role_display', lambda: None)())
-    org = getattr(u, 'organization', None)
-    org_slug = org.slug if org else ''
-    print(f"{u.username}\t{u.email}\trole={getattr(u,'role',None)}\torg={org_slug}\tlast_login={u.last_login}\tdate_joined={u.date_joined}\tis_active={u.is_active}")
+  org = getattr(u, 'organization', None)
+  org_slug = org.slug if org else ''
+  print(f"{u.username}\t{u.email}\trole={getattr(u,'role',None)}\torg={org_slug}\tlast_login={u.last_login}\tdate_joined={u.date_joined}\tis_active={u.is_active}")
 
 print('=== Super Admins ===')
 qs = User.objects.filter(role=User.SUPER_ADMIN)
 if not qs.exists():
-    # fallback to is_superuser boolean
-    qs = User.objects.filter(is_superuser=True)
+  qs = User.objects.filter(is_superuser=True)
 for u in qs:
-    fmt(u)
+  fmt(u)
 
 print('\n=== Organization Admins ===')
 for u in User.objects.filter(role=User.ORG_ADMIN).select_related('organization'):
-    fmt(u)
+  fmt(u)
 
-# handle resets injected below
-RESET_USERS = __RESET_USERS__
-RESET_ALL = __RESET_ALL__
+# Read reset params from environment
+RESET_USERS_RAW = os.environ.get('RESET_USERS_RAW', '')
+if RESET_USERS_RAW:
+  RESET_USERS = RESET_USERS_RAW.split(',')
+else:
+  RESET_USERS = []
+RESET_ALL = os.environ.get('RESET_ALL', 'False') in ('1', 'True', 'true')
+
 if RESET_ALL:
-    candidates = list(set(list(User.objects.filter(role=User.SUPER_ADMIN)) + list(User.objects.filter(role=User.ORG_ADMIN))))
-    for u in candidates:
-        newpw = secrets.token_urlsafe(9)
-        u.set_password(newpw)
-        u.save()
-        print(f"RESET {u.username} -> {newpw}")
+  candidates = list(set(list(User.objects.filter(role=User.SUPER_ADMIN)) + list(User.objects.filter(role=User.ORG_ADMIN))))
+  for u in candidates:
+    newpw = secrets.token_urlsafe(9)
+    u.set_password(newpw)
+    u.save()
+    print(f"RESET {u.username} -> {newpw}")
 elif RESET_USERS:
-    for username in RESET_USERS:
-        try:
-            u = User.objects.get(username=username)
-            newpw = secrets.token_urlsafe(9)
-            u.set_password(newpw)
-            u.save()
-            print(f"RESET {u.username} -> {newpw}")
-        except User.DoesNotExist:
-            print(f"NOUSER {username}")
+  for username in RESET_USERS:
+    try:
+      u = User.objects.get(username=username)
+      newpw = secrets.token_urlsafe(9)
+      u.set_password(newpw)
+      u.save()
+      print(f"RESET {u.username} -> {newpw}")
+    except User.DoesNotExist:
+      print(f"NOUSER {username}")
 
 PY
 )
 
-# Inject reset params
-if [ "$RESET_ALL" -eq 1 ]; then
-  PYCODE=${PYCODE//__RESET_USERS__/[]}
-  PYCODE=${PYCODE//__RESET_ALL__/True}
-else
-  if [ -n "$RESET_USERS" ]; then
-    # convert comma list to Python list of strings
-    IFS=',' read -r -a arr <<< "$RESET_USERS"
-    pylist="["
-    first=1
-    for v in "${arr[@]}"; do
-      if [ $first -eq 1 ]; then
-        pylist+=$(printf "%s" "'%s'" "$v")
-        first=0
-      else
-        pylist+=","$(printf "%s" "'%s'" "$v")
-      fi
-    done
-    pylist+="]"
-    PYCODE=${PYCODE//__RESET_USERS__/$pylist}
-    PYCODE=${PYCODE//__RESET_ALL__/False}
-  else
-    PYCODE=${PYCODE//__RESET_USERS__/[]}
-    PYCODE=${PYCODE//__RESET_ALL__/False}
-  fi
-fi
+# Export reset params as environment variables to the Python runner
+export RESET_USERS_RAW="$RESET_USERS"
+export RESET_ALL="$RESET_ALL"
 
 # Run under Django manage.py shell
 python3 manage.py shell -c "$PYCODE"
