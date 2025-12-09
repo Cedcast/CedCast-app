@@ -8,6 +8,11 @@
 </head>
 <body>
 <div class="container mt-4">
+    <div class="mb-3">
+        <a href="{% url 'dashboard' %}">
+            <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:48px">
+        </a>
+    </div>
     <a href="{% url 'dashboard' %}" class="btn btn-secondary mb-3">Back to Dashboard</a>
     <h2>Edit {{ org.name }}</h2>
     {% if notice %}
@@ -25,23 +30,23 @@
         </div>
         <div class="mb-3">
             <label class="form-label">Hubtel Client Secret</label>
-            <input class="form-control" name="hubtel_client_secret" placeholder="Leave blank to keep existing secret">
+            <input class="form-control" name="hubtel_client_secret" placeholder="Leave blank to keep existing secret" value="{% if hubtel_secret_present %}********{% else %}{% endif %}">
             {% if hubtel_secret_present %}
-                <div class="form-text">A Hubtel client secret is stored (hidden). Enter a new value to replace it.</div>
+                <div class="form-text">A Hubtel client secret is stored (masked). Enter a new value to replace it.</div>
             {% endif %}
         </div>
         <div class="mb-3">
             <label class="form-label">Hubtel API Key</label>
-            <input class="form-control" name="hubtel_api_key" placeholder="Leave blank to keep existing key">
+            <input class="form-control" name="hubtel_api_key" placeholder="Leave blank to keep existing key" value="{% if hubtel_secret_present %}********{% else %}{% endif %}">
             {% if hubtel_secret_present %}
-                <div class="form-text">A Hubtel API key is stored (hidden). Enter a new value to replace it.</div>
+                <div class="form-text">A Hubtel API key is stored (masked). Enter a new value to replace it.</div>
             {% endif %}
         </div>
         <div class="mb-3">
             <label class="form-label">Hubtel Sender ID</label>
-            <input class="form-control" name="hubtel_sender_id" placeholder="Leave blank to keep existing sender id">
+            <input class="form-control" name="hubtel_sender_id" placeholder="Leave blank to keep existing sender id" value="{{ org.hubtel_sender_id|default_if_none:'' }}">
             {% if hubtel_secret_present %}
-                <div class="form-text">A Hubtel sender id is stored (hidden). Enter a new value to replace it.</div>
+                <div class="form-text">A Hubtel sender id is stored. Enter a new value to replace it.</div>
             {% endif %}
         </div>
         <hr />
@@ -51,16 +56,16 @@
         </div>
         <div class="mb-3">
             <label class="form-label">ClickSend API Key</label>
-            <input class="form-control" name="clicksend_api_key" placeholder="Leave blank to keep existing key">
+            <input class="form-control" name="clicksend_api_key" placeholder="Leave blank to keep existing key" value="{% if clicksend_key_present %}********{% else %}{% endif %}">
             {% if clicksend_key_present %}
-                <div class="form-text">A ClickSend API key is stored (hidden). Enter a new value to replace it.</div>
+                <div class="form-text">A ClickSend API key is stored (masked). Enter a new value to replace it.</div>
             {% endif %}
         </div>
         <div class="mb-3">
             <label class="form-label">Sender ID</label>
-            <input class="form-control" name="sender_id" placeholder="Leave blank to keep existing sender id">
+            <input class="form-control" name="sender_id" placeholder="Leave blank to keep existing sender id" value="{{ org.sender_id|default_if_none:'' }}">
             {% if sender_present %}
-                <div class="form-text">A sender id is stored (hidden). Enter a new value to replace it.</div>
+                <div class="form-text">A sender id is stored. Enter a new value to replace it.</div>
             {% endif %}
         </div>
         <div class="form-check mb-3">
