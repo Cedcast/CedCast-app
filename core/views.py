@@ -1139,10 +1139,21 @@ def org_message_logs(request, org_slug=None):
 	logs = OrgAlertRecipient.objects.filter(message__organization=org)
 	if status:
 		logs = logs.filter(status=status)
-	if date_from:
-		logs = logs.filter(sent_at__gte=date_from)
-	if date_to:
-		logs = logs.filter(sent_at__lte=date_to)
+		# Parse date filter inputs (expected YYYY-MM-DD). Use sent_at__date to avoid timezone-aware/datetime issues.
+		import datetime as _dt
+		if date_from:
+			try:
+				dfrom = _dt.date.fromisoformat(date_from)
+				logs = logs.filter(sent_at__date__gte=dfrom)
+			except Exception:
+				# ignore bad input
+				date_from = None
+		if date_to:
+			try:
+				dto = _dt.date.fromisoformat(date_to)
+				logs = logs.filter(sent_at__date__lte=dto)
+			except Exception:
+				date_to = None
 	logs = logs.order_by('-sent_at')
 	return render(request, 'org_message_logs.html', {'organization': org, 'logs': logs, 'status': status, 'from': date_from, 'to': date_to})
 

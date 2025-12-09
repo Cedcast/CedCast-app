@@ -9,8 +9,22 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         now = timezone.now()
-        messages = OrgMessage.objects.filter(sent=False, scheduled_time__lte=now)
+        messages = OrgMessage.objects.filter(sent=False)
         for message in messages:
+            sched = message.scheduled_time
+            try:
+                if sched is None:
+                    continue
+                if sched.tzinfo is None:
+                    aware = timezone.make_aware(sched)
+                    message.scheduled_time = aware
+                    message.save(update_fields=['scheduled_time'])
+                    sched = aware
+            except Exception:
+                continue
+            if sched > now:
+                continue
+
             recipients = message.recipients_status.all()
             for ar in recipients:
                 if ar.status == 'pending':

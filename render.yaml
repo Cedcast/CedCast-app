@@ -25,3 +25,13 @@ services:
         sync: false
       - key: DEFAULT_ORG_SLUG
         value: packnet
+  - type: worker
+    name: school-alert-scheduler
+    env: python
+    plan: free
+    startCommand: python3 manage.py run_scheduler --interval 60 --limit 200
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: school_alert_system.settings
+      - key: SCHEDULER_INTERVAL
+        value: '60'

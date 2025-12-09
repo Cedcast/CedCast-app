@@ -25,7 +25,9 @@ class Command(BaseCommand):
 
         now = timezone.now()
 
-        qs = OrgAlertRecipient.objects.filter(status='pending', message__scheduled_time__lte=now)
+        # Avoid potential aware/naive datetime comparisons in DB filters by selecting
+        # pending recipients and checking their message.scheduled_time in Python after normalizing.
+        qs = OrgAlertRecipient.objects.filter(status='pending')
         if org_slug:
             qs = qs.filter(message__organization__slug=org_slug)
 
@@ -46,6 +48,21 @@ class Command(BaseCommand):
             phone = ar.contact.phone_number
             content = ar.message.content
             tenant = getattr(ar.message, 'organization', None)
+            # normalize message scheduled_time if naive and skip if not yet due
+            try:
+                sched = ar.message.scheduled_time
+                if sched is None:
+                    continue
+                if sched.tzinfo is None:
+                    sched = timezone.make_aware(sched)
+                    ar.message.scheduled_time = sched
+                    ar.message.save(update_fields=['scheduled_time'])
+                if sched > now:
+                    # message not yet due; skip
+                    continue
+            except Exception:
+                # if we can't parse scheduled_time, skip this recipient for now
+                continue
             try:
                 if dry_run:
                     self.stdout.write(f"[DRY] Would send to {phone}: {content[:60]}")
