@@ -140,6 +140,17 @@ if [ "${IMPORT_DUMP:-}" = "true" ]; then
   fi
 fi
 
+## Optional guarded scheduler background launcher. When RUN_SCHEDULER_IN_WEB=true the
+## web container will also start the lightweight scheduler in background. This is
+## a fallback for environments where a separate worker is not available. The
+## scheduler runs under nohup so it survives the exec that follows; output is
+## silenced to avoid cluttering web logs. Enable by setting RUN_SCHEDULER_IN_WEB=true
+## (and optionally SCHEDULER_INTERVAL, SCHEDULER_LIMIT).
+if [ "${RUN_SCHEDULER_IN_WEB:-}" = "true" ]; then
+  echo "RUN_SCHEDULER_IN_WEB=true: starting scheduler in background"
+  nohup python3 manage.py run_scheduler --interval "${SCHEDULER_INTERVAL:-60}" --limit "${SCHEDULER_LIMIT:-200}" >/dev/null 2>&1 &
+fi
+
 exec gunicorn school_alert_system.wsgi:application \
   --workers "$NUM_WORKERS" \
   --bind "$BIND" \
