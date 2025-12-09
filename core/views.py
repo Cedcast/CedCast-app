@@ -769,7 +769,14 @@ def enroll_tenant_view(request):
 	if user.role != User.SUPER_ADMIN:
 		return redirect('dashboard')
 
+	# Ensure generated_credentials is always defined so GET requests don't hit
+	# an UnboundLocalError when rendering the form (POST may set this).
 	notice = None
+	generated_credentials = None
+
+	# Add logging import so we can record unexpected exceptions to the app logs.
+	import logging
+
 	if request.method == 'POST':
 		entity_type = request.POST.get('entity_type', 'school')
 		name = request.POST.get('name')
@@ -896,7 +903,14 @@ def enroll_tenant_view(request):
 			if generated_credentials:
 				notice += f" Admin account created: username={generated_credentials['username']}"
 
-	return render(request, 'enroll_tenant.html', {'notice': notice, 'generated_credentials': generated_credentials})
+	try:
+		return render(request, 'enroll_tenant.html', {'notice': notice, 'generated_credentials': generated_credentials})
+	except Exception:
+		# Log the full traceback to the configured logger and re-raise so Django
+		# still returns a 500 to the client. The logged traceback will appear in
+		# Render's service logs and help diagnose the issue.
+		logging.exception('Unhandled exception in enroll_tenant_view')
+		raise
 
 
 @login_required
