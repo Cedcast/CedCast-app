@@ -50,6 +50,31 @@
                         </div>
                     </div>
                 </div>
+
+            <!-- Quick Onboard helper card -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card card-shadow">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between">
+                                <div>
+                                    <h5 class="mb-1">Quick Onboard</h5>
+                                    <div class="small-muted">Get an organization live in three simple steps.</div>
+                                    <ol class="mt-2 mb-0" style="padding-left:18px">
+                                        <li>Select <strong>New Tenant</strong> to create the organization and admin account.</li>
+                                        <li>Open <strong>Onboarding</strong> to configure sender IDs and branding.</li>
+                                        <li>Use <strong>Global Templates</strong> or create org templates to send messages.</li>
+                                    </ol>
+                                </div>
+                                <div class="text-end">
+                                    <a href="{% url 'enroll_tenant' %}" class="btn btn-primary btn-lg">Quick Onboard</a>
+                                    <div class="mt-2"><a href="{% url 'system_logs' %}" class="small-muted">View onboarding docs</a></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             </div>
 
             <div class="row mb-4">
@@ -63,22 +88,22 @@
                                     <!-- Quick Actions table (click rows to navigate) -->
                                     <table class="table table-sm table-hover quick-actions-table mb-0">
                                         <tbody>
-                                            <tr data-href="{% url 'enroll_tenant' %}">
+                                            <tr data-href="{% url 'enroll_tenant' %}" tabindex="0" role="button" aria-label="Enroll Tenant">
                                                 <td><i class="bi bi-person-plus-fill"></i></td>
                                                 <td>Enroll Tenant</td>
                                                 <td class="text-end"><small class="text-muted">Create a new tenant</small></td>
                                             </tr>
-                                            <tr data-href="{% url 'super_orgs' %}">
+                                            <tr data-href="{% url 'super_orgs' %}" tabindex="0" role="button" aria-label="Onboarding">
                                                 <td><i class="bi bi-building"></i></td>
                                                 <td>Onboarding</td>
                                                 <td class="text-end"><small class="text-muted">Manage organizations</small></td>
                                             </tr>
-                                            <tr data-href="{% url 'global_templates' %}">
+                                            <tr data-href="{% url 'global_templates' %}" tabindex="0" role="button" aria-label="Global Templates">
                                                 <td><i class="bi bi-card-text"></i></td>
                                                 <td>Global Templates</td>
                                                 <td class="text-end"><small class="text-muted">Shared message templates</small></td>
                                             </tr>
-                                            <tr data-href="{% url 'system_logs' %}">
+                                            <tr data-href="{% url 'system_logs' %}" tabindex="0" role="button" aria-label="System Logs">
                                                 <td><i class="bi bi-list-check"></i></td>
                                                 <td>System Logs</td>
                                                 <td class="text-end"><small class="text-muted">View background logs</small></td>
@@ -167,6 +192,24 @@
                 } catch (err) {
                     // swallow errors to avoid breaking the page
                     console.error('Row click handler error', err);
+                }
+            }, false);
+        })();
+
+        // Keyboard activation for quick-actions-table rows (Enter to activate)
+        (function(){
+            document.addEventListener('keydown', function(e){
+                try {
+                    if (e.key !== 'Enter') return;
+                    var el = document.activeElement;
+                    if (!el) return;
+                    // If focused element is a tr with data-href, follow it
+                    if (el.matches && el.matches('tr[data-href]')) {
+                        var href = el.getAttribute('data-href');
+                        if (href) window.location.href = href;
+                    }
+                } catch (err) {
+                    console.error('Keydown handler error', err);
                 }
             }, false);
         })();

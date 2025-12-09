@@ -20,3 +20,9 @@
   .quick-actions-btn { min-width: 140px; }
   .dashboard-header { flex-direction:column; align-items:flex-start; }
 }
+
+/* Quick onboard card */
+.card .quick-onboard-steps { margin-top:6px }
+
+/* Focus styles for keyboard navigation */
+.quick-actions-table tbody tr:focus { outline: 3px solid rgba(13,110,253,0.15); background-color:#f1f5ff; }
