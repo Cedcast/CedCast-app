@@ -12,7 +12,7 @@
     <h1 class="mb-4">Welcome, Tenant Admin</h1>
         <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-                <span>Tenant: {{ tenant_name or school.name }}</span>
+                <span>Tenant: {{ tenant_name|default:school.name }}</span>
                 {% if tenant_logo_url %}
                     <img src="{{ tenant_logo_url }}" alt="Tenant Logo" style="height:40px; max-width:120px; object-fit:contain; background:#fff; border-radius:6px; margin-left:16px;">
                 {% elif school.logo %}
@@ -28,11 +28,11 @@
                     </div>
                     <div class="col-md-4">
                         <label for="primary_color" class="form-label">Primary Color:</label>
-                        <input type="color" name="primary_color" class="form-control form-control-color" value="{{ tenant_primary_color or school.primary_color }}">
+                        <input type="color" name="primary_color" class="form-control form-control-color" value="{{ tenant_primary_color|default:school.primary_color }}">
                     </div>
                     <div class="col-md-4">
                         <label for="secondary_color" class="form-label">Secondary Color:</label>
-                        <input type="color" name="secondary_color" class="form-control form-control-color" value="{{ tenant_secondary_color or school.secondary_color }}">
+                        <input type="color" name="secondary_color" class="form-control form-control-color" value="{{ tenant_secondary_color|default:school.secondary_color }}">
                     </div>
                     <div class="col-12">
                         <button type="submit" class="btn btn-info">Update Branding</button>

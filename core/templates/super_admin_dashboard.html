@@ -29,7 +29,7 @@
 
       <div class="dropdown">
         <a class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" href="#">
-          <div class="avatar rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:34px; height:34px;">{{ request.user.username|first|upper }}</div>
+          <div class="avatar rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:34px; height:34px;">{{ request.user.username|slice:":1"|upper }}</div>
           <span class="ms-2 d-none d-sm-inline">{{ request.user.username }}</span>
         </a>
         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">

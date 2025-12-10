@@ -11,7 +11,7 @@
                 <div class="position-relative">
                     <button class="btn btn-outline-light btn-sm p-1" id="notifBtn" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-bell-fill" aria-hidden="true"></i>
-                        {% if notification_count|default:0|int > 0 %}
+                        {% if notification_count|default:0|add:0 > 0 %}
                         <span class="notif-badge">{{ notification_count }}</span>
                         {% endif %}
                     </button>
