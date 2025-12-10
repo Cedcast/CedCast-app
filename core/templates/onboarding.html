@@ -9,7 +9,10 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">CedCast</a>
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:28px; margin-right:8px; object-fit:contain;" onerror="this.style.display='none'">
+                <span class="align-middle">CedCast</span>
+            </a>
             <div class="d-flex">
                 <a href="{% url 'dashboard' %}" class="btn btn-outline-light me-2">Dashboard</a>
                 <a href="/logout/" class="btn btn-outline-light">Logout</a>
@@ -70,6 +73,7 @@
                                         <th>Sender ID</th>
                                         <th>Onboarded</th>
                                         <th>Active</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -80,6 +84,9 @@
                                         <td>{{ org.sender_id|default:'—' }}</td>
                                         <td>{% if org.onboarded %}Yes{% else %}No{% endif %}</td>
                                         <td>{% if org.is_active %}Yes{% else %}No{% endif %}</td>
+                                        <td>
+                                            <a href="{% url 'super_edit_org' org_slug=org.slug %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        </td>
                                     </tr>
                                     {% empty %}
                                     <tr><td colspan="5" class="text-center">No organizations found.</td></tr>

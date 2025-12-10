@@ -328,8 +328,50 @@ def dashboard(request, school_slug=None):
 		from .models import Message as SchoolMessage, OrgMessage as OrganizationMessage
 		total_msgs = SchoolMessage.objects.count() + OrganizationMessage.objects.count()
 		total_sent = SchoolMessage.objects.filter(sent=True).count() + OrganizationMessage.objects.filter(sent=True).count()
+		# Build 7-day trends (oldest -> newest)
+		from django.utils import timezone
+		import datetime
+		from django.db.models.functions import TruncDate
+		from django.db.models import Count
+		trend_days = 7
+		now = timezone.now()
+		start_date = (now - datetime.timedelta(days=trend_days - 1)).date()
+		# Aggregate sent counts by sent_at date for school and org recipients
+		from .models import AlertRecipient as SchoolAlertRecipient, OrgAlertRecipient as OrganizationAlertRecipient
+		sent_school_qs = SchoolAlertRecipient.objects.filter(status='sent', sent_at__date__gte=start_date).annotate(day=TruncDate('sent_at')).values('day').annotate(count=Count('id'))
+		sent_org_qs = OrganizationAlertRecipient.objects.filter(status='sent', sent_at__date__gte=start_date).annotate(day=TruncDate('sent_at')).values('day').annotate(count=Count('id'))
+		# Aggregate totals by message created date (for delivery denominator)
+		total_school_qs = SchoolAlertRecipient.objects.filter(message__created_at__date__gte=start_date).annotate(day=TruncDate('message__created_at')).values('day').annotate(total=Count('id'))
+		total_org_qs = OrganizationAlertRecipient.objects.filter(message__created_at__date__gte=start_date).annotate(day=TruncDate('message__created_at')).values('day').annotate(total=Count('id'))
+		# Aggregate org creations
+		orgs_qs = Organization.objects.filter(created_at__date__gte=start_date).annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id'))
+		# build dicts keyed by date for quick lookup
+		sent_by_date = {}
+		for r in sent_school_qs:
+			sent_by_date[r['day']] = sent_by_date.get(r['day'], 0) + r['count']
+		for r in sent_org_qs:
+			sent_by_date[r['day']] = sent_by_date.get(r['day'], 0) + r['count']
+		total_by_date = {}
+		for r in total_school_qs:
+			total_by_date[r['day']] = total_by_date.get(r['day'], 0) + r['total']
+		for r in total_org_qs:
+			total_by_date[r['day']] = total_by_date.get(r['day'], 0) + r['total']
+		orgs_by_date = { r['day']: r['count'] for r in orgs_qs }
+		# Build arrays oldest->newest
+		messages_trend = []
+		orgs_trend = []
+		delivery_trend = []
+		for i in range(trend_days - 1, -1, -1):
+			d = (now - datetime.timedelta(days=i)).date()
+			messages_trend.append(sent_by_date.get(d, 0))
+			orgs_trend.append(orgs_by_date.get(d, 0))
+			total = total_by_date.get(d, 0)
+			sent = sent_by_date.get(d, 0)
+			delivery_trend.append(int((sent / total * 100)) if total else 0)
+
 		context = {"schools": schools, "school_stats": school_stats, "org_stats": org_stats, "notice": notice,
 			"total_messages": total_msgs, "total_sent": total_sent,
+			"messages_trend": messages_trend, "orgs_trend": orgs_trend, "delivery_trend": delivery_trend,
 			"hubtel_dry_run": getattr(settings, 'HUBTEL_DRY_RUN', False),
 			"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
 		}
@@ -741,6 +783,39 @@ def org_dashboard(request, org_slug=None):
 	sent_recipients = OrgAlertRecipient.objects.filter(message__organization=organization, status='sent').count()
 	delivery_rate = (sent_recipients / total_recipients * 100) if total_recipients else 0
 
+	# Build simple 7-day trend arrays (oldest -> newest) for sparklines in the dashboard.
+	# These are lightweight per-day counts derived from created_at / sent_at fields.
+	from django.db.models.functions import TruncDate
+	from django.db.models import Count
+	trend_days = 7
+	now = now
+	start_date = (now - datetime.timedelta(days=trend_days - 1)).date()
+	# Aggregate sent counts by sent_at date
+	msgs_qs = OrgAlertRecipient.objects.filter(message__organization=organization, status='sent', sent_at__date__gte=start_date).annotate(day=TruncDate('sent_at')).values('day').annotate(count=Count('id'))
+	# Aggregate contacts and templates by created_at
+	contacts_qs = Contact.objects.filter(organization=organization, created_at__date__gte=start_date).annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id'))
+	templates_qs = OrgSMSTemplate.objects.filter(organization=organization, created_at__date__gte=start_date).annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id'))
+	# Totals by message.created_at (denominator for delivery %)
+	total_qs = OrgAlertRecipient.objects.filter(message__organization=organization, message__created_at__date__gte=start_date).annotate(day=TruncDate('message__created_at')).values('day').annotate(total=Count('id'))
+	# Build lookup dicts
+	msgs_by_date = { r['day']: r['count'] for r in msgs_qs }
+	contacts_by_date = { r['day']: r['count'] for r in contacts_qs }
+	templates_by_date = { r['day']: r['count'] for r in templates_qs }
+	total_by_date = { r['day']: r['total'] for r in total_qs }
+	# Build arrays oldest->newest
+	msgs_sent_trend = []
+	contacts_trend = []
+	templates_trend = []
+	delivery_trend = []
+	for i in range(trend_days - 1, -1, -1):
+		d = (now - datetime.timedelta(days=i)).date()
+		msgs_sent_trend.append(msgs_by_date.get(d, 0))
+		contacts_trend.append(contacts_by_date.get(d, 0))
+		templates_trend.append(templates_by_date.get(d, 0))
+		tot = total_by_date.get(d, 0)
+		sent = msgs_by_date.get(d, 0)
+		delivery_trend.append(int((sent / tot * 100)) if tot else 0)
+
 	return render(request, "org_admin_dashboard.html", {
 		"organization": organization,
 		"messages": messages,
@@ -752,6 +827,11 @@ def org_dashboard(request, org_slug=None):
 		"msgs_sent_week": msgs_sent_week,
 		"msgs_sent_month": msgs_sent_month,
 		"delivery_rate": delivery_rate,
+		# trend arrays for sparklines (lists of ints, oldest->newest)
+		"contacts_trend": contacts_trend,
+		"templates_trend": templates_trend,
+		"msgs_sent_trend": msgs_sent_trend,
+		"delivery_trend": delivery_trend,
 		"hubtel_dry_run": getattr(settings, 'HUBTEL_DRY_RUN', False),
 		"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
 	})
@@ -1218,6 +1298,9 @@ def org_settings_view(request, org_slug=None):
 		return redirect('dashboard')
 	org = user.organization
 	notice = None
+	# Values to surface in template when we auto-create a user with a temporary password
+	created_temp_pw = None
+	created_username = None
 	from .models import StatsViewer, SupportTicket
 	# handle creating a stats-only viewer user or updating branding
 	if request.method == 'POST':
@@ -1234,23 +1317,49 @@ def org_settings_view(request, org_slug=None):
 			notice = 'Branding saved.'
 		elif action == 'invite_stats_user':
 			# invite or create a user who will be a stats viewer
-			invite_email = request.POST.get('invite_email')
-			invite_username = request.POST.get('invite_username')
-			if invite_username:
+				invite_email = request.POST.get('invite_email')
+				invite_username = request.POST.get('invite_username')
+				if invite_username:
 				from django.contrib.auth import get_user_model
 				UserModel = get_user_model()
 				u = UserModel.objects.filter(username=invite_username).first()
-				if not u and invite_email:
+				created = False
+				temp_pw = None
+				if not u:
+					# create a user even if email is not provided; generate a temporary password
 					import secrets
 					temp_pw = secrets.token_urlsafe(12)
-					u = UserModel.objects.create_user(username=invite_username, email=invite_email, password=temp_pw)
-				if u:
-					u.is_staff = False
-					u.save()
+					# email may be blank
+					u = UserModel.objects.create_user(username=invite_username, email=invite_email or '', password=temp_pw)
+					created = True
+				# ensure user is stats-only (not staff)
+				u.is_staff = False
+				u.save()
 				# create StatsViewer entry
 				try:
 					StatsViewer.objects.get_or_create(user=u, organization=org)
-					notice = f"Stats viewer '{invite_username}' added."
+					# If we created the user just now, either send a password-reset (if email) or show temp pw in notice
+					if created:
+						# if email not provided, surface the temporary password so admin can copy it
+						if not invite_email:
+							created_temp_pw = temp_pw
+							created_username = invite_username
+						if invite_email:
+							# attempt to send password reset email rather than exposing password in UI
+							try:
+								from django.contrib.auth.forms import PasswordResetForm
+								reset_form = PasswordResetForm({'email': invite_email})
+								if reset_form.is_valid():
+									reset_form.save(request=request, use_https=request.is_secure(), email_template_name='registration/password_reset_email.html')
+									notice = f"Stats viewer '{invite_username}' added. Password-reset email sent to {invite_email}."
+								else:
+									notice = f"Stats viewer '{invite_username}' added. Temporary password: {temp_pw}"
+							except Exception:
+								notice = f"Stats viewer '{invite_username}' added. Temporary password: {temp_pw}"
+						else:
+							notice = f"Stats viewer '{invite_username}' added. Temporary password: {temp_pw}"
+					else:
+						notice = f"Stats viewer '{invite_username}' added."
 				except Exception as e:
 					notice = f"Could not add stats viewer: {e}"
 
@@ -1294,7 +1403,15 @@ def org_settings_view(request, org_slug=None):
 	# recent tickets for display
 	tickets = SupportTicket.objects.filter(organization=org).order_by('-created_at')[:10]
 
-	return render(request, 'org_settings.html', {'organization': org, 'notice': notice, 'users': users, 'stats_viewers': stats_viewers, 'tickets': tickets})
+	return render(request, 'org_settings.html', {
+		'organization': org,
+		'notice': notice,
+		'users': users,
+		'stats_viewers': stats_viewers,
+		'tickets': tickets,
+		'created_temp_pw': created_temp_pw,
+		'created_username': created_username,
+	})
 
 
 @login_required

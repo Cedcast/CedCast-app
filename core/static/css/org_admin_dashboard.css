@@ -1,0 +1,75 @@
+/* Small, low-risk cosmetic styles for org admin dashboard */
+body.oid-dashboard {
+  background: #f6f8fb;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji";
+  color: #222;
+}
+
+.navbar-brand .brand-name { font-weight: 600; font-size: 1.05rem; }
+.navbar-brand { letter-spacing: 0.2px; }
+
+.card { border-radius: 12px; transition: transform .12s ease, box-shadow .12s ease; }
+.card.shadow-sm { box-shadow: 0 2px 8px rgba(20,30,50,0.04); }
+.card.shadow { box-shadow: 0 6px 20px rgba(20,30,50,0.06); }
+.card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(20,30,50,0.08); }
+
+.stat-emoji { font-size: 0.95rem; margin-right: 8px; }
+
+/* Sidebar tweaks */
+.list-group-item { border: none; padding-top: 0.65rem; padding-bottom: 0.65rem; }
+.list-group-item:hover { background: rgba(0,0,0,0.02); }
+
+/* Buttons */
+.btn { border-radius: 8px; }
+.btn-sm { padding: .35rem .6rem; }
+
+/* Quick visual badges */
+.badge-modern { background: rgba(0,0,0,0.06); color: #111; border-radius: 999px; padding: .25rem .6rem; font-size: .82rem; }
+
+/* make forms a little cleaner */
+.form-control { border-radius: 8px; }
+
+/* responsive spacing */
+@media (max-width: 576px) {
+  .brand-name { display: none; }
+}
+
+/* Accessibility: ensure emoji text sizes are not too small */
+.card .card-title, .card .card-subtitle { line-height: 1.15; }
+
+/* Gentle focus styles */
+.btn:focus, .form-control:focus { box-shadow: 0 0 0 3px rgba(0,123,255,0.12); }
+
+/* small utility */
+.d-flex.gap-2 > a.btn { min-width: 130px; }
+
+/* End of file */
+
+/* Header small additions */
+.sender-preview strong { color: #fff; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; }
+.notif-badge { position: absolute; top: -6px; right: -6px; background: #dc3545; color: #fff; font-size: 0.65rem; padding: 2px 6px; border-radius: 999px; }
+
+/* make dropdown menu compact */
+.dropdown-menu p, .dropdown-menu .dropdown-item { font-size: 0.9rem; }
+
+/* Sidebar specific styles */
+.sidebar-card { overflow: visible; }
+#sidebar { padding-right: 6px; }
+#sidebarSearch { width: 100%; }
+.sidebar .list-group-item i { font-size: 1rem; }
+.sidebar .list-group-item .label { vertical-align: middle; }
+
+/* Collapsed sidebar */
+.sidebar-collapsed { width: 64px !important; }
+.sidebar-collapsed .list-group-item .label { display: none; }
+.sidebar-collapsed #sidebarSearch { display: none; }
+.sidebar-collapsed .card-body { padding-left: .5rem; padding-right: .5rem; }
+
+/* Tweak the toggle button */
+#sidebarToggle { width: 36px; height: 36px; padding: 6px; }
+
+/* Pinned quick send button */
+.pinned-quicksend { background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); font-weight:600; }
+.pinned-quicksend i { color: #ffc107; }
+.sidebar .pinned-quicksend { margin-bottom: .35rem; border-radius: 8px; }

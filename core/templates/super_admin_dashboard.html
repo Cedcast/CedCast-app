@@ -1,218 +1,230 @@
-<!DOCTYPE html>
-<html>
-<head>
-    {% load static %}
-    <title>CedCast SMS platform</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link href="{% static 'css/super_admin.css' %}" rel="stylesheet">
-</head>
-<body>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-            <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'dashboard' %}">
-                <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:36px; max-height:36px; object-fit:contain; display:inline-block; margin-right:8px;" onerror="this.style.display='none'">
-                <span class="align-middle">CedCast SMS platform</span>
-            </a>
-                <div class="d-flex">
-                    <a href="/logout/" class="btn btn-outline-light">Logout</a>
-                </div>
-            </div>
-        </nav>
+{% extends 'base.html' %}
+{% load static %}
 
-        <div class="container">
-            {% if hubtel_dry_run or clicksend_dry_run %}
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="alert alert-warning"> <strong>Test mode:</strong>
-                        {% if hubtel_dry_run %} Hubtel is running in dry-run mode — outgoing messages are simulated.{% endif %}
-                        {% if clicksend_dry_run %}{% if hubtel_dry_run %} {% endif %} {% if hubtel_dry_run %}<br>{% endif %} ClickSend is running in dry-run mode — outgoing messages are simulated.{% endif %}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            <div id="messages-section" class="row mb-4">
-                <div class="col-12">
-                    <div class="card card-shadow">
-                        <div class="card-body dashboard-header">
-                            <div>
-                                <h4 class="mb-1">Enrolled Orgs &amp; Stats</h4>
-                                <div class="small-muted">Quick access to organizations and aggregated stats.</div>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <a href="{% url 'super_orgs' %}" class="btn btn-outline-primary">
-                                    <i class="bi bi-people" style="font-size:1rem; margin-right:6px"></i>
-                                    Enrolled Orgs <span class="badge bg-secondary badge-org-count">{{ org_stats|length }}</span>
-                                </a>
-                                <a href="{% url 'system_logs' %}" class="btn btn-outline-secondary">Stats</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+{% block title %}Super Admin — Dashboard{% endblock %}
 
-            <!-- Quick Onboard helper card -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card card-shadow">
-                        <div class="card-body">
-                            <div class="d-flex align-items-start justify-content-between">
-                                <div>
-                                    <h5 class="mb-1">Quick Onboard</h5>
-                                    <div class="small-muted">Get an organization live in three simple steps.</div>
-                                    <ol class="mt-2 mb-0" style="padding-left:18px">
-                                        <li>Select <strong>New Tenant</strong> to create the organization and admin account.</li>
-                                        <li>Open <strong>Onboarding</strong> to configure sender IDs and branding.</li>
-                                        <li>Use <strong>Global Templates</strong> or create org templates to send messages.</li>
-                                    </ol>
-                                </div>
-                                <div class="text-end">
-                                    <a href="{% url 'enroll_tenant' %}" class="btn btn-primary btn-lg">Quick Onboard</a>
-                                    <div class="mt-2"><a href="{% url 'system_logs' %}" class="small-muted">View onboarding docs</a></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            </div>
+{% block content %}
 
-            <div class="row mb-4">
-                <div class="col-md-8 order-md-1">
-                    <div class="card shadow">
-                        <div class="card-header bg-secondary text-white">Quick Actions</div>
-                        <div class="card-body">
-                            <p class="mb-2">Create tenants, view stats, and manage organizations from this dashboard.</p>
-                            <div class="d-flex gap-2 mb-3 align-items-start">
-                                <div style="flex:1; min-width:220px">
-                                    <!-- Quick Actions table (click rows to navigate) -->
-                                    <table class="table table-sm table-hover quick-actions-table mb-0">
-                                        <tbody>
-                                            <tr data-href="{% url 'enroll_tenant' %}" tabindex="0" role="button" aria-label="Enroll Tenant">
-                                                <td><i class="bi bi-person-plus-fill"></i></td>
-                                                <td>Enroll Tenant</td>
-                                                <td class="text-end"><small class="text-muted">Create a new tenant</small></td>
-                                            </tr>
-                                            <tr data-href="{% url 'super_orgs' %}" tabindex="0" role="button" aria-label="Onboarding">
-                                                <td><i class="bi bi-building"></i></td>
-                                                <td>Onboarding</td>
-                                                <td class="text-end"><small class="text-muted">Manage organizations</small></td>
-                                            </tr>
-                                            <tr data-href="{% url 'global_templates' %}" tabindex="0" role="button" aria-label="Global Templates">
-                                                <td><i class="bi bi-card-text"></i></td>
-                                                <td>Global Templates</td>
-                                                <td class="text-end"><small class="text-muted">Shared message templates</small></td>
-                                            </tr>
-                                            <tr data-href="{% url 'system_logs' %}" tabindex="0" role="button" aria-label="System Logs">
-                                                <td><i class="bi bi-list-check"></i></td>
-                                                <td>System Logs</td>
-                                                <td class="text-end"><small class="text-muted">View background logs</small></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div style="white-space:nowrap">
-                                    <a href="{% url 'enroll_tenant' %}" class="btn btn-outline-success">New Tenant</a>
-                                </div>
-                            </div>
-                            {% if notice %}
-                                <div class="alert alert-success">{{ notice }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 order-md-2">
-                    <div class="card card-shadow">
-                        <div class="card-header bg-secondary text-white">Messages Overview</div>
-                        <div class="stat-card" id="statCard" data-total="{{ total_messages|default:0 }}" data-sent="{{ total_sent|default:0 }}">
-                            <div>
-                                <div class="small-muted">Recent activity</div>
-                                <div class="stat-badges">
-                                    <div class="stat-badge sent"><i class="bi bi-send-fill"></i> <span id="stat-sent">0</span></div>
-                                    <div class="stat-badge pending"><i class="bi bi-hourglass-split"></i> <span id="stat-pending">0</span></div>
-                                </div>
-                            </div>
-                            <div style="min-width:72px; text-align:center;">
-                                <canvas id="messagesChart" width="80" height="80"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
+      <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:32px; margin-right:8px;" onerror="this.style.display='none'">
+      <span class="fw-bold">CedCast</span>
+    </a>
+    <div class="d-flex align-items-center gap-3">
+      <div class="position-relative">
+        <button class="btn btn-sm btn-light" id="notifBtn" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-bell"></i>
+          <span class="badge bg-danger position-absolute top-0 start-100 translate-middle p-1">{{ notifications|length|default:0 }}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="notifBtn" style="min-width:260px;">
+          <li class="dropdown-header">Notifications</li>
+          {% for n in notifications|default:list %}
+            <li class="dropdown-item small">{{ n }}</li>
+          {% empty %}
+            <li class="dropdown-item small text-muted">No notifications</li>
+          {% endfor %}
+        </ul>
+      </div>
 
-            <!-- Removed duplicate Enrolled Organizations & Stats table — use Enrolled Orgs button above to view details -->
+      <div class="dropdown">
+        <a class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" href="#">
+          <div class="avatar rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:34px; height:34px;">{{ request.user.username|first|upper }}</div>
+          <span class="ms-2 d-none d-sm-inline">{{ request.user.username }}</span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+          <li><a class="dropdown-item" href="#">Profile</a></li>
+          <li><a class="dropdown-item" href="#">Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/logout/">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
 
-            <!-- Enroll form removed from dashboard — use the dedicated Enroll page instead -->
+<div class="container py-4">
+    {% if hubtel_dry_run or clicksend_dry_run %}
+        <div class="alert alert-warning"> <strong>Test mode:</strong>
+            {% if hubtel_dry_run %} Hubtel is running in dry-run mode — outgoing messages are simulated.{% endif %}
+            {% if clicksend_dry_run %}{% if hubtel_dry_run %}<br>{% endif %} ClickSend is running in dry-run mode — outgoing messages are simulated.{% endif %}
         </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% endif %}
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card mb-3">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">Enrolled Organizations</h4>
+                        <div class="text-muted small">Manage tenants, onboarding, and global templates.</div>
+                    </div>
+                    <div>
+                        <a href="{% url 'enroll_tenant' %}" class="btn btn-primary me-2"><i class="bi bi-person-plus-fill"></i> New Tenant</a>
+                        <a href="{% url 'super_orgs' %}" class="btn btn-outline-secondary"><i class="bi bi-people"></i> View all ({{ org_stats|length }})</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row gx-4 gy-3">
+        <!-- Small metrics row (7-day sparklines) -->
+        <div class="col-12 mb-3">
+            <div class="row g-3">
+                <div class="col-sm-4">
+                    <div class="card p-2 h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Messages (7d)</div>
+                                <div class="h5 mb-0">{{ total_messages|default:0 }}</div>
+                            </div>
+                            <div style="width:120px;">
+                                <canvas class="sparkline" id="sparkMessages" width="120" height="40" {% if messages_trend %}data-trend="{{ messages_trend|join:',' }}"{% endif %}></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="card p-2 h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">New Orgs (7d)</div>
+                                <div class="h5 mb-0">{{ org_stats|length }}</div>
+                            </div>
+                            <div style="width:120px;">
+                                <canvas class="sparkline" id="sparkOrgs" width="120" height="40" {% if orgs_trend %}data-trend="{{ orgs_trend|join:',' }}"{% endif %}></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="card p-2 h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Delivery % (7d)</div>
+                                <div class="h5 mb-0">{{ total_sent|default:0 }}</div>
+                            </div>
+                            <div style="width:120px;">
+                                <canvas class="sparkline" id="sparkDelivery" width="120" height="40" {% if delivery_trend %}data-trend="{{ delivery_trend|join:',' }}"{% endif %}></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">Quick Actions</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <table class="table table-sm table-hover quick-actions-table mb-0">
+                                <tbody>
+                                    <tr data-href="{% url 'enroll_tenant' %}" tabindex="0">
+                                        <td><i class="bi bi-person-plus-fill"></i></td>
+                                        <td>Enroll Tenant</td>
+                                        <td class="text-end text-muted small">Create a new tenant</td>
+                                    </tr>
+                                    <tr data-href="{% url 'super_orgs' %}" tabindex="0">
+                                        <td><i class="bi bi-building"></i></td>
+                                        <td>Onboarding</td>
+                                        <td class="text-end text-muted small">Manage organizations</td>
+                                    </tr>
+                                    <tr data-href="{% url 'global_templates' %}" tabindex="0">
+                                        <td><i class="bi bi-card-text"></i></td>
+                                        <td>Global Templates</td>
+                                        <td class="text-end text-muted small">Shared message templates</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-center justify-content-center">
+                            <a href="{% url 'enroll_tenant' %}" class="btn btn-success">New Tenant</a>
+                        </div>
+                    </div>
+                    {% if notice %}<div class="alert alert-success mt-3">{{ notice }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">Messages Overview</div>
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="small text-muted">Recent activity</div>
+                        <div class="d-flex gap-2 mt-2">
+                            <div class="badge bg-success"><i class="bi bi-send-fill"></i> <span id="stat-sent">0</span></div>
+                            <div class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> <span id="stat-pending">0</span></div>
+                        </div>
+                    </div>
+                    <div id="statCard" data-total="{{ total_messages|default:0 }}" data-sent="{{ total_sent|default:0 }}" style="display:none;"></div>
+                    <div style="width:90px; text-align:center;">
+                        <canvas id="messagesChart" width="90" height="90"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
         (function(){
-            const ctx = document.getElementById('messagesChart');
-            // Render a compact doughnut chart and populate numeric badges
-            (function(){
-                const statCard = document.getElementById('statCard');
-                const canvas = document.getElementById('messagesChart');
-                const total = statCard ? parseInt(statCard.dataset.total || 0, 10) : 0;
-                const sent = statCard ? parseInt(statCard.dataset.sent || 0, 10) : 0;
-                const pending = Math.max(0, total - sent);
-                const sentEl = document.getElementById('stat-sent');
-                const pendingEl = document.getElementById('stat-pending');
-                if (sentEl) sentEl.textContent = sent;
-                if (pendingEl) pendingEl.textContent = pending;
-                if (canvas) {
-                    try {
-                        new Chart(canvas, {
-                            type: 'doughnut',
-                            data: { labels: ['Sent','Pending'], datasets: [{ data: [sent, pending], backgroundColor: ['#28a745','#ffc107'] }] },
-                            options: { plugins: { legend: { display: false } }, cutout: '70%' }
+            const statCard = document.getElementById('statCard');
+            const canvas = document.getElementById('messagesChart');
+            const total = statCard ? parseInt(statCard.dataset.total || 0, 10) : 0;
+            const sent = statCard ? parseInt(statCard.dataset.sent || 0, 10) : 0;
+            const pending = Math.max(0, total - sent);
+            const sentEl = document.getElementById('stat-sent');
+            const pendingEl = document.getElementById('stat-pending');
+            if (sentEl) sentEl.textContent = sent;
+            if (pendingEl) pendingEl.textContent = pending;
+            if (canvas) {
+                try {
+                    new Chart(canvas, {
+                        type: 'doughnut',
+                        data: { labels: ['Sent','Pending'], datasets: [{ data: [sent, pending], backgroundColor: ['#28a745','#ffc107'] }] },
+                        options: { plugins: { legend: { display: false } }, cutout: '70%' }
+                    });
+                } catch (e) { console.error('Chart render error', e); }
+            }
+        })();
+
+        // keep quick-actions-table row click behavior
+        document.addEventListener('click', function(e){
+            try {
+                const tr = e.target.closest && e.target.closest('tr[data-href]');
+                if (!tr) return;
+                if (e.target.closest('a, button, input, textarea, select, label')) return;
+                const href = tr.getAttribute('data-href');
+                if (href) window.location.href = href;
+            } catch (err) { console.error(err); }
+        }, false);
+        
+        // Render tiny sparklines from data-trend attributes
+        (function(){
+            try{
+                const sparkCanvases = document.querySelectorAll('canvas.sparkline');
+                sparkCanvases.forEach(function(c){
+                    const dataAttr = c.getAttribute('data-trend') || '';
+                    const vals = dataAttr ? dataAttr.split(',').map(x=>parseInt(x,10)||0) : [];
+                    if (!vals.length) return;
+                    try{
+                        new Chart(c, {
+                            type: 'line',
+                            data: { labels: vals.map((_,i)=>i+1), datasets: [{ data: vals, borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,0.06)', tension: 0.3, pointRadius: 0 }] },
+                            options: { plugins: { legend: { display: false } }, elements: { line: { borderWidth: 2 } }, scales: { x: { display: false }, y: { display: false } }, responsive: false, maintainAspectRatio: false }
                         });
-                    } catch (e) {
-                        console.error('Chart render error', e);
-                    }
-                }
-            })();
-        })();
-
-        // Make table rows clickable when they have a data-href attribute.
-        (function(){
-            document.addEventListener('click', function(e){
-                try {
-                    // Find the nearest tr with data-href
-                    const tr = e.target.closest && e.target.closest('tr[data-href]');
-                    if (!tr) return;
-
-                    // If the click was on an interactive element, don't hijack it
-                    if (e.target.closest('a, button, input, textarea, select, label')) return;
-
-                    const href = tr.getAttribute('data-href');
-                    if (href) {
-                        window.location.href = href;
-                    }
-                } catch (err) {
-                    // swallow errors to avoid breaking the page
-                    console.error('Row click handler error', err);
-                }
-            }, false);
-        })();
-
-        // Keyboard activation for quick-actions-table rows (Enter to activate)
-        (function(){
-            document.addEventListener('keydown', function(e){
-                try {
-                    if (e.key !== 'Enter') return;
-                    var el = document.activeElement;
-                    if (!el) return;
-                    // If focused element is a tr with data-href, follow it
-                    if (el.matches && el.matches('tr[data-href]')) {
-                        var href = el.getAttribute('data-href');
-                        if (href) window.location.href = href;
-                    }
-                } catch (err) {
-                    console.error('Keydown handler error', err);
-                }
-            }, false);
+                    }catch(e){/* ignore chart render errors */}
+                });
+            }catch(e){console.error(e)}
         })();
     </script>
-</body>
-</html>
+{% endblock %}
