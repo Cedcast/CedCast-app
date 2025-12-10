@@ -1317,9 +1317,9 @@ def org_settings_view(request, org_slug=None):
 			notice = 'Branding saved.'
 		elif action == 'invite_stats_user':
 			# invite or create a user who will be a stats viewer
-				invite_email = request.POST.get('invite_email')
-				invite_username = request.POST.get('invite_username')
-				if invite_username:
+			invite_email = request.POST.get('invite_email')
+			invite_username = request.POST.get('invite_username')
+			if invite_username:
 				from django.contrib.auth import get_user_model
 				UserModel = get_user_model()
 				u = UserModel.objects.filter(username=invite_username).first()
