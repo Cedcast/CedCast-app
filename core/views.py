@@ -729,36 +729,39 @@ def org_dashboard(request, org_slug=None):
 	message_sent = False
 	error = None
 	if request.method == "POST":
-		from .models import Contact, OrgMessage, OrgAlertRecipient
-		# Add contact
-		contact_name = request.POST.get("contact_name")
-		raw_phone = request.POST.get("contact_phone")
-		sms_body = request.POST.get("sms_body")
-		scheduled_time = request.POST.get("scheduled_time")
-		recipients_str = request.POST.get("recipients")
+		if not organization.is_active:
+			error = 'Your organization account is suspended. Please contact support.'
+		else:
+			from .models import Contact, OrgMessage, OrgAlertRecipient
+			# Add contact
+			contact_name = request.POST.get("contact_name")
+			raw_phone = request.POST.get("contact_phone")
+			sms_body = request.POST.get("sms_body")
+			scheduled_time = request.POST.get("scheduled_time")
+			recipients_str = request.POST.get("recipients")
 
-		if contact_name and raw_phone:
-			from .utils import normalize_phone_number
-			phone_number = normalize_phone_number(raw_phone)
-			Contact.objects.create(organization=organization, name=contact_name, phone_number=phone_number)
-		elif sms_body and scheduled_time:
-			import datetime
-			from django.utils import timezone
-			scheduled_dt = timezone.make_aware(datetime.datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M"))
-			msg = OrgMessage.objects.create(
-				organization=organization,
-				content=sms_body,
-				scheduled_time=scheduled_dt,
-				sent=False,
-				created_by=request.user,
-			)
-			if recipients_str:
-				phone_numbers = [num.strip() for num in recipients_str.split(",") if num.strip()]
-				contacts = Contact.objects.filter(organization=organization, phone_number__in=phone_numbers)
-			else:
-				contacts = Contact.objects.filter(organization=organization)
-			for c in contacts:
-				OrgAlertRecipient.objects.create(message=msg, contact=c, status='pending')
+			if contact_name and raw_phone:
+				from .utils import normalize_phone_number
+				phone_number = normalize_phone_number(raw_phone)
+				Contact.objects.create(organization=organization, name=contact_name, phone_number=phone_number)
+			elif sms_body and scheduled_time:
+				import datetime
+				from django.utils import timezone
+				scheduled_dt = timezone.make_aware(datetime.datetime.strptime(scheduled_time, "%Y-%m-%dT%H:%M"))
+				msg = OrgMessage.objects.create(
+					organization=organization,
+					content=sms_body,
+					scheduled_time=scheduled_dt,
+					sent=False,
+					created_by=request.user,
+				)
+				if recipients_str:
+					phone_numbers = [num.strip() for num in recipients_str.split(",") if num.strip()]
+					contacts = Contact.objects.filter(organization=organization, phone_number__in=phone_numbers)
+				else:
+					contacts = Contact.objects.filter(organization=organization)
+				for c in contacts:
+					OrgAlertRecipient.objects.create(message=msg, contact=c, status='pending')
 
 	from .models import OrgMessage
 	messages = OrgMessage.objects.filter(organization=organization).order_by('-scheduled_time')
@@ -834,6 +837,7 @@ def org_dashboard(request, org_slug=None):
 		"delivery_trend": delivery_trend,
 		"hubtel_dry_run": getattr(settings, 'HUBTEL_DRY_RUN', False),
 		"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
+		"is_suspended": not organization.is_active,
 	})
 
 
@@ -1002,6 +1006,8 @@ def org_send_sms(request, org_slug=None):
 	org = user.organization
 	if org_slug and org.slug != org_slug:
 		return redirect('org_send_sms', org_slug=org.slug)
+	if not org.is_active:
+		return render(request, 'org_send_sms.html', {'organization': org, 'error': 'Your organization account is suspended. Please contact support.'})
 
 	# Load org templates for selection
 	from .models import OrgSMSTemplate
@@ -1423,6 +1429,8 @@ def org_upload_contacts(request, org_slug=None):
 	organization = user.organization
 	if org_slug and organization.slug != org_slug:
 		return redirect('org_dashboard', org_slug=organization.slug)
+	if not organization.is_active:
+		return render(request, 'org_contacts.html', {'organization': organization, 'error': 'Your organization account is suspended. Please contact support.'})
 
 	message = None
 	from .models import Contact

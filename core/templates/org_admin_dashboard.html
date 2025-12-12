@@ -56,6 +56,13 @@
             </div>
         </div>
         {% endif %}
+        {% if is_suspended %}
+        <div class="mb-3">
+            <div class="alert alert-danger">
+                <strong>Account Suspended:</strong> Your organization account has been suspended. You cannot send messages or add contacts. Please contact support for assistance.
+            </div>
+        </div>
+        {% endif %}
         <div class="row">
                     <div class="col-md-3 mb-3" id="sidebarCol">
                         <div class="card shadow-sm sidebar-card">
