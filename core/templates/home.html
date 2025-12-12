@@ -1,21 +1,140 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}CedCast SMS platform{% endblock %}
+{% block title %}CedCast - Modern SMS Platform for Organizations{% endblock %}
+{% block body_class %}landing-page{% endblock %}
 {% block content %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'dashboard' %}">
-                <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:36px; max-height:36px; object-fit:contain; display:inline-block; margin-right:8px;" onerror="this.style.display='none'">
-                <span class="align-middle">CedCast SMS platform</span>
-            </a>
+    <!-- Hero Section -->
+    <section class="hero bg-primary text-white py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold mb-4">Empower Your Organization with Smart SMS Communication</h1>
+                    <p class="lead mb-4">CedCast is a cutting-edge SaaS platform designed for multi-tenant SMS alerts, contact management, and seamless communication. Streamline your messaging needs with our robust, user-friendly solution.</p>
+                    <div class="d-flex gap-3">
+                        <a href="{% url 'login' %}" class="btn btn-light btn-lg">Login</a>
+                        <button class="btn btn-outline-light btn-lg" data-bs-toggle="modal" data-bs-target="#signupModal">Request Signup</button>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast Logo" class="img-fluid" style="max-height: 300px;" onerror="this.style.display='none'">
+                </div>
+            </div>
         </div>
-    </nav>
-    <div class="container text-center py-5">
-    <h1 class="mb-4">Welcome to CedCast SMS platform</h1>
-    <p class="lead mb-4">A modern SaaS platform for multi-tenant SMS alerts, contact communication, and more.</p>
-        <a href="/login/" class="btn btn-primary btn-lg me-2">Login</a>
-        {% if request.user.is_authenticated and request.user.role == 'super_admin' %}
-            <a href="/admin/" class="btn btn-outline-secondary btn-lg">Admin Panel</a>
-        {% endif %}
+    </section>
+
+    <!-- Features Section -->
+    <section class="features py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center mb-5">Why Choose CedCast?</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-chat-dots text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Multi-Tenant SMS</h5>
+                            <p class="card-text">Send targeted SMS alerts to contacts across multiple organizations with ease.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-people text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Contact Management</h5>
+                            <p class="card-text">Organize and manage contact lists with advanced grouping and import features.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-bar-chart text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Analytics & Reporting</h5>
+                            <p class="card-text">Track delivery rates, message trends, and performance metrics in real-time.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Secure & Reliable</h5>
+                            <p class="card-text">Enterprise-grade security with multiple SMS provider integrations for reliability.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-clock text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Scheduled Messaging</h5>
+                            <p class="card-text">Schedule messages for future delivery and automate recurring communications.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-gear text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Customizable Templates</h5>
+                            <p class="card-text">Create and reuse SMS templates for consistent messaging across your organization.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta py-5 bg-primary text-white">
+        <div class="container text-center">
+            <h2 class="mb-4">Ready to Transform Your Communication?</h2>
+            <p class="lead mb-4">Join organizations already using CedCast to streamline their SMS communications.</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'login' %}" class="btn btn-light btn-lg">Get Started</a>
+                <button class="btn btn-outline-light btn-lg" data-bs-toggle="modal" data-bs-target="#signupModal">Request Demo</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Signup Modal -->
+    <div class="modal fade" id="signupModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Request Signup</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'signup_request' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="org_name" class="form-label">Organization Name</label>
+                            <input type="text" class="form-control" id="org_name" name="org_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="contact_name" class="form-label">Contact Person</label>
+                            <input type="text" class="form-control" id="contact_name" name="contact_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Message (Optional)</label>
+                            <textarea class="form-control" id="message" name="message" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Send Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 {% endblock %}

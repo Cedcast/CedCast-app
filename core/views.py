@@ -1767,3 +1767,38 @@ def hubtel_webhook(request):
 		logger = logging.getLogger(__name__)
 		logger.exception('Error processing Hubtel webhook')
 		return JsonResponse({'error': str(e)}, status=500)
+
+
+def signup_request(request):
+	if request.method == 'POST':
+		org_name = request.POST.get('org_name')
+		contact_name = request.POST.get('contact_name')
+		email = request.POST.get('email')
+		phone = request.POST.get('phone')
+		message = request.POST.get('message', '')
+
+		# Create a support ticket or send email to superadmin
+		from .models import SupportTicket
+		ticket = SupportTicket.objects.create(
+			organization=None,  # No org yet
+			created_by=None,
+			subject=f"Signup Request: {org_name}",
+			message=f"Organization: {org_name}\nContact: {contact_name}\nEmail: {email}\nPhone: {phone}\nMessage: {message}"
+		)
+
+		# Optionally send email
+		try:
+			from django.core.mail import send_mail
+			send_mail(
+				'New Signup Request',
+				f"A new signup request has been submitted.\n\n{ticket.message}",
+				'noreply@cedcast.com',  # From
+				['superadmin@cedcast.com'],  # To superadmin
+				fail_silently=True
+			)
+		except Exception:
+			pass
+
+		return render(request, 'signup_success.html', {'message': 'Your signup request has been submitted. We will contact you soon!'})
+
+	return redirect('home')
