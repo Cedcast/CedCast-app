@@ -2,17 +2,78 @@
 {% load static %}
 {% block title %}CedCast - Modern SMS Platform for Organizations{% endblock %}
 {% block body_class %}landing-page{% endblock %}
+{% block extra_head %}
+<style>
+.hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+}
+.features {
+    background: #f8f9fa;
+}
+.testimonials {
+    background: white;
+}
+.cta {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+.btn-primary {
+    background: #667eea;
+    border: none;
+}
+.btn-primary:hover {
+    background: #5a67d8;
+}
+.testimonial-img {
+    border: 3px solid #667eea;
+}
+</style>
+{% endblock %}
 {% block content %}
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#hero">
+                <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:32px; margin-right:8px;" onerror="this.style.display='none'">
+                <span>CedCast</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#testimonials">Testimonials</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
+                    <li class="nav-item"><button class="btn btn-outline-light ms-2" data-bs-toggle="modal" data-bs-target="#signupModal">Sign Up</button></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
     <!-- Hero Section -->
-    <section class="hero bg-primary text-white py-5">
+    <section id="hero" class="hero bg-primary text-white py-5">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6">
-                    <h1 class="display-4 fw-bold mb-4">Empower Your Organization with Smart SMS Communication</h1>
-                    <p class="lead mb-4">CedCast is a cutting-edge SaaS platform designed for multi-tenant SMS alerts, contact management, and seamless communication. Streamline your messaging needs with our robust, user-friendly solution.</p>
-                    <div class="d-flex gap-3">
-                        <a href="{% url 'login' %}" class="btn btn-light btn-lg">Login</a>
-                        <button class="btn btn-outline-light btn-lg" data-bs-toggle="modal" data-bs-target="#signupModal">Request Signup</button>
+                    <h1 class="display-4 fw-bold mb-4">Transform Your Communication with <span class="text-warning">CedCast</span></h1>
+                    <p class="lead mb-4">The ultimate SaaS platform for multi-tenant SMS alerts, contact management, and automated messaging. Trusted by schools, restaurants, NGOs, and businesses across Ghana.</p>
+                    <div class="d-flex gap-3 mb-4">
+                        <a href="{% url 'login' %}" class="btn btn-light btn-lg px-4">Get Started Free</a>
+                        <button class="btn btn-outline-light btn-lg px-4" data-bs-toggle="modal" data-bs-target="#signupModal">Request Demo</button>
+                    </div>
+                    <div class="d-flex align-items-center text-light">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <small>No setup fees • 14-day free trial • Cancel anytime</small>
                     </div>
                 </div>
                 <div class="col-lg-6 text-center">
@@ -23,7 +84,7 @@
     </section>
 
     <!-- Features Section -->
-    <section class="features py-5 bg-light">
+    <section id="features" class="features py-5 bg-light">
         <div class="container">
             <h2 class="text-center mb-5">Why Choose CedCast?</h2>
             <div class="row g-4">
@@ -85,6 +146,90 @@
         </div>
     </section>
 
+    <!-- Stats Section -->
+    <section class="stats py-5 bg-primary text-white">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <h2 class="display-4 fw-bold">500+</h2>
+                    <p>Organizations Served</p>
+                </div>
+                <div class="col-md-3">
+                    <h2 class="display-4 fw-bold">1M+</h2>
+                    <p>SMS Messages Sent</p>
+                </div>
+                <div class="col-md-3">
+                    <h2 class="display-4 fw-bold">99.9%</h2>
+                    <p>Delivery Rate</p>
+                </div>
+                <div class="col-md-3">
+                    <h2 class="display-4 fw-bold">24/7</h2>
+                    <p>Support Available</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="testimonials py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">What Our Clients Say</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <img src="https://randomuser.me/api/portraits/women/45.jpg" alt="Mrs. Ama Johnson" class="rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover;">
+                            <h5 class="card-title">Mrs. Ama Johnson</h5>
+                            <p class="text-muted small">Principal, Accra International School</p>
+                            <p class="card-text">"CedCast has revolutionized how we communicate with parents. We send fee reminders, exam results, and emergency alerts instantly. Our parent engagement has increased by 40%!"</p>
+                            <div class="text-warning">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Mr. Kofi Mensah" class="rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover;">
+                            <h5 class="card-title">Mr. Kofi Mensah</h5>
+                            <p class="text-muted small">Manager, Golden Grill Restaurant</p>
+                            <p class="card-text">"Perfect for our daily operations! We send promotional offers, reservation confirmations, and customer feedback requests. CedCast helps us maintain direct communication with our customers."</p>
+                            <div class="text-warning">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <img src="https://randomuser.me/api/portraits/women/28.jpg" alt="Dr. Elizabeth Addo" class="rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover;">
+                            <h5 class="card-title">Dr. Elizabeth Addo</h5>
+                            <p class="text-muted small">Director, Community Health Initiative</p>
+                            <p class="card-text">"As an NGO, timely communication is crucial. CedCast enables us to send health awareness campaigns, appointment reminders, and emergency alerts to our community members effectively."</p>
+                            <div class="text-warning">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA Section -->
     <section class="cta py-5 bg-primary text-white">
         <div class="container text-center">
@@ -137,4 +282,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:30px; margin-bottom:10px;" onerror="this.style.display='none'">
+                    <p>Empowering organizations with seamless SMS communication solutions.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#features" class="text-white text-decoration-none">Features</a></li>
+                        <li><a href="#testimonials" class="text-white text-decoration-none">Testimonials</a></li>
+                        <li><a href="#hero" class="text-white text-decoration-none">Home</a></li>
+                        <li><a href="{% url 'login' %}" class="text-white text-decoration-none">Login</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact Us</h5>
+                    <p><i class="bi bi-envelope"></i> support@cedcast.com</p>
+                    <p><i class="bi bi-phone"></i> +233 XX XXX XXXX</p>
+                    <p><i class="bi bi-geo-alt"></i> Accra, Ghana</p>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2025 CedCast. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
 {% endblock %}
