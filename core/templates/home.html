@@ -53,6 +53,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#premium">Premium</a></li>
                     <li class="nav-item"><a class="nav-link" href="#testimonials">Testimonials</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
                     <li class="nav-item"><button class="btn btn-outline-light ms-2" data-bs-toggle="modal" data-bs-target="#signupModal">Sign Up</button></li>
@@ -137,9 +138,18 @@
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body text-center">
-                            <i class="bi bi-gear text-primary" style="font-size: 3rem;"></i>
-                            <h5 class="card-title mt-3">Customizable Templates</h5>
-                            <p class="card-text">Create and reuse SMS templates for consistent messaging across your organization.</p>
+                            <i class="bi bi-tag text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Custom Sender ID</h5>
+                            <p class="card-text">Get your brand name as the sender ID instead of a phone number. Make your messages look professional and build brand recognition.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-star text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Premium Support</h5>
+                            <p class="card-text">Priority customer support with dedicated account managers and custom integrations.</p>
                         </div>
                     </div>
                 </div>
@@ -179,7 +189,7 @@
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body text-center">
-                            <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Mrs. Ama Johnson" class="rounded-circle mb-3 testimonial-img" style="width: 80px; height: 80px; object-fit: cover;">
+                            <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Mrs. Joyce Asamoah" class="rounded-circle mb-3 testimonial-img" style="width: 80px; height: 80px; object-fit: cover;">
                             <h5 class="card-title">Mrs. Ama Johnson</h5>
                             <p class="text-muted small">Principal, Accra International School</p>
                             <p class="card-text">"CedCast has revolutionized how we communicate with parents. We send fee reminders, exam results, and emergency alerts instantly. Our parent engagement has increased by 40%!"</p>
@@ -223,6 +233,68 @@
                                 <i class="bi bi-star-fill"></i>
                                 <i class="bi bi-star-fill"></i>
                                 <i class="bi bi-star-half"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Premium Services Section -->
+    <section id="premium" class="premium py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center mb-5">Premium Services</h2>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="bi bi-tag text-primary me-3" style="font-size: 2rem;"></i>
+                                <h5 class="card-title mb-0">Custom Sender ID (Alpha Tag)</h5>
+                            </div>
+                            <p class="card-text">Replace generic phone numbers with your brand name as the sender. Available sender IDs include:</p>
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check-circle text-success me-2"></i>Company names (e.g., "MyCompany")</li>
+                                <li><i class="bi bi-check-circle text-success me-2"></i>Brand names (e.g., "CedCast")</li>
+                                <li><i class="bi bi-check-circle text-success me-2"></i>Product names (e.g., "AlertPro")</li>
+                                <li><i class="bi bi-check-circle text-success me-2"></i>Up to 11 characters</li>
+                            </ul>
+                            <div class="mt-3">
+                                <h6 class="text-primary">Benefits:</h6>
+                                <ul class="list-unstyled small">
+                                    <li><i class="bi bi-star text-warning me-2"></i>Higher open rates (up to 30% more)</li>
+                                    <li><i class="bi bi-star text-warning me-2"></i>Professional brand image</li>
+                                    <li><i class="bi bi-star text-warning me-2"></i>Better customer recognition</li>
+                                    <li><i class="bi bi-star text-warning me-2"></i>Increased response rates</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="bi bi-cash text-success me-3" style="font-size: 2rem;"></i>
+                                <h5 class="card-title mb-0">Pricing & Setup</h5>
+                            </div>
+                            <div class="pricing-card p-3 bg-primary text-white rounded mb-3">
+                                <h4 class="mb-2">₵50.00 one-time setup</h4>
+                                <p class="mb-0 small">Includes registration and approval process</p>
+                            </div>
+                            <h6>How to Get Started:</h6>
+                            <ol class="small">
+                                <li>Choose your preferred sender ID</li>
+                                <li>Submit registration request</li>
+                                <li>Pay setup fee via Paystack</li>
+                                <li>Wait for approval (2-5 business days)</li>
+                                <li>Start sending branded messages!</li>
+                            </ol>
+                            <div class="mt-3">
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#senderIdModal">
+                                    <i class="bi bi-tag me-2"></i>Request Custom Sender ID
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -284,6 +356,66 @@
         </div>
     </div>
 
+    <!-- Sender ID Request Modal -->
+    <div class="modal fade" id="senderIdModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Request Custom Sender ID</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Custom Sender ID Setup:</strong> ₵50.00 one-time fee. Approval typically takes 2-5 business days.
+                    </div>
+                    <form method="post" action="{% url 'signup_request' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="service_type" value="sender_id">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="org_name_sender" class="form-label">Organization Name</label>
+                                <input type="text" class="form-control" id="org_name_sender" name="org_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="requested_sender_id" class="form-label">Requested Sender ID</label>
+                                <input type="text" class="form-control" id="requested_sender_id" name="requested_sender_id" maxlength="11" placeholder="e.g., MyCompany" required>
+                                <div class="form-text">Up to 11 characters, letters and numbers only</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="contact_name_sender" class="form-label">Contact Person</label>
+                                <input type="text" class="form-control" id="contact_name_sender" name="contact_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email_sender" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email_sender" name="email" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone_sender" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone_sender" name="phone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message_sender" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="message_sender" name="message" rows="3" placeholder="Any specific requirements or notes about your sender ID request"></textarea>
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Important:</strong> Sender IDs must comply with regulatory requirements. We cannot guarantee approval of all requests.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Submit Request</button>
+                    </div>
+                </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="bg-dark text-white py-4 mt-5">
         <div class="container">
@@ -296,6 +428,7 @@
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
                         <li><a href="#features" class="text-white text-decoration-none">Features</a></li>
+                        <li><a href="#premium" class="text-white text-decoration-none">Premium Services</a></li>
                         <li><a href="#testimonials" class="text-white text-decoration-none">Testimonials</a></li>
                         <li><a href="#hero" class="text-white text-decoration-none">Home</a></li>
                         <li><a href="{% url 'login' %}" class="text-white text-decoration-none">Login</a></li>

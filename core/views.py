@@ -1807,22 +1807,32 @@ def signup_request(request):
 		email = request.POST.get('email')
 		phone = request.POST.get('phone')
 		message = request.POST.get('message', '')
+		service_type = request.POST.get('service_type', 'signup')
+		requested_sender_id = request.POST.get('requested_sender_id', '')
+
+		# Create subject based on service type
+		if service_type == 'sender_id':
+			subject = f"Sender ID Request: {requested_sender_id} - {org_name}"
+			full_message = f"SERVICE TYPE: Custom Sender ID Request\nOrganization: {org_name}\nRequested Sender ID: {requested_sender_id}\nContact: {contact_name}\nEmail: {email}\nPhone: {phone}\nAdditional Notes: {message}"
+		else:
+			subject = f"Signup Request: {org_name}"
+			full_message = f"Organization: {org_name}\nContact: {contact_name}\nEmail: {email}\nPhone: {phone}\nMessage: {message}"
 
 		# Create a support ticket or send email to superadmin
 		from .models import SupportTicket
 		ticket = SupportTicket.objects.create(
 			organization=None,  # No org yet
 			created_by=None,
-			subject=f"Signup Request: {org_name}",
-			message=f"Organization: {org_name}\nContact: {contact_name}\nEmail: {email}\nPhone: {phone}\nMessage: {message}"
+			subject=subject,
+			message=full_message
 		)
 
 		# Optionally send email
 		try:
 			from django.core.mail import send_mail
 			send_mail(
-				'New Signup Request',
-				f"A new signup request has been submitted.\n\n{ticket.message}",
+				subject,
+				f"A new request has been submitted.\n\n{ticket.message}",
 				'noreply@cedcast.com',  # From
 				['superadmin@cedcast.com'],  # To superadmin
 				fail_silently=True
@@ -1830,7 +1840,10 @@ def signup_request(request):
 		except Exception:
 			pass
 
-		return render(request, 'signup_success.html', {'message': 'Your signup request has been submitted. We will contact you soon!'})
+		if service_type == 'sender_id':
+			return render(request, 'signup_success.html', {'message': 'Your custom sender ID request has been submitted! We will process it within 2-5 business days. Setup fee: ₵50.00.'})
+		else:
+			return render(request, 'signup_success.html', {'message': 'Your signup request has been submitted. We will contact you soon!'})
 
 	return redirect('home')
 
