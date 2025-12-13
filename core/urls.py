@@ -12,6 +12,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('profile/', views.profile_view, name='profile'),
     path('send-sms/', views.send_sms_view, name='send_sms'),
+    path('billing/', views.billing_redirect, name='billing'),
     # Multi-tenant (slug-prefixed) routes
     path('<slug:school_slug>/dashboard/', views.dashboard, name='school_dashboard'),
     path('<slug:school_slug>/send-sms/', views.send_sms_view, name='school_send_sms'),

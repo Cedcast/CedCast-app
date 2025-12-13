@@ -31,6 +31,14 @@ def profile_view(request):
 	return render(request, 'profile.html', {'user': user, 'notice': notice})
 
 @login_required
+def billing_redirect(request):
+	user = request.user
+	if user.role == User.ORG_ADMIN and getattr(user, 'organization', None):
+		return redirect('org_billing', org_slug=user.organization.slug)
+	else:
+		return redirect('dashboard')
+
+@login_required
 def send_sms_view(request, school_slug=None):
 	user = request.user
 	if user.role != User.SCHOOL_ADMIN:
