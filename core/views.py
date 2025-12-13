@@ -1199,6 +1199,9 @@ def org_send_sms(request, org_slug=None):
 					# defer failure until (and unless) it's actually used as a fallback.
 					clicksend_utils = None
 
+				# Get SMS pricing from settings
+				customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
+
 				# Check balance before sending
 				from .utils import validate_sms_balance
 				is_valid, balance_error = validate_sms_balance(org, contact_qs.count(), settings)
