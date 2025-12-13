@@ -1875,18 +1875,47 @@ def org_billing(request, org_slug=None):
 			try:
 				amount = Decimal(amount_str)
 				if amount > 0 and amount <= 10000:  # Max 10,000 GHS
-					# Create payment request (could be stored in database or sent via email)
-					# For now, just show success message
-					message = f'Balance addition request submitted successfully! Amount: ₵{amount}. You will receive payment instructions via email shortly.'
+					# Initialize Paystack payment
+					import uuid
+					from . import paystack_utils
 
-					# TODO: Send email to superadmin with payment request details
-					# TODO: Create payment request record in database
-					# TODO: Send payment instructions to org admin
+					reference = str(uuid.uuid4())
+					callback_url = request.build_absolute_uri(f'/org/{organization.slug}/billing/callback/')
 
+					try:
+						payment_data = paystack_utils.initialize_payment(
+							email=user.email,
+							amount=amount,
+							reference=reference,
+							callback_url=callback_url
+						)
+
+						# Store payment intent in session
+						request.session['payment_reference'] = reference
+						request.session['payment_amount'] = str(amount)
+						request.session['org_slug'] = organization.slug
+
+						# Return payment URL for AJAX request
+						return JsonResponse({
+							'success': True,
+							'payment_url': payment_data['data']['authorization_url']
+						})
+
+					except Exception as e:
+						return JsonResponse({
+							'success': False,
+							'message': f'Payment initialization failed: {str(e)}'
+						})
 				else:
-					message = 'Amount must be between 0.01 and 10,000 GHS.'
+					return JsonResponse({
+						'success': False,
+						'message': 'Amount must be between 0.01 and 10,000 GHS.'
+					})
 			except Exception:
-				message = 'Invalid amount.'
+				return JsonResponse({
+					'success': False,
+					'message': 'Invalid amount.'
+				})
 
 	sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
 	sms_provider_cost = getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03'))
@@ -1897,6 +1926,7 @@ def org_billing(request, org_slug=None):
 		'organization': organization,
 		'user': user,
 		'message': message,
+		'paystack_public_key': paystack_public_key,
 		'sms_customer_rate': sms_customer_rate,
 		'sms_provider_cost': sms_provider_cost,
 		'sms_min_balance': sms_min_balance,
@@ -1914,6 +1944,7 @@ def org_billing_callback(request, org_slug=None):
 		return redirect('org_billing', org_slug=organization.slug)
 
 	message = None
+	paystack_public_key = getattr(settings, 'PAYSTACK_PUBLIC_KEY', None)
 	reference = request.GET.get('reference') or request.session.get('payment_reference')
 
 	if reference:
@@ -1951,6 +1982,7 @@ def org_billing_callback(request, org_slug=None):
 		'organization': organization,
 		'user': user,
 		'message': message,
+		'paystack_public_key': paystack_public_key,
 		'sms_customer_rate': sms_customer_rate,
 		'sms_provider_cost': sms_provider_cost,
 		'sms_min_balance': sms_min_balance,
