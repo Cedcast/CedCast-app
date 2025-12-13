@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 
 
 def normalize_phone_number(raw: str, default_country='+233') -> str | None:
@@ -46,3 +47,47 @@ def normalize_phone_number(raw: str, default_country='+233') -> str | None:
         return '+' + cleaned
 
     return None
+
+
+def validate_sms_balance(organization, recipient_count: int, settings) -> tuple[bool, str]:
+    """
+    Validate if organization has sufficient balance for SMS sending.
+
+    Args:
+        organization: Organization instance
+        recipient_count: Number of recipients
+        settings: Django settings module
+
+    Returns:
+        tuple: (is_valid: bool, error_message: str)
+    """
+    customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
+    min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
+    estimated_cost = recipient_count * customer_rate
+
+    if organization.balance < min_balance:
+        return False, f'Insufficient balance. Minimum balance required: ₵{min_balance}. Your balance: ₵{organization.balance}.'
+
+    if organization.balance < estimated_cost:
+        return False, f'Insufficient balance for {recipient_count} recipients. Estimated cost: ₵{estimated_cost}. Your balance: ₵{organization.balance}.'
+
+    return True, ""
+
+
+def deduct_sms_balance(organization, recipient_count: int, settings) -> Decimal:
+    """
+    Deduct SMS cost from organization balance.
+
+    Args:
+        organization: Organization instance
+        recipient_count: Number of recipients successfully sent
+        settings: Django settings module
+
+    Returns:
+        Decimal: Actual cost deducted
+    """
+    customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
+    actual_cost = recipient_count * customer_rate
+    organization.balance -= actual_cost
+    organization.save()
+    return actual_cost

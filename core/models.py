@@ -1,4 +1,3 @@
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from decimal import Decimal
@@ -13,6 +12,12 @@ class AlertRecipient(models.Model):
 	provider_status = models.CharField(max_length=100, blank=True, null=True)
 	sent_at = models.DateTimeField(blank=True, null=True)
 	error_message = models.TextField(blank=True, null=True)
+
+	class Meta:
+		indexes = [
+			models.Index(fields=['status', 'sent_at']),
+			models.Index(fields=['message', 'status']),
+		]
 
 	def __str__(self):
 		return f"{self.parent.name} - {self.status}"
@@ -110,6 +115,12 @@ class Message(models.Model):
 	created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True)
 	recipients = models.ManyToManyField('Parent', through='AlertRecipient', related_name='messages')
 
+	class Meta:
+		indexes = [
+			models.Index(fields=['school', 'scheduled_time']),
+			models.Index(fields=['school', 'sent', 'created_at']),
+		]
+
 	def __str__(self):
 		return f"Message to {self.school.name} at {self.scheduled_time}"
 
@@ -121,6 +132,12 @@ class OrgMessage(models.Model):
 	sent = models.BooleanField(default=False)
 	created_at = models.DateTimeField(auto_now_add=True)
 	created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True)
+
+	class Meta:
+		indexes = [
+			models.Index(fields=['organization', 'scheduled_time']),
+			models.Index(fields=['organization', 'sent', 'created_at']),
+		]
 
 	def __str__(self):
 		return f"Message to {self.organization.name} at {self.scheduled_time}"
@@ -137,6 +154,13 @@ class OrgAlertRecipient(models.Model):
 	provider_status = models.CharField(max_length=100, blank=True, null=True)
 	retry_count = models.IntegerField(default=0)
 	last_retry_at = models.DateTimeField(blank=True, null=True)
+
+	class Meta:
+		indexes = [
+			models.Index(fields=['status', 'sent_at']),
+			models.Index(fields=['message', 'status']),
+			models.Index(fields=['contact', 'status']),
+		]
 
 	def __str__(self):
 		return f"{self.contact.name} - {self.status}"
@@ -175,6 +199,12 @@ class Organization(models.Model):
 	# billing
 	balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
+	class Meta:
+		indexes = [
+			models.Index(fields=['is_active', 'onboarded']),
+			models.Index(fields=['slug']),
+		]
+
 	def __str__(self):
 		return f"{self.name} ({self.org_type})"
 
@@ -184,6 +214,12 @@ class Contact(models.Model):
 	name = models.CharField(max_length=255)
 	phone_number = models.CharField(max_length=20)
 	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		indexes = [
+			models.Index(fields=['organization', 'created_at']),
+			models.Index(fields=['organization', 'phone_number']),
+		]
 
 	def clean(self):
 		from django.core.exceptions import ValidationError

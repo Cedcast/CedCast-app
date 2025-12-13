@@ -171,6 +171,32 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Use WhiteNoise to serve static files in production (works well on Render)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Caching configuration
+# Use Redis for caching if available, otherwise use database caching
+REDIS_URL = os.environ.get('REDIS_URL')
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
+        }
+    }
+else:
+    # Fallback to database caching for development
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'cache_table',
+        }
+    }
+
+# Cache timeout settings (in seconds)
+CACHE_TIMEOUT_DASHBOARD = int(os.environ.get('CACHE_TIMEOUT_DASHBOARD', '300'))  # 5 minutes
+CACHE_TIMEOUT_CONTACTS = int(os.environ.get('CACHE_TIMEOUT_CONTACTS', '600'))  # 10 minutes
+
 # Security settings for production. Applied when DEBUG is False.
 if not DEBUG:
     # HTTP Strict Transport Security - set a short default; increase once verified
@@ -258,3 +284,11 @@ SMS_CUSTOMER_RATE = Decimal(os.environ.get('SMS_CUSTOMER_RATE', '0.10'))  # Defa
 SMS_MIN_BALANCE = Decimal(os.environ.get('SMS_MIN_BALANCE', '1.00'))  # Default 1.00 GHS
 
 # Profit margin per SMS = SMS_CUSTOMER_RATE - SMS_PROVIDER_COST
+
+# Application Constants
+MAX_SMS_LENGTH = 160  # Maximum characters per SMS
+MAX_PAYMENT_AMOUNT = Decimal('10000.00')  # Maximum payment amount in GHS
+MIN_PAYMENT_AMOUNT = Decimal('0.01')  # Minimum payment amount in GHS
+DEFAULT_DASHBOARD_MESSAGES_LIMIT = 10  # Limit messages shown on dashboard
+TREND_DAYS = 7  # Number of days for trend calculations
+ORG_MESSAGE_MAX_RETRIES = int(os.environ.get('ORG_MESSAGE_MAX_RETRIES', '3'))  # Max retry attempts for failed SMS

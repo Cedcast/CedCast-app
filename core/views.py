@@ -785,60 +785,121 @@ def org_dashboard(request, org_slug=None):
 					OrgAlertRecipient.objects.create(message=msg, contact=c, status='pending')
 
 	from .models import OrgMessage
-	messages = OrgMessage.objects.filter(organization=organization).order_by('-scheduled_time')
-	# compute org-level metrics for dashboard
-	from django.utils import timezone
-	import datetime
-	from .models import OrgAlertRecipient, OrgSMSTemplate, Contact
+	from django.core.cache import cache
+	cache_key = f"org_dashboard_metrics_{organization.id}"
+	cached_metrics = cache.get(cache_key)
 
-	now = timezone.now()
-	start_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-	start_week = now - datetime.timedelta(days=7)
-	start_month = now - datetime.timedelta(days=30)
+	if cached_metrics:
+		messages = cached_metrics['messages']
+		contacts_count = cached_metrics['contacts_count']
+		templates_count = cached_metrics['templates_count']
+		msgs_sent_today = cached_metrics['msgs_sent_today']
+		msgs_sent_week = cached_metrics['msgs_sent_week']
+		msgs_sent_month = cached_metrics['msgs_sent_month']
+		total_recipients = cached_metrics['total_recipients']
+		sent_recipients = cached_metrics['sent_recipients']
+		delivery_rate = cached_metrics['delivery_rate']
+		msgs_sent_trend = cached_metrics['msgs_sent_trend']
+		contacts_trend = cached_metrics['contacts_trend']
+		templates_trend = cached_metrics['templates_trend']
+		delivery_trend = cached_metrics['delivery_trend']
+	else:
+		messages = OrgMessage.objects.filter(organization=organization).select_related('created_by').order_by('-scheduled_time')[:getattr(settings, 'DEFAULT_DASHBOARD_MESSAGES_LIMIT', 10)]  # Limit to recent messages
+		# compute org-level metrics for dashboard
+		from django.utils import timezone
+		import datetime
+		from .models import OrgAlertRecipient, OrgSMSTemplate, Contact
 
-	contacts_count = Contact.objects.filter(organization=organization).count()
-	templates_count = OrgSMSTemplate.objects.filter(organization=organization).count()
+		now = timezone.now()
+		start_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+		start_week = now - datetime.timedelta(days=7)
+		start_month = now - datetime.timedelta(days=30)
 
-	msgs_sent_today = OrgAlertRecipient.objects.filter(message__organization=organization, status='sent', sent_at__gte=start_today).count()
-	msgs_sent_week = OrgAlertRecipient.objects.filter(message__organization=organization, status='sent', sent_at__gte=start_week).count()
-	msgs_sent_month = OrgAlertRecipient.objects.filter(message__organization=organization, status='sent', sent_at__gte=start_month).count()
+		# Use aggregate queries for better performance
+		from django.db.models import Count, Q
+		contacts_count = Contact.objects.filter(organization=organization).count()
+		templates_count = OrgSMSTemplate.objects.filter(organization=organization).count()
 
-	total_recipients = OrgAlertRecipient.objects.filter(message__organization=organization).count()
-	sent_recipients = OrgAlertRecipient.objects.filter(message__organization=organization, status='sent').count()
-	delivery_rate = (sent_recipients / total_recipients * 100) if total_recipients else 0
+		# Optimize metrics queries with single aggregates
+		sent_today_agg = OrgAlertRecipient.objects.filter(
+			message__organization=organization,
+			status='sent',
+			sent_at__gte=start_today
+		).aggregate(count=Count('id'))
+		msgs_sent_today = sent_today_agg['count']
 
-	# Build simple 7-day trend arrays (oldest -> newest) for sparklines in the dashboard.
-	# These are lightweight per-day counts derived from created_at / sent_at fields.
-	from django.db.models.functions import TruncDate
-	from django.db.models import Count
-	trend_days = 7
-	now = now
-	start_date = (now - datetime.timedelta(days=trend_days - 1)).date()
-	# Aggregate sent counts by sent_at date
-	msgs_qs = OrgAlertRecipient.objects.filter(message__organization=organization, status='sent', sent_at__date__gte=start_date).annotate(day=TruncDate('sent_at')).values('day').annotate(count=Count('id'))
-	# Aggregate contacts and templates by created_at
-	contacts_qs = Contact.objects.filter(organization=organization, created_at__date__gte=start_date).annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id'))
-	templates_qs = OrgSMSTemplate.objects.filter(organization=organization, created_at__date__gte=start_date).annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id'))
-	# Totals by message.created_at (denominator for delivery %)
-	total_qs = OrgAlertRecipient.objects.filter(message__organization=organization, message__created_at__date__gte=start_date).annotate(day=TruncDate('message__created_at')).values('day').annotate(total=Count('id'))
-	# Build lookup dicts
-	msgs_by_date = { r['day']: r['count'] for r in msgs_qs }
-	contacts_by_date = { r['day']: r['count'] for r in contacts_qs }
-	templates_by_date = { r['day']: r['count'] for r in templates_qs }
-	total_by_date = { r['day']: r['total'] for r in total_qs }
-	# Build arrays oldest->newest
-	msgs_sent_trend = []
-	contacts_trend = []
-	templates_trend = []
-	delivery_trend = []
-	for i in range(trend_days - 1, -1, -1):
-		d = (now - datetime.timedelta(days=i)).date()
-		msgs_sent_trend.append(msgs_by_date.get(d, 0))
-		contacts_trend.append(contacts_by_date.get(d, 0))
-		templates_trend.append(templates_by_date.get(d, 0))
-		tot = total_by_date.get(d, 0)
-		sent = msgs_by_date.get(d, 0)
-		delivery_trend.append(int((sent / tot * 100)) if tot else 0)
+		sent_week_agg = OrgAlertRecipient.objects.filter(
+			message__organization=organization,
+			status='sent',
+			sent_at__gte=start_week
+		).aggregate(count=Count('id'))
+		msgs_sent_week = sent_week_agg['count']
+
+		sent_month_agg = OrgAlertRecipient.objects.filter(
+			message__organization=organization,
+			status='sent',
+			sent_at__gte=start_month
+		).aggregate(count=Count('id'))
+		msgs_sent_month = sent_month_agg['count']
+
+		# Calculate delivery rate efficiently
+		total_recipients_agg = OrgAlertRecipient.objects.filter(message__organization=organization).aggregate(
+			total=Count('id'),
+			sent=Count('id', filter=Q(status='sent'))
+		)
+		total_recipients = total_recipients_agg['total']
+		sent_recipients = total_recipients_agg['sent']
+		delivery_rate = (sent_recipients / total_recipients * 100) if total_recipients else 0
+
+		# Build simple 7-day trend arrays (oldest -> newest) for sparklines in the dashboard.
+		# These are lightweight per-day counts derived from created_at / sent_at fields.
+		from django.db.models.functions import TruncDate
+		from django.db.models import Count
+		trend_days = getattr(settings, 'TREND_DAYS', 7)
+		now = now
+		start_date = (now - datetime.timedelta(days=trend_days - 1)).date()
+		# Aggregate sent counts by sent_at date
+		msgs_qs = OrgAlertRecipient.objects.filter(message__organization=organization, status='sent', sent_at__date__gte=start_date).annotate(day=TruncDate('sent_at')).values('day').annotate(count=Count('id'))
+		# Aggregate contacts and templates by created_at
+		contacts_qs = Contact.objects.filter(organization=organization, created_at__date__gte=start_date).annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id'))
+		templates_qs = OrgSMSTemplate.objects.filter(organization=organization, created_at__date__gte=start_date).annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id'))
+		# Totals by message.created_at (denominator for delivery %)
+		total_qs = OrgAlertRecipient.objects.filter(message__organization=organization, message__created_at__date__gte=start_date).annotate(day=TruncDate('message__created_at')).values('day').annotate(total=Count('id'))
+		# Build lookup dicts
+		msgs_by_date = { r['day']: r['count'] for r in msgs_qs }
+		contacts_by_date = { r['day']: r['count'] for r in contacts_qs }
+		templates_by_date = { r['day']: r['count'] for r in templates_qs }
+		total_by_date = { r['day']: r['total'] for r in total_qs }
+		# Build arrays oldest->newest
+		msgs_sent_trend = []
+		contacts_trend = []
+		templates_trend = []
+		delivery_trend = []
+		for i in range(trend_days - 1, -1, -1):
+			d = (now - datetime.timedelta(days=i)).date()
+			msgs_sent_trend.append(msgs_by_date.get(d, 0))
+			contacts_trend.append(contacts_by_date.get(d, 0))
+			templates_trend.append(templates_by_date.get(d, 0))
+			tot = total_by_date.get(d, 0)
+			sent = msgs_by_date.get(d, 0)
+			delivery_trend.append(int((sent / tot * 100)) if tot else 0)
+
+		# Cache the expensive metrics for 5 minutes
+		cache.set(cache_key, {
+			'messages': messages,
+			'contacts_count': contacts_count,
+			'templates_count': templates_count,
+			'msgs_sent_today': msgs_sent_today,
+			'msgs_sent_week': msgs_sent_week,
+			'msgs_sent_month': msgs_sent_month,
+			'total_recipients': total_recipients,
+			'sent_recipients': sent_recipients,
+			'delivery_rate': delivery_rate,
+			'msgs_sent_trend': msgs_sent_trend,
+			'contacts_trend': contacts_trend,
+			'templates_trend': templates_trend,
+			'delivery_trend': delivery_trend,
+		}, getattr(settings, 'CACHE_TIMEOUT_DASHBOARD', 300))
 
 	return render(request, "org_admin_dashboard.html", {
 		"organization": organization,
@@ -1037,7 +1098,17 @@ def org_send_sms(request, org_slug=None):
 	from .models import Contact, ContactGroup, OrgMessage, OrgAlertRecipient
 	error = None
 	success = None
-	contacts = Contact.objects.filter(organization=org)
+
+	# Paginate contacts for better performance
+	from django.core.paginator import Paginator
+	contacts_page = request.GET.get('contacts_page', 1)
+	contacts_qs = Contact.objects.filter(organization=org).order_by('name')
+	contacts_paginator = Paginator(contacts_qs, 50)  # 50 contacts per page
+	try:
+		contacts = contacts_paginator.page(contacts_page)
+	except:
+		contacts = contacts_paginator.page(1)
+
 	groups = ContactGroup.objects.filter(organization=org)
 
 	# reCAPTCHA support: site/secret from settings
@@ -1119,15 +1190,10 @@ def org_send_sms(request, org_slug=None):
 					clicksend_utils = None
 
 				# Check balance before sending
-				recipient_count = contact_qs.count()
-				customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
-				min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
-				estimated_cost = recipient_count * customer_rate
-
-				if org.balance < min_balance:
-					error = f'Insufficient balance. Minimum balance required: ₵{min_balance}. Your balance: ₵{org.balance}.'
-				elif org.balance < estimated_cost:
-					error = f'Insufficient balance for {recipient_count} recipients. Estimated cost: ₵{estimated_cost}. Your balance: ₵{org.balance}.'
+				from .utils import validate_sms_balance
+				is_valid, balance_error = validate_sms_balance(org, contact_qs.count(), settings)
+				if not is_valid:
+					error = balance_error
 				else:
 					processed = 0
 					actual_cost = Decimal('0')
@@ -1156,19 +1222,24 @@ def org_send_sms(request, org_slug=None):
 							processed += 1
 							actual_cost += customer_rate
 						except Exception as e:
+							import logging
+							logger = logging.getLogger(__name__)
+							logger.error(f"SMS sending failed for contact {ar.contact.id} ({ar.contact.phone_number}): {str(e)}")
 							ar.retry_count = (ar.retry_count or 0) + 1
 							ar.last_retry_at = _tz.now()
 							ar.error_message = str(e)
 							if ar.retry_count >= getattr(settings, 'ORG_MESSAGE_MAX_RETRIES', 3):
 								ar.status = 'failed'
+								logger.warning(f"SMS failed permanently for contact {ar.contact.id} after {ar.retry_count} retries")
 							else:
 								ar.status = 'pending'
+								logger.info(f"SMS queued for retry for contact {ar.contact.id}, attempt {ar.retry_count}")
 							ar.save()
 
 					# Deduct actual cost from balance
 					if processed > 0:
-						org.balance -= actual_cost
-						org.save()
+						from .utils import deduct_sms_balance
+						actual_cost = deduct_sms_balance(org, processed, settings)
 
 					if processed > 0:
 						success = f"Message sent to {processed} recipients. Cost: ₵{actual_cost}. Remaining balance: ₵{org.balance}."
@@ -1874,7 +1945,7 @@ def org_billing(request, org_slug=None):
 			amount_str = request.POST.get('amount', '').strip()
 			try:
 				amount = Decimal(amount_str)
-				if amount > 0 and amount <= 10000:  # Max 10,000 GHS
+				if amount > 0 and amount <= getattr(settings, 'MAX_PAYMENT_AMOUNT', Decimal('10000')):  # Max payment amount
 					# Initialize Paystack payment
 					import uuid
 					from . import paystack_utils
@@ -1932,6 +2003,8 @@ def org_billing(request, org_slug=None):
 		'sms_provider_cost': sms_provider_cost,
 		'sms_min_balance': sms_min_balance,
 		'available_sms': available_sms,
+		'max_payment_amount': getattr(settings, 'MAX_PAYMENT_AMOUNT', Decimal('10000')),
+		'min_payment_amount': getattr(settings, 'MIN_PAYMENT_AMOUNT', Decimal('0.01')),
 	})
 
 

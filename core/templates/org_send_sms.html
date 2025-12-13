@@ -58,6 +58,31 @@
                                 <option value="{{ c.id }}">{{ c.name }} — {{ c.phone_number }}</option>
                             {% endfor %}
                         </select>
+                        {% if contacts.has_other_pages %}
+                        <nav aria-label="Contacts pagination" class="mt-2">
+                            <ul class="pagination pagination-sm">
+                                {% if contacts.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?contacts_page={{ contacts.previous_page_number }}{% if request.GET.sms_body %}&sms_body={{ request.GET.sms_body }}{% endif %}{% if request.GET.scheduled_time %}&scheduled_time={{ request.GET.scheduled_time }}{% endif %}">Previous</a>
+                                </li>
+                                {% endif %}
+                                {% for num in contacts.paginator.page_range %}
+                                    {% if contacts.number == num %}
+                                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                    {% elif num > contacts.number|add:'-3' and num < contacts.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?contacts_page={{ num }}{% if request.GET.sms_body %}&sms_body={{ request.GET.sms_body }}{% endif %}{% if request.GET.scheduled_time %}&scheduled_time={{ request.GET.scheduled_time }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if contacts.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?contacts_page={{ contacts.next_page_number }}{% if request.GET.sms_body %}&sms_body={{ request.GET.sms_body }}{% endif %}{% if request.GET.scheduled_time %}&scheduled_time={{ request.GET.scheduled_time }}{% endif %}">Next</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
                     </div>
                     {% if recaptcha_site_key %}
                     <div class="mb-3">

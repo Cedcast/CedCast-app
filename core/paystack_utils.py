@@ -3,11 +3,12 @@ import requests
 import re
 from django.conf import settings
 from decimal import Decimal
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
-def initialize_payment(email, amount, reference, callback_url=None):
+def initialize_payment(email: str, amount: Decimal, reference: str, callback_url: Optional[str] = None) -> Dict[str, Any]:
     """
     Initialize a Paystack payment transaction.
 
@@ -29,7 +30,7 @@ def initialize_payment(email, amount, reference, callback_url=None):
         raise Exception(f"Invalid or missing email address. Please update your profile with a valid email.")
 
     # Validate amount
-    if amount <= 0 or amount > 10000:
+    if amount <= 0 or amount > getattr(settings, 'MAX_PAYMENT_AMOUNT', Decimal('10000')):
         raise Exception("Amount must be between 0.01 and 10,000 GHS")
 
     url = f"{settings.PAYSTACK_BASE_URL}/transaction/initialize"
@@ -64,7 +65,7 @@ def initialize_payment(email, amount, reference, callback_url=None):
         raise Exception(f"Payment initialization failed: {str(e)}")
 
 
-def verify_payment(reference):
+def verify_payment(reference: str) -> Dict[str, Any]:
     """
     Verify a Paystack payment transaction.
 
