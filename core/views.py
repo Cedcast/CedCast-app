@@ -1913,6 +1913,7 @@ def org_billing(request, org_slug=None):
 
 	return render(request, 'org_billing.html', {
 		'organization': organization,
+		'user': user,
 		'message': message,
 		'paystack_public_key': paystack_public_key,
 		'sms_customer_rate': sms_customer_rate,
@@ -1961,12 +1962,20 @@ def org_billing_callback(request, org_slug=None):
 	else:
 		message = 'No payment reference found.'
 
+	sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
+	sms_provider_cost = getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03'))
+	sms_min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
+	sms_profit_margin = sms_customer_rate - sms_provider_cost
+	available_sms = int(organization.balance / sms_customer_rate) if sms_customer_rate > 0 else 0
+
 	return render(request, 'org_billing.html', {
 		'organization': organization,
+		'user': user,
 		'message': message,
 		'paystack_public_key': getattr(settings, 'PAYSTACK_PUBLIC_KEY', None),
-		'sms_customer_rate': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10')),
-		'sms_provider_cost': getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
-		'sms_min_balance': getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00')),
-		'sms_profit_margin': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10')) - getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
+		'sms_customer_rate': sms_customer_rate,
+		'sms_provider_cost': sms_provider_cost,
+		'sms_min_balance': sms_min_balance,
+		'sms_profit_margin': sms_profit_margin,
+		'available_sms': available_sms,
 	})
