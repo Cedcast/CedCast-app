@@ -19,6 +19,18 @@ def health(request):
 	return HttpResponse("OK", status=200)
 
 @login_required
+def profile_view(request):
+	user = request.user
+	notice = None
+	if request.method == 'POST':
+		user.first_name = request.POST.get('first_name', user.first_name)
+		user.last_name = request.POST.get('last_name', user.last_name)
+		user.email = request.POST.get('email', user.email)
+		user.save()
+		notice = 'Profile updated successfully.'
+	return render(request, 'profile.html', {'user': user, 'notice': notice})
+
+@login_required
 def send_sms_view(request, school_slug=None):
 	user = request.user
 	if user.role != User.SCHOOL_ADMIN:
@@ -839,6 +851,7 @@ def org_dashboard(request, org_slug=None):
 		"hubtel_dry_run": getattr(settings, 'HUBTEL_DRY_RUN', False),
 		"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
 		"is_suspended": not organization.is_active,
+		"low_balance": organization.balance < Decimal('10.00'),
 	})
 
 

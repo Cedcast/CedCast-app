@@ -10,6 +10,7 @@ urlpatterns = [
     path('login/org/', views.login_org_view, name='login_org'),
     path('logout/', views.logout_view, name='logout'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('profile/', views.profile_view, name='profile'),
     path('send-sms/', views.send_sms_view, name='send_sms'),
     # Multi-tenant (slug-prefixed) routes
     path('<slug:school_slug>/dashboard/', views.dashboard, name='school_dashboard'),
