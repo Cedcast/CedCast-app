@@ -240,3 +240,8 @@ RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
 # Legacy Twilio/ClickSend credentials (kept for backwards compat but Hubtel is preferred)
 # TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
 # TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+
+# Paystack payment gateway settings
+PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY')
+PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY')
+PAYSTACK_BASE_URL = 'https://api.paystack.co'

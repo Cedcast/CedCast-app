@@ -1828,20 +1828,89 @@ def org_billing(request, org_slug=None):
 		return redirect('org_billing', org_slug=organization.slug)
 
 	message = None
+	paystack_public_key = getattr(settings, 'PAYSTACK_PUBLIC_KEY', None)
+
 	if request.method == 'POST':
 		action = request.POST.get('action')
 		if action == 'add_balance':
 			amount_str = request.POST.get('amount', '').strip()
 			try:
 				amount = Decimal(amount_str)
+				if amount > 0 and amount <= 10000:  # Max 10,000 GHS
+					# Initialize Paystack payment
+					import uuid
+					from . import paystack_utils
+
+					reference = str(uuid.uuid4())
+					callback_url = request.build_absolute_uri(f'/org/{organization.slug}/billing/callback/')
+
+					try:
+						payment_data = paystack_utils.initialize_payment(
+							email=user.email,
+							amount=amount,
+							reference=reference,
+							callback_url=callback_url
+						)
+
+						# Store payment intent in session
+						request.session['payment_reference'] = reference
+						request.session['payment_amount'] = str(amount)
+						request.session['org_slug'] = organization.slug
+
+						# Redirect to Paystack payment page
+						return redirect(payment_data['data']['authorization_url'])
+
+					except Exception as e:
+						message = f'Payment initialization failed: {str(e)}'
+				else:
+					message = 'Amount must be between 0.01 and 10,000 GHS.'
+			except Exception:
+				message = 'Invalid amount.'
+
+	return render(request, 'org_billing.html', {
+		'organization': organization,
+		'message': message,
+		'paystack_public_key': paystack_public_key,
+	})
+
+
+@login_required
+def org_billing_callback(request, org_slug=None):
+	user = request.user
+	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
+		return redirect('dashboard')
+	organization = user.organization
+	if org_slug and organization.slug != org_slug:
+		return redirect('org_billing', org_slug=organization.slug)
+
+	message = None
+	reference = request.GET.get('reference') or request.session.get('payment_reference')
+
+	if reference:
+		try:
+			from . import paystack_utils
+			verification = paystack_utils.verify_payment(reference)
+
+			if verification['data']['status'] == 'success':
+				amount = Decimal(request.session.get('payment_amount', '0'))
 				if amount > 0:
 					organization.balance += amount
 					organization.save()
-					message = f'Balance added successfully. New balance: GHS {organization.balance}'
+
+					# Clear session
+					request.session.pop('payment_reference', None)
+					request.session.pop('payment_amount', None)
+					request.session.pop('org_slug', None)
+
+					message = f'Payment successful! Balance added: GHS {amount}. New balance: GHS {organization.balance}'
 				else:
-					message = 'Amount must be positive.'
-			except Exception:
-				message = 'Invalid amount.'
+					message = 'Payment successful but amount not found in session.'
+			else:
+				message = 'Payment was not successful.'
+		except Exception as e:
+			message = f'Payment verification failed: {str(e)}'
+	else:
+		message = 'No payment reference found.'
 
 	return render(request, 'org_billing.html', {
 		'organization': organization,

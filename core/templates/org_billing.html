@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}{{ organization.name }} - Billing{% endblock %}
+{% block extra_head %}
+<script src="https://js.paystack.co/v1/inline.js"></script>
+{% endblock %}
 {% block content %}
     <div class="container py-4">
         <h2 class="mb-4">Billing & Balance</h2>
@@ -14,7 +17,7 @@
                         <h5>Current Balance</h5>
                     </div>
                     <div class="card-body">
-                        <h3 class="text-primary">GHS {{ organization.balance }}</h3>
+                        <h3 class="text-primary">₵{{ organization.balance|floatformat:2 }}</h3>
                         <p class="text-muted">Available SMS credits: {{ organization.balance|mul:100|intcomma }} (approx.)</p>
                     </div>
                 </div>
@@ -25,19 +28,55 @@
                         <h5>Add Balance</h5>
                     </div>
                     <div class="card-body">
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="add_balance">
-                            <div class="mb-3">
-                                <label for="amount" class="form-label">Amount (GHS)</label>
-                                <input type="number" step="0.01" min="0" class="form-control" id="amount" name="amount" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Add Balance</button>
-                        </form>
-                        <small class="text-muted mt-2 d-block">Note: This is a demo. In production, integrate with a payment gateway like PayStack or Flutterwave.</small>
+                        {% if paystack_public_key %}
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount (GHS)</label>
+                            <input type="number" step="0.01" min="0.01" max="10000" class="form-control" id="amount" name="amount" placeholder="Enter amount">
+                        </div>
+                        <button type="button" class="btn btn-primary" id="payBtn" onclick="payWithPaystack()">Pay with Paystack</button>
+                        <small class="text-muted mt-2 d-block">Secure payments powered by Paystack. Supports Mobile Money and Bank Cards.</small>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <strong>Payment Gateway Not Configured</strong><br>
+                            Paystack integration is not set up. Please contact support to enable payments.
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function payWithPaystack() {
+    const amount = document.getElementById('amount').value;
+    if (!amount || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+    }
+
+    if (amount > 10000) {
+        alert('Maximum amount is 10,000 GHS');
+        return;
+    }
+
+    const handler = PaystackPop.setup({
+        key: '{{ paystack_public_key }}',
+        email: '{{ user.email }}',
+        amount: amount * 100, // Convert to pesewas
+        currency: 'GHS',
+        ref: 'org_{{ organization.id }}_' + Math.floor((Math.random() * 1000000000) + 1),
+        callback: function(response) {
+            // Payment successful, redirect to callback
+            window.location.href = '{% url "org_billing_callback" organization.slug %}?reference=' + response.reference;
+        },
+        onClose: function() {
+            alert('Payment cancelled');
+        }
+    });
+    handler.openIframe();
+}
+</script>
 {% endblock %}

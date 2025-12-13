@@ -30,6 +30,7 @@ urlpatterns = [
     path('<slug:org_slug>/org/users/', views.org_users_view, name='org_users'),
     path('<slug:org_slug>/org/settings/', views.org_settings_view, name='org_settings'),
     path('<slug:org_slug>/org/billing/', views.org_billing, name='org_billing'),
+    path('<slug:org_slug>/org/billing/callback/', views.org_billing_callback, name='org_billing_callback'),
     # Hubtel delivery receipt webhook
     path('webhooks/hubtel/', views.hubtel_webhook, name='hubtel_webhook'),
     path('health/', views.health, name='health'),
