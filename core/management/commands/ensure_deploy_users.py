@@ -65,6 +65,7 @@ class Command(BaseCommand):
                 "role": User.SUPER_ADMIN,
                 "is_staff": True,
                 "is_superuser": True,
+                "email": f"{super_username}@cedcast.com",
             },
         )
         if created_super:
@@ -87,6 +88,7 @@ class Command(BaseCommand):
             defaults={
                 "role": User.ORG_ADMIN,
                 "is_staff": False,
+                "email": f"{org_username}@cedcast.com",
             },
         )
         # Attach to organization

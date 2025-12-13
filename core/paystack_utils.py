@@ -23,9 +23,10 @@ def initialize_payment(email, amount, reference, callback_url=None):
     if not settings.PAYSTACK_SECRET_KEY:
         raise Exception("Paystack secret key not configured")
 
-    # Validate email format
-    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
-        raise Exception("Invalid email format")
+    # Validate email format (more permissive)
+    if not email or not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+        logger.error(f"Invalid or missing email: {email}")
+        raise Exception(f"Invalid or missing email address. Please update your profile with a valid email.")
 
     # Validate amount
     if amount <= 0 or amount > 10000:
