@@ -252,7 +252,7 @@ PAYSTACK_BASE_URL = 'https://api.paystack.co'
 SMS_PROVIDER_COST = Decimal(os.environ.get('SMS_PROVIDER_COST', '0.03'))  # Default 0.03 GHS
 
 # What you charge customers per SMS (must be > SMS_PROVIDER_COST for profit)
-SMS_CUSTOMER_RATE = Decimal(os.environ.get('SMS_CUSTOMER_RATE', '0.05'))  # Default 0.05 GHS
+SMS_CUSTOMER_RATE = Decimal(os.environ.get('SMS_CUSTOMER_RATE', '0.10'))  # Default 0.10 GHS
 
 # Minimum balance required before allowing sends
 SMS_MIN_BALANCE = Decimal(os.environ.get('SMS_MIN_BALANCE', '1.00'))  # Default 1.00 GHS

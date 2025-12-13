@@ -1112,7 +1112,7 @@ def org_send_sms(request, org_slug=None):
 
 				# Check balance before sending
 				recipient_count = contact_qs.count()
-				customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.05'))
+				customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
 				min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
 				estimated_cost = recipient_count * customer_rate
 
@@ -1888,10 +1888,10 @@ def org_billing(request, org_slug=None):
 		'organization': organization,
 		'message': message,
 		'paystack_public_key': paystack_public_key,
-		'sms_customer_rate': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.05')),
+		'sms_customer_rate': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10')),
 		'sms_provider_cost': getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
 		'sms_min_balance': getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00')),
-		'sms_profit_margin': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.05')) - getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
+		'sms_profit_margin': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10')) - getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
 	})
 
 
@@ -1937,8 +1937,8 @@ def org_billing_callback(request, org_slug=None):
 		'organization': organization,
 		'message': message,
 		'paystack_public_key': getattr(settings, 'PAYSTACK_PUBLIC_KEY', None),
-		'sms_customer_rate': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.05')),
+		'sms_customer_rate': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10')),
 		'sms_provider_cost': getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
 		'sms_min_balance': getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00')),
-		'sms_profit_margin': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.05')) - getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
+		'sms_profit_margin': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10')) - getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
 	})
