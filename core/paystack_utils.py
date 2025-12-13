@@ -1,5 +1,6 @@
 import logging
 import requests
+import re
 from django.conf import settings
 from decimal import Decimal
 
@@ -22,6 +23,14 @@ def initialize_payment(email, amount, reference, callback_url=None):
     if not settings.PAYSTACK_SECRET_KEY:
         raise Exception("Paystack secret key not configured")
 
+    # Validate email format
+    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+        raise Exception("Invalid email format")
+
+    # Validate amount
+    if amount <= 0 or amount > 10000:
+        raise Exception("Amount must be between 0.01 and 10,000 GHS")
+
     url = f"{settings.PAYSTACK_BASE_URL}/transaction/initialize"
     headers = {
         'Authorization': f'Bearer {settings.PAYSTACK_SECRET_KEY}',
@@ -42,7 +51,11 @@ def initialize_payment(email, amount, reference, callback_url=None):
         data['callback_url'] = callback_url
 
     try:
+        logger.info(f"Paystack init request: email={email}, amount={amount_pesewas}, reference={reference}, callback_url={callback_url}")
         response = requests.post(url, json=data, headers=headers)
+        logger.info(f"Paystack response status: {response.status_code}")
+        if response.status_code != 200:
+            logger.error(f"Paystack error response: {response.text}")
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
