@@ -1102,53 +1102,70 @@ def org_send_sms(request, org_slug=None):
 			if action == 'send_now':
 				from django.utils import timezone as _tz
 				from core import hubtel_utils
+				from decimal import Decimal
 				try:
 					from core import clicksend_utils
 				except Exception:
 					# clicksend_client may not be installed in some deployments;
 					# defer failure until (and unless) it's actually used as a fallback.
 					clicksend_utils = None
-				processed = 0
-				for ar in getattr(msg, 'recipients_status').all():
-					phone = ar.contact.phone_number
-					try:
-						# prefer Hubtel; fallback to ClickSend
-						sent_id = None
+
+				# Check balance before sending
+				recipient_count = contact_qs.count()
+				customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.05'))
+				min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
+				estimated_cost = recipient_count * customer_rate
+
+				if org.balance < min_balance:
+					error = f'Insufficient balance. Minimum balance required: ₵{min_balance}. Your balance: ₵{org.balance}.'
+				elif org.balance < estimated_cost:
+					error = f'Insufficient balance for {recipient_count} recipients. Estimated cost: ₵{estimated_cost}. Your balance: ₵{org.balance}.'
+				else:
+					processed = 0
+					actual_cost = Decimal('0')
+					for ar in getattr(msg, 'recipients_status').all():
+						phone = ar.contact.phone_number
 						try:
-							sent_id = hubtel_utils.send_sms(phone, sms_body, org)
-						except Exception as e_hub:
-							# If ClickSend integration is available, try it as a fallback.
-							if clicksend_utils is not None:
-								try:
-									sent_id = clicksend_utils.send_sms(phone, sms_body, org)
-								except Exception as e_click:
-									raise Exception(f"Hubtel error: {e_hub}; ClickSend error: {e_click}")
+							# prefer Hubtel; fallback to ClickSend
+							sent_id = None
+							try:
+								sent_id = hubtel_utils.send_sms(phone, sms_body, org)
+							except Exception as e_hub:
+								# If ClickSend integration is available, try it as a fallback.
+								if clicksend_utils is not None:
+									try:
+										sent_id = clicksend_utils.send_sms(phone, sms_body, org)
+									except Exception as e_click:
+										raise Exception(f"Hubtel error: {e_hub}; ClickSend error: {e_click}")
+								else:
+									# No ClickSend client installed; surface the original Hubtel error.
+									raise Exception(f"Hubtel error: {e_hub}; ClickSend not available")
+							ar.provider_message_id = str(sent_id)
+							ar.status = 'sent'
+							ar.sent_at = _tz.now()
+							ar.error_message = ''
+							ar.save()
+							processed += 1
+							actual_cost += customer_rate
+						except Exception as e:
+							ar.retry_count = (ar.retry_count or 0) + 1
+							ar.last_retry_at = _tz.now()
+							ar.error_message = str(e)
+							if ar.retry_count >= getattr(settings, 'ORG_MESSAGE_MAX_RETRIES', 3):
+								ar.status = 'failed'
 							else:
-								# No ClickSend client installed; surface the original Hubtel error.
-								raise Exception(f"Hubtel error: {e_hub}; ClickSend not available")
-						ar.provider_message_id = str(sent_id)
-						ar.status = 'sent'
-						ar.sent_at = _tz.now()
-						ar.error_message = ''
-						ar.save()
-						processed += 1
-					except Exception as e:
-						ar.retry_count = (ar.retry_count or 0) + 1
-						ar.last_retry_at = _tz.now()
-						ar.error_message = str(e)
-						if ar.retry_count >= getattr(settings, 'ORG_MESSAGE_MAX_RETRIES', 3):
-							ar.status = 'failed'
-						else:
-							ar.status = 'pending'
-						ar.save()
-			# mark message.sent if no pending recipients
-			pending_exists = getattr(msg, 'recipients_status').filter(status='pending').exists()
-			if not pending_exists:
-				msg.sent = True
-				msg.save()
-				success = f"Message sent to {processed} recipients."
-			else:
-				success = 'Message scheduled.'
+								ar.status = 'pending'
+							ar.save()
+
+					# Deduct actual cost from balance
+					if processed > 0:
+						org.balance -= actual_cost
+						org.save()
+
+					if processed > 0:
+						success = f"Message sent to {processed} recipients. Cost: ₵{actual_cost}. Remaining balance: ₵{org.balance}."
+					else:
+						error = 'Failed to send any messages. Please try again.'
 		else:
 			error = 'Please provide a message and at least one recipient.'
 
@@ -1871,6 +1888,10 @@ def org_billing(request, org_slug=None):
 		'organization': organization,
 		'message': message,
 		'paystack_public_key': paystack_public_key,
+		'sms_customer_rate': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.05')),
+		'sms_provider_cost': getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
+		'sms_min_balance': getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00')),
+		'sms_profit_margin': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.05')) - getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
 	})
 
 
@@ -1915,4 +1936,9 @@ def org_billing_callback(request, org_slug=None):
 	return render(request, 'org_billing.html', {
 		'organization': organization,
 		'message': message,
+		'paystack_public_key': getattr(settings, 'PAYSTACK_PUBLIC_KEY', None),
+		'sms_customer_rate': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.05')),
+		'sms_provider_cost': getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
+		'sms_min_balance': getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00')),
+		'sms_profit_margin': getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.05')) - getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03')),
 	})

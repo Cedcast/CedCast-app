@@ -14,6 +14,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from decimal import Decimal
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -245,3 +246,15 @@ RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
 PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY')
 PAYSTACK_BASE_URL = 'https://api.paystack.co'
+
+# SMS Pricing and Billing Configuration
+# Cost per SMS from providers (what you pay)
+SMS_PROVIDER_COST = Decimal(os.environ.get('SMS_PROVIDER_COST', '0.03'))  # Default 0.03 GHS
+
+# What you charge customers per SMS (must be > SMS_PROVIDER_COST for profit)
+SMS_CUSTOMER_RATE = Decimal(os.environ.get('SMS_CUSTOMER_RATE', '0.05'))  # Default 0.05 GHS
+
+# Minimum balance required before allowing sends
+SMS_MIN_BALANCE = Decimal(os.environ.get('SMS_MIN_BALANCE', '1.00'))  # Default 1.00 GHS
+
+# Profit margin per SMS = SMS_CUSTOMER_RATE - SMS_PROVIDER_COST
