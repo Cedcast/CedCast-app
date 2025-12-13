@@ -18,7 +18,7 @@
                     </div>
                     <div class="card-body">
                         <h3 class="text-primary">₵{{ organization.balance|floatformat:2 }}</h3>
-                        <p class="text-muted">Available SMS credits: {{ organization.balance|div:sms_customer_rate|floatformat:0|intcomma }} (approx.)</p>
+                        <p class="text-muted">Available SMS credits: {{ available_sms|intcomma }} (approx.)</p>
                         {% if organization.balance < sms_min_balance %}
                         <div class="alert alert-warning mt-2">
                             <small><i class="bi bi-exclamation-triangle"></i> Low balance warning! Minimum balance: ₵{{ sms_min_balance }}</small>
