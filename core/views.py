@@ -787,7 +787,13 @@ def org_dashboard(request, org_slug=None):
 	from .models import OrgMessage
 	from django.core.cache import cache
 	cache_key = f"org_dashboard_metrics_{organization.id}"
-	cached_metrics = cache.get(cache_key)
+
+	# Try to get cached metrics, but handle cache failures gracefully
+	try:
+		cached_metrics = cache.get(cache_key)
+	except Exception:
+		# If caching fails for any reason, just proceed without cache
+		cached_metrics = None
 
 	if cached_metrics:
 		messages = cached_metrics['messages']
@@ -884,22 +890,26 @@ def org_dashboard(request, org_slug=None):
 			sent = msgs_by_date.get(d, 0)
 			delivery_trend.append(int((sent / tot * 100)) if tot else 0)
 
-		# Cache the expensive metrics for 5 minutes
-		cache.set(cache_key, {
-			'messages': messages,
-			'contacts_count': contacts_count,
-			'templates_count': templates_count,
-			'msgs_sent_today': msgs_sent_today,
-			'msgs_sent_week': msgs_sent_week,
-			'msgs_sent_month': msgs_sent_month,
-			'total_recipients': total_recipients,
-			'sent_recipients': sent_recipients,
-			'delivery_rate': delivery_rate,
-			'msgs_sent_trend': msgs_sent_trend,
-			'contacts_trend': contacts_trend,
-			'templates_trend': templates_trend,
-			'delivery_trend': delivery_trend,
-		}, getattr(settings, 'CACHE_TIMEOUT_DASHBOARD', 300))
+		# Cache the expensive metrics for 5 minutes (but don't fail if caching is unavailable)
+		try:
+			cache.set(cache_key, {
+				'messages': messages,
+				'contacts_count': contacts_count,
+				'templates_count': templates_count,
+				'msgs_sent_today': msgs_sent_today,
+				'msgs_sent_week': msgs_sent_week,
+				'msgs_sent_month': msgs_sent_month,
+				'total_recipients': total_recipients,
+				'sent_recipients': sent_recipients,
+				'delivery_rate': delivery_rate,
+				'msgs_sent_trend': msgs_sent_trend,
+				'contacts_trend': contacts_trend,
+				'templates_trend': templates_trend,
+				'delivery_trend': delivery_trend,
+			}, getattr(settings, 'CACHE_TIMEOUT_DASHBOARD', 300))
+		except Exception:
+			# If caching fails, just continue without caching - don't break the application
+			pass
 
 	return render(request, "org_admin_dashboard.html", {
 		"organization": organization,
