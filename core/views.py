@@ -6,7 +6,7 @@ from django.utils.text import slugify
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import User, School
+from .models import User, School, Organization
 from django.http import JsonResponse, HttpResponse
 from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
@@ -1878,9 +1878,10 @@ def org_billing(request, org_slug=None):
 					# Initialize Paystack payment
 					import uuid
 					from . import paystack_utils
+					from django.urls import reverse
 
 					reference = str(uuid.uuid4())
-					callback_url = request.build_absolute_uri(f'/org/{organization.slug}/billing/callback/')
+					callback_url = request.build_absolute_uri(reverse('org_billing_callback', kwargs={'org_slug': organization.slug}))
 
 					try:
 						payment_data = paystack_utils.initialize_payment(
@@ -1934,18 +1935,16 @@ def org_billing(request, org_slug=None):
 	})
 
 
-@login_required
 def org_billing_callback(request, org_slug=None):
-	user = request.user
-	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
-		return redirect('dashboard')
-	organization = user.organization
-	if org_slug and organization.slug != org_slug:
-		return redirect('org_billing', org_slug=organization.slug)
+	# Get organization from slug
+	try:
+		organization = Organization.objects.get(slug=org_slug)
+	except Organization.DoesNotExist:
+		return redirect('home')
 
 	message = None
 	paystack_public_key = getattr(settings, 'PAYSTACK_PUBLIC_KEY', None)
-	reference = request.GET.get('reference') or request.session.get('payment_reference')
+	reference = request.GET.get('reference')
 
 	if reference:
 		try:
@@ -1953,19 +1952,14 @@ def org_billing_callback(request, org_slug=None):
 			verification = paystack_utils.verify_payment(reference)
 
 			if verification['data']['status'] == 'success':
-				amount = Decimal(request.session.get('payment_amount', '0'))
+				amount = Decimal(verification['data']['amount']) / 100  # Convert from pesewas
 				if amount > 0:
 					organization.balance += amount
 					organization.save()
 
-					# Clear session
-					request.session.pop('payment_reference', None)
-					request.session.pop('payment_amount', None)
-					request.session.pop('org_slug', None)
-
 					message = f'Payment successful! Balance added: GHS {amount}. New balance: GHS {organization.balance}'
 				else:
-					message = 'Payment successful but amount not found in session.'
+					message = 'Payment successful but amount not found.'
 			else:
 				message = 'Payment was not successful.'
 		except Exception as e:
@@ -1980,11 +1974,12 @@ def org_billing_callback(request, org_slug=None):
 
 	return render(request, 'org_billing.html', {
 		'organization': organization,
-		'user': user,
-		'message': message,
-		'paystack_public_key': paystack_public_key,
+		'balance': organization.balance,
+		'available_sms': available_sms,
 		'sms_customer_rate': sms_customer_rate,
 		'sms_provider_cost': sms_provider_cost,
 		'sms_min_balance': sms_min_balance,
-		'available_sms': available_sms,
+		'paystack_public_key': paystack_public_key,
+		'message': message,
+		'callback_mode': True,  # Flag to indicate this is a callback response
 	})

@@ -36,7 +36,7 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                         <li><a class="dropdown-item" href="/profile/">Profile</a></li>
-                        <li><a class="dropdown-item" href="/billing/">Billing</a></li>
+                        <li><a class="dropdown-item" href="{% url 'org_billing' organization.slug %}">Billing</a></li>
                         <li><a class="dropdown-item" href="#">Switch organisation</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="/logout/">Logout</a></li>
@@ -63,6 +63,13 @@
             </div>
         </div>
         {% endif %}
+        {% if low_balance %}
+        <div class="mb-3">
+            <div class="alert alert-warning">
+                <strong>Low Balance:</strong> Your account balance is low (₵{{ organization.balance|floatformat:2 }}). Please <a href="{% url 'org_billing' organization.slug %}">add credits</a> to continue sending messages.
+            </div>
+        </div>
+        {% endif %}
         <div class="row">
                     <div class="col-md-3 mb-3" id="sidebarCol">
                         <div class="card shadow-sm sidebar-card">
@@ -83,6 +90,7 @@
                                     {% if user.is_superuser or user.is_staff or user.role == 'org_admin' or user.role == 'owner' %}
                                         <a href="{% url 'org_users' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-person-badge-fill me-2"></i><span class="label">Users</span></a>
                                         <a href="{% url 'org_settings' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-gear-fill me-2"></i><span class="label">Settings</span></a>
+                                        <a href="{% url 'org_billing' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-cash-stack me-2"></i><span class="label">Billing</span></a>
                                     {% endif %}
                                 </div>
                             </div>
@@ -91,7 +99,7 @@
 
             <div class="col-md-9">
                 <div class="row mb-3">
-                    <div class="col-sm-6 col-md-3 mb-2">
+                    <div class="col-sm-6 col-md-2 mb-2">
                         <div class="card text-center shadow-sm position-relative" style="overflow:visible;">
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted"><i class="bi bi-people me-1"></i> Contacts</h6>
@@ -101,7 +109,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-sm-6 col-md-3 mb-2">
+                    <div class="col-sm-6 col-md-2 mb-2">
                         <div class="card text-center shadow-sm position-relative" style="overflow:visible;">
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted"><i class="bi bi-folder me-1"></i> Templates</h6>
@@ -111,7 +119,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-sm-6 col-md-3 mb-2">
+                    <div class="col-sm-6 col-md-2 mb-2">
                         <div class="card text-center shadow-sm position-relative" style="overflow:visible;">
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted"><i class="bi bi-send me-1"></i> Sent Today</h6>
@@ -121,7 +129,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-sm-6 col-md-3 mb-2">
+                    <div class="col-sm-6 col-md-2 mb-2">
                         <div class="card text-center shadow-sm position-relative" style="overflow:visible;">
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted"><i class="bi bi-graph-up me-1"></i> Delivery Rate</h6>
@@ -136,6 +144,16 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-sm-6 col-md-2 mb-2">
+                        <div class="card text-center shadow-sm position-relative" style="overflow:visible;">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted"><i class="bi bi-cash me-1"></i> Balance</h6>
+                                <h3 class="card-title"><i class="bi bi-cash-stack stat-emoji"></i> ₵{{ organization.balance|floatformat:2 }}</h3>
+                                <p class="text-muted small mb-0">Available credits</p>
+                                <a href="{% url 'org_billing' organization.slug %}" class="stretched-link" aria-label="Manage billing"></a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="row mb-3">
@@ -145,7 +163,8 @@
                             <div class="card-body">
                                 <a href="{% url 'org_upload_contacts' organization.slug %}" class="btn btn-sm btn-outline-primary me-2">📥 Upload</a>
                                 <a href="{% url 'org_templates' organization.slug %}" class="btn btn-sm btn-outline-secondary me-2">🗂️ Templates</a>
-                                <a href="{% url 'org_retry_failed' organization.slug %}" class="btn btn-sm btn-outline-danger">🔁 Retry Failed</a>
+                                <a href="{% url 'org_retry_failed' organization.slug %}" class="btn btn-sm btn-outline-danger me-2">🔁 Retry Failed</a>
+                                <a href="{% url 'org_billing' organization.slug %}" class="btn btn-sm btn-outline-success">💰 Billing</a>
                             </div>
                         </div>
                     </div>
