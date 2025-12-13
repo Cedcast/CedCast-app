@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ organization.name }} - Billing{% endblock %}
+{% block content %}
+    <div class="container py-4">
+        <h2 class="mb-4">Billing & Balance</h2>
+        {% if message %}
+            <div class="alert alert-info">{{ message }}</div>
+        {% endif %}
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Current Balance</h5>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="text-primary">GHS {{ organization.balance }}</h3>
+                        <p class="text-muted">Available SMS credits: {{ organization.balance|mul:100|intcomma }} (approx.)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Add Balance</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="add_balance">
+                            <div class="mb-3">
+                                <label for="amount" class="form-label">Amount (GHS)</label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="amount" name="amount" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Add Balance</button>
+                        </form>
+                        <small class="text-muted mt-2 d-block">Note: This is a demo. In production, integrate with a payment gateway like PayStack or Flutterwave.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from .models import User, School
 from django.http import JsonResponse, HttpResponse
+from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
 import json
 import os
@@ -1802,3 +1803,34 @@ def signup_request(request):
 		return render(request, 'signup_success.html', {'message': 'Your signup request has been submitted. We will contact you soon!'})
 
 	return redirect('home')
+
+
+@login_required
+def org_billing(request, org_slug=None):
+	user = request.user
+	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
+		return redirect('dashboard')
+	organization = user.organization
+	if org_slug and organization.slug != org_slug:
+		return redirect('org_billing', org_slug=organization.slug)
+
+	message = None
+	if request.method == 'POST':
+		action = request.POST.get('action')
+		if action == 'add_balance':
+			amount_str = request.POST.get('amount', '').strip()
+			try:
+				amount = Decimal(amount_str)
+				if amount > 0:
+					organization.balance += amount
+					organization.save()
+					message = f'Balance added successfully. New balance: GHS {organization.balance}'
+				else:
+					message = 'Amount must be positive.'
+			except Exception:
+				message = 'Invalid amount.'
+
+	return render(request, 'org_billing.html', {
+		'organization': organization,
+		'message': message,
+	})

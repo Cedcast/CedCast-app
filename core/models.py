@@ -1,6 +1,7 @@
 
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from decimal import Decimal
 
 class AlertRecipient(models.Model):
 	message = models.ForeignKey('Message', on_delete=models.CASCADE, related_name='recipients_status')
@@ -171,6 +172,8 @@ class Organization(models.Model):
 	# administrative flags
 	is_active = models.BooleanField(default=True)
 	onboarded = models.BooleanField(default=False)
+	# billing
+	balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
 	def __str__(self):
 		return f"{self.name} ({self.org_type})"
