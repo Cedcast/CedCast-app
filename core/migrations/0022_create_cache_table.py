@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             CREATE TABLE IF NOT EXISTS cache_table (
                 cache_key VARCHAR(255) PRIMARY KEY,
                 value TEXT NOT NULL,
-                expires DATETIME NOT NULL
+                expires TIMESTAMP NOT NULL
             );
             """,
             reverse_sql="DROP TABLE IF EXISTS cache_table;"
