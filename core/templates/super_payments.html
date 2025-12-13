@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Super Admin — Payment Analytics{% endblock %}
+
+{% block content %}
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
+      <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:32px; margin-right:8px;" onerror="this.style.display='none'">
+      <span class="fw-bold">CedCast</span>
+    </a>
+    <div class="d-flex align-items-center gap-3">
+      <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+      </a>
+      <div class="dropdown">
+        <a class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" href="#">
+          <div class="avatar rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:34px; height:34px;">{{ request.user.username|slice:":1"|upper }}</div>
+          <span class="ms-2 d-none d-sm-inline">{{ request.user.username }}</span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+          <li><a class="dropdown-item" href="#">Profile</a></li>
+          <li><a class="dropdown-item" href="#">Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/logout/">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1"><i class="bi bi-cash text-success"></i> Payment Analytics</h2>
+                    <p class="text-muted mb-0">Track organization payments and revenue</p>
+                </div>
+                <div class="text-end">
+                    <div class="h3 text-success mb-0">₵{{ total_revenue|floatformat:2 }}</div>
+                    <small class="text-muted">Total Revenue</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <div class="h4 text-success mb-1">{{ total_payments }}</div>
+                    <small class="text-muted">Total Payments</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <div class="h4 text-warning mb-1">{{ pending_payments }}</div>
+                    <small class="text-muted">Pending</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <div class="h4 text-danger mb-1">{{ failed_payments }}</div>
+                    <small class="text-muted">Failed</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <div class="h4 text-info mb-1">₵{{ recent_revenue|floatformat:2 }}</div>
+                    <small class="text-muted">Last 30 Days</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="success" {% if status_filter == 'success' %}selected{% endif %}>Success</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="org" class="form-label">Organization</label>
+                    <select name="org" id="org" class="form-select">
+                        <option value="">All Organizations</option>
+                        {% for org in orgs_with_payments %}
+                        <option value="{{ org.slug }}" {% if org_filter == org.slug %}selected{% endif %}>{{ org.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ date_from }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ date_to }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Filter</button>
+                    <a href="{% url 'super_payments' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Payment History</h5>
+            <small class="text-muted">{{ payments.paginator.count }} payments</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Organization</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Reference</th>
+                            <th>Date</th>
+                            <th>Processed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if payment.organization.logo %}
+                                        <img src="{{ payment.organization.logo.url }}" alt="{{ payment.organization.name }}" class="rounded me-2" style="width:32px; height:32px; object-fit:cover;">
+                                    {% else %}
+                                        <div class="bg-secondary text-white rounded me-2 d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
+                                            {{ payment.organization.name|slice:":1"|upper }}
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold">{{ payment.organization.name }}</div>
+                                        <small class="text-muted">{{ payment.organization.org_type|title }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-success fs-6">₵{{ payment.amount|floatformat:2 }}</span>
+                            </td>
+                            <td>
+                                {% if payment.status == 'success' %}
+                                    <span class="badge bg-success">Success</span>
+                                {% elif payment.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif payment.status == 'failed' %}
+                                    <span class="badge bg-danger">Failed</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ payment.status|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code class="small">{{ payment.paystack_reference|truncatechars:20 }}</code>
+                            </td>
+                            <td>
+                                <div class="small">{{ payment.created_at|date:"M d, Y" }}</div>
+                                <small class="text-muted">{{ payment.created_at|time:"H:i" }}</small>
+                            </td>
+                            <td>
+                                {% if payment.processed_at %}
+                                    <div class="small">{{ payment.processed_at|date:"M d, Y" }}</div>
+                                    <small class="text-muted">{{ payment.processed_at|time:"H:i" }}</small>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="bi bi-cash display-4"></i>
+                                    <p class="mt-2">No payments found matching your criteria.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if payments.paginator.num_pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Payment pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if payments.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if org_filter %}org={{ org_filter }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ payments.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in payments.paginator.page_range %}
+                        {% if payments.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > payments.number|add:'-3' and num < payments.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if org_filter %}org={{ org_filter }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if payments.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if org_filter %}org={{ org_filter }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ payments.next_page_number }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

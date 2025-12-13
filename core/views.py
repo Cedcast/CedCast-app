@@ -390,11 +390,53 @@ def dashboard(request, school_slug=None):
 			sent = sent_by_date.get(d, 0)
 			delivery_trend.append(int((sent / total * 100)) if total else 0)
 
+		# Billing analytics
+		from .models import Payment
+		from django.db.models import Sum, Count
+		from decimal import Decimal
+
+		# Payment statistics
+		total_payments = Payment.objects.filter(status='success').count()
+		total_revenue = Payment.objects.filter(status='success').aggregate(total=Sum('amount'))['total'] or Decimal('0')
+		recent_payments = Payment.objects.filter(status='success', created_at__date__gte=start_date).count()
+
+		# Organization balance statistics
+		orgs_with_balance = Organization.objects.filter(balance__gt=Decimal('0')).count()
+		total_org_balance = Organization.objects.aggregate(total=Sum('balance'))['total'] or Decimal('0')
+		avg_org_balance = total_org_balance / orgs_with_balance if orgs_with_balance > 0 else Decimal('0')
+
+		# Recent payments trend (7 days)
+		payments_trend = []
+		for i in range(trend_days - 1, -1, -1):
+			d = (now - datetime.timedelta(days=i)).date()
+			day_payments = Payment.objects.filter(status='success', created_at__date=d).count()
+			payments_trend.append(day_payments)
+
+		# Top paying organizations
+		top_orgs = Organization.objects.filter(balance__gt=Decimal('0')).order_by('-balance')[:5]
+		top_payers = []
+		for org in top_orgs:
+			total_paid = Payment.objects.filter(organization=org, status='success').aggregate(total=Sum('amount'))['total'] or Decimal('0')
+			top_payers.append({
+				'organization': org,
+				'balance': org.balance,
+				'total_paid': total_paid,
+			})
+
 		context = {"schools": schools, "school_stats": school_stats, "org_stats": org_stats, "notice": notice,
 			"total_messages": total_msgs, "total_sent": total_sent,
 			"messages_trend": messages_trend, "orgs_trend": orgs_trend, "delivery_trend": delivery_trend,
 			"hubtel_dry_run": getattr(settings, 'HUBTEL_DRY_RUN', False),
 			"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
+			# Billing analytics
+			"total_payments": total_payments,
+			"total_revenue": total_revenue,
+			"recent_payments": recent_payments,
+			"orgs_with_balance": orgs_with_balance,
+			"total_org_balance": total_org_balance,
+			"avg_org_balance": avg_org_balance,
+			"payments_trend": payments_trend,
+			"top_payers": top_payers,
 		}
 		return render(request, "super_admin_dashboard.html", context)
 
@@ -2040,13 +2082,42 @@ def org_billing_callback(request, org_slug=None):
 			if verification['data']['status'] == 'success':
 				amount = Decimal(verification['data']['amount']) / 100  # Convert from pesewas
 				if amount > 0:
-					organization.balance += amount
-					organization.save()
+					# Create payment record
+					from .models import Payment
+					from django.utils import timezone
+					payment, created = Payment.objects.get_or_create(
+						paystack_reference=reference,
+						defaults={
+							'organization': organization,
+							'amount': amount,
+							'paystack_transaction_id': verification['data'].get('id'),
+							'status': 'success',
+							'processed_at': timezone.now(),
+						}
+					)
 
-					message = f'Payment successful! Balance added: GHS {amount}. New balance: GHS {organization.balance}'
+					if created:
+						organization.balance += amount
+						organization.save()
+						message = f'Payment successful! Balance added: GHS {amount}. New balance: GHS {organization.balance}'
+					else:
+						message = f'Payment already processed. Current balance: GHS {organization.balance}'
 				else:
 					message = 'Payment successful but amount not found.'
 			else:
+				# Create failed payment record
+				from .models import Payment
+				from django.utils import timezone
+				Payment.objects.get_or_create(
+					paystack_reference=reference,
+					defaults={
+						'organization': organization,
+						'amount': Decimal(verification['data'].get('amount', 0)) / 100,
+						'paystack_transaction_id': verification['data'].get('id'),
+						'status': 'failed',
+						'processed_at': timezone.now(),
+					}
+				)
 				message = 'Payment was not successful.'
 		except Exception as e:
 			message = f'Payment verification failed: {str(e)}'
@@ -2069,3 +2140,76 @@ def org_billing_callback(request, org_slug=None):
 		'message': message,
 		'callback_mode': True,  # Flag to indicate this is a callback response
 	})
+
+
+@login_required
+def super_payments_view(request):
+    """Superadmin view for payment analytics and transaction history."""
+    user = request.user
+    if not user.role == User.SUPER_ADMIN:
+        return redirect('dashboard')
+
+    from .models import Payment, Organization
+    from django.db.models import Sum, Count
+    from django.core.paginator import Paginator
+    from decimal import Decimal
+
+    # Get filter parameters
+    status_filter = request.GET.get('status', '')
+    org_filter = request.GET.get('org', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
+    # Base queryset
+    payments = Payment.objects.select_related('organization').order_by('-created_at')
+
+    # Apply filters
+    if status_filter:
+        payments = payments.filter(status=status_filter)
+    if org_filter:
+        payments = payments.filter(organization__slug=org_filter)
+
+    # Date filtering
+    if date_from:
+        payments = payments.filter(created_at__date__gte=date_from)
+    if date_to:
+        payments = payments.filter(created_at__date__lte=date_to)
+
+    # Pagination
+    paginator = Paginator(payments, 50)  # 50 payments per page
+    page_number = request.GET.get('page')
+    payments_page = paginator.get_page(page_number)
+
+    # Summary statistics
+    total_payments = Payment.objects.filter(status='success').count()
+    total_revenue = Payment.objects.filter(status='success').aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    pending_payments = Payment.objects.filter(status='pending').count()
+    failed_payments = Payment.objects.filter(status='failed').count()
+
+    # Recent payments (last 30 days)
+    from django.utils import timezone
+    import datetime
+    thirty_days_ago = timezone.now() - datetime.timedelta(days=30)
+    recent_revenue = Payment.objects.filter(
+        status='success',
+        created_at__gte=thirty_days_ago
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    # Organizations with payments
+    orgs_with_payments = Organization.objects.filter(payments__status='success').distinct().order_by('name')
+
+    context = {
+        'payments': payments_page,
+        'total_payments': total_payments,
+        'total_revenue': total_revenue,
+        'pending_payments': pending_payments,
+        'failed_payments': failed_payments,
+        'recent_revenue': recent_revenue,
+        'orgs_with_payments': orgs_with_payments,
+        'status_filter': status_filter,
+        'org_filter': org_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+
+    return render(request, 'super_payments.html', context)

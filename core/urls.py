@@ -41,6 +41,7 @@ urlpatterns = [
     path('super/global-templates/', views.global_templates_view, name='global_templates'),
     path('super/global-templates/create/', views.create_global_template_view, name='create_global_template'),
     path('super/global-templates/<int:template_id>/edit/', views.edit_global_template_view, name='edit_global_template'),
+    path('super/payments/', views.super_payments_view, name='super_payments'),
     path('super/onboarding/', views.onboarding_view, name='onboarding'),
     path('super/orgs/', views.onboarding_view, name='super_orgs'),
     path('super/orgs/<slug:org_slug>/edit/', views.super_edit_org_view, name='super_edit_org'),

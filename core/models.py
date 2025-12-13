@@ -274,3 +274,30 @@ class SupportTicket(models.Model):
 
 	def __str__(self):
 		return f"[{self.organization.slug}] {self.subject} ({self.status})"
+
+
+class Payment(models.Model):
+	"""Track balance additions via Paystack payments"""
+	organization = models.ForeignKey('Organization', on_delete=models.CASCADE, related_name='payments')
+	amount = models.DecimalField(max_digits=10, decimal_places=2)
+	paystack_reference = models.CharField(max_length=100, unique=True)
+	paystack_transaction_id = models.CharField(max_length=100, blank=True, null=True)
+	status = models.CharField(max_length=20, choices=[
+		('pending', 'Pending'),
+		('success', 'Success'),
+		('failed', 'Failed'),
+		('cancelled', 'Cancelled'),
+	], default='pending')
+	processed_at = models.DateTimeField(blank=True, null=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['-created_at']
+		indexes = [
+			models.Index(fields=['organization', 'status']),
+			models.Index(fields=['paystack_reference']),
+			models.Index(fields=['created_at']),
+		]
+
+	def __str__(self):
+		return f"{self.organization.name} - ₵{self.amount} ({self.status})"
