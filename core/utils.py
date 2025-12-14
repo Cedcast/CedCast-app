@@ -51,7 +51,7 @@ def normalize_phone_number(raw: str, default_country='+233') -> str | None:
 
 def validate_sms_balance(organization, recipient_count: int, settings) -> tuple[bool, str]:
     """
-    Validate if organization has sufficient balance for SMS sending.
+    Validate if organization has sufficient SMS for sending based on package.
 
     Args:
         organization: Organization instance
@@ -61,22 +61,27 @@ def validate_sms_balance(organization, recipient_count: int, settings) -> tuple[
     Returns:
         tuple: (is_valid: bool, error_message: str)
     """
-    customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
-    min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
-    estimated_cost = recipient_count * customer_rate
+    from django.utils import timezone
 
-    if organization.balance < min_balance:
-        return False, f'Insufficient balance. Minimum balance required: ₵{min_balance}. Your balance: ₵{organization.balance}.'
+    # Check if organization has an active package
+    if not organization.current_package:
+        return False, "No active package. Please purchase a package to send SMS."
 
-    if organization.balance < estimated_cost:
-        return False, f'Insufficient balance for {recipient_count} recipients. Estimated cost: ₵{estimated_cost}. Your balance: ₵{organization.balance}.'
+    # Check package expiry for expiry packages
+    if organization.current_package.package_type == 'expiry':
+        if not organization.package_expiry_date or organization.package_expiry_date < timezone.now():
+            return False, "Your package has expired. Please renew your package."
+
+    # Check SMS remaining
+    if organization.sms_remaining < recipient_count:
+        return False, f"Insufficient SMS in package. Required: {recipient_count}, Available: {organization.sms_remaining}. Please purchase more SMS."
 
     return True, ""
 
 
-def deduct_sms_balance(organization, recipient_count: int, settings) -> Decimal:
+def deduct_sms_balance(organization, recipient_count: int, settings) -> int:
     """
-    Deduct SMS cost from organization balance.
+    Deduct SMS count from organization package.
 
     Args:
         organization: Organization instance
@@ -84,10 +89,8 @@ def deduct_sms_balance(organization, recipient_count: int, settings) -> Decimal:
         settings: Django settings module
 
     Returns:
-        Decimal: Actual cost deducted
+        int: Number of SMS deducted
     """
-    customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
-    actual_cost = recipient_count * customer_rate
-    organization.balance -= actual_cost
+    organization.sms_remaining -= recipient_count
     organization.save()
-    return actual_cost
+    return recipient_count

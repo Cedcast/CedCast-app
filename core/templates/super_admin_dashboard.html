@@ -207,6 +207,117 @@
             </div>
         </div>
 
+        <!-- Premium Analytics Row -->
+        <div class="col-12 mb-3">
+            <div class="row g-3">
+                <div class="col-sm-3">
+                    <div class="card p-2 h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Premium Organizations</div>
+                                <div class="h5 mb-0">{{ premium_orgs }} <small class="text-muted">({{ premium_percentage|floatformat:1 }}%)</small></div>
+                            </div>
+                            <div class="text-warning">
+                                <i class="bi bi-star-fill fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="card p-2 h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Orgs with Packages</div>
+                                <div class="h5 mb-0">{{ orgs_with_packages }}</div>
+                            </div>
+                            <div class="text-primary">
+                                <i class="bi bi-box-seam fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="card p-2 h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Total SMS Remaining</div>
+                                <div class="h5 mb-0">{{ total_sms_remaining }}</div>
+                            </div>
+                            <div class="text-success">
+                                <i class="bi bi-chat-dots fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div class="card p-2 h-100">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Active Packages</div>
+                                <div class="h5 mb-0">{{ package_stats|length }}</div>
+                            </div>
+                            <div class="text-info">
+                                <i class="bi bi-tags fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Package Usage Table -->
+        {% if package_stats %}
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-box-seam"></i> Package Usage Statistics</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Package</th>
+                                    <th class="text-center">Type</th>
+                                    <th class="text-end">Organizations</th>
+                                    <th class="text-end">SMS Allocated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in package_stats %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <div class="fw-bold">{{ stat.package.name }}</div>
+                                            <small class="text-muted">{{ stat.package.sms_count }} SMS • ₵{{ stat.package.price|floatformat:2 }}</small>
+                                            {% if stat.package.is_premium %}
+                                            <span class="badge bg-warning text-dark ms-1">PREMIUM</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if stat.package.package_type == 'expiry' %}
+                                        <span class="badge bg-info">{{ stat.package.expiry_days }}d</span>
+                                        {% else %}
+                                        <span class="badge bg-success">∞</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge bg-primary">{{ stat.orgs_using }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge bg-success">{{ stat.total_sms_allocated }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Top Payers Table -->
         {% if top_payers %}
         <div class="col-lg-6">

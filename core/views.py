@@ -6,7 +6,7 @@ from django.utils.text import slugify
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import User, School, Organization
+from .models import User, School, Organization, Package
 from django.http import JsonResponse, HttpResponse
 from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
@@ -405,6 +405,27 @@ def dashboard(request, school_slug=None):
 		total_org_balance = Organization.objects.aggregate(total=Sum('balance'))['total'] or Decimal('0')
 		avg_org_balance = total_org_balance / orgs_with_balance if orgs_with_balance > 0 else Decimal('0')
 
+		# Premium organizations statistics
+		premium_orgs = Organization.objects.filter(is_premium=True).count()
+		total_orgs = Organization.objects.count()
+		premium_percentage = (premium_orgs / total_orgs * 100) if total_orgs > 0 else 0
+
+		# Package usage statistics
+		from .models import Package
+		package_stats = []
+		for package in Package.objects.filter(is_active=True):
+			orgs_using = Organization.objects.filter(current_package=package).count()
+			total_sms_allocated = orgs_using * package.sms_count
+			package_stats.append({
+				'package': package,
+				'orgs_using': orgs_using,
+				'total_sms_allocated': total_sms_allocated,
+			})
+
+		# SMS remaining statistics
+		total_sms_remaining = Organization.objects.aggregate(total=Sum('sms_remaining'))['total'] or 0
+		orgs_with_packages = Organization.objects.filter(current_package__isnull=False).count()
+
 		# Recent payments trend (7 days)
 		payments_trend = []
 		for i in range(trend_days - 1, -1, -1):
@@ -437,6 +458,13 @@ def dashboard(request, school_slug=None):
 			"avg_org_balance": avg_org_balance,
 			"payments_trend": payments_trend,
 			"top_payers": top_payers,
+			# Premium analytics
+			"premium_orgs": premium_orgs,
+			"total_orgs": total_orgs,
+			"premium_percentage": premium_percentage,
+			"package_stats": package_stats,
+			"total_sms_remaining": total_sms_remaining,
+			"orgs_with_packages": orgs_with_packages,
 		}
 		return render(request, "super_admin_dashboard.html", context)
 
@@ -972,7 +1000,7 @@ def org_dashboard(request, org_slug=None):
 		"hubtel_dry_run": getattr(settings, 'HUBTEL_DRY_RUN', False),
 		"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
 		"is_suspended": not organization.is_active,
-		"low_balance": organization.balance < Decimal('10.00'),
+		"low_balance": organization.sms_remaining < 50 if organization.current_package else False,
 	})
 
 
@@ -1241,17 +1269,13 @@ def org_send_sms(request, org_slug=None):
 					# defer failure until (and unless) it's actually used as a fallback.
 					clicksend_utils = None
 
-				# Get SMS pricing from settings
-				customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
-
-				# Check balance before sending
+				# Check package before sending
 				from .utils import validate_sms_balance
 				is_valid, balance_error = validate_sms_balance(org, contact_qs.count(), settings)
 				if not is_valid:
 					error = balance_error
 				else:
 					processed = 0
-					actual_cost = Decimal('0')
 					for ar in getattr(msg, 'recipients_status').all():
 						phone = ar.contact.phone_number
 						try:
@@ -1275,7 +1299,6 @@ def org_send_sms(request, org_slug=None):
 							ar.error_message = ''
 							ar.save()
 							processed += 1
-							actual_cost += customer_rate
 						except Exception as e:
 							import logging
 							logger = logging.getLogger(__name__)
@@ -1291,13 +1314,14 @@ def org_send_sms(request, org_slug=None):
 								logger.info(f"SMS queued for retry for contact {ar.contact.id}, attempt {ar.retry_count}")
 							ar.save()
 
-					# Deduct actual cost from balance
+					# Deduct SMS from package
+					sms_deducted = 0
 					if processed > 0:
 						from .utils import deduct_sms_balance
-						actual_cost = deduct_sms_balance(org, processed, settings)
+						sms_deducted = deduct_sms_balance(org, processed, settings)
 
 					if processed > 0:
-						success = f"Message sent to {processed} recipients. Cost: ₵{actual_cost}. Remaining balance: ₵{org.balance}."
+						success = f"Message sent to {processed} recipients. SMS used: {sms_deducted}. Remaining SMS: {org.sms_remaining}."
 					else:
 						error = 'Failed to send any messages. Please try again.'
 		else:
@@ -1996,58 +2020,38 @@ def org_billing(request, org_slug=None):
 
 	if request.method == 'POST':
 		action = request.POST.get('action')
-		if action == 'add_balance':
-			amount_str = request.POST.get('amount', '').strip()
+		if action == 'purchase_package':
+			package_id = request.POST.get('package_id')
 			try:
-				amount = Decimal(amount_str)
-				if amount > 0 and amount <= getattr(settings, 'MAX_PAYMENT_AMOUNT', Decimal('10000')):  # Max payment amount
-					# Initialize Paystack payment
-					import uuid
-					from . import paystack_utils
-					from django.urls import reverse
-
-					reference = str(uuid.uuid4())
-					callback_url = request.build_absolute_uri(reverse('org_billing_callback', kwargs={'org_slug': organization.slug}))
-
-					try:
-						payment_data = paystack_utils.initialize_payment(
-							email=user.email,
-							amount=amount,
-							reference=reference,
-							callback_url=callback_url
-						)
-
-						# Store payment intent in session
-						request.session['payment_reference'] = reference
-						request.session['payment_amount'] = str(amount)
-						request.session['org_slug'] = organization.slug
-
-						# Return payment URL for AJAX request
-						return JsonResponse({
-							'success': True,
-							'payment_url': payment_data['data']['authorization_url']
-						})
-
-					except Exception as e:
-						return JsonResponse({
-							'success': False,
-							'message': f'Payment initialization failed: {str(e)}'
-						})
+				package = Package.objects.get(id=package_id, is_active=True)
+				if organization.balance >= package.price:
+					# Deduct balance
+					organization.balance -= package.price
+					# Set package
+					organization.current_package = package
+					organization.sms_remaining = package.sms_count
+					if package.package_type == 'expiry':
+						from django.utils import timezone
+						organization.package_expiry_date = timezone.now() + timezone.timedelta(days=package.expiry_days)
+					else:
+						organization.package_expiry_date = None
+					# Set premium status
+					organization.is_premium = package.is_premium
+					organization.save()
+					message = f'Package "{package.name}" purchased successfully! {package.sms_count} SMS added.'
 				else:
-					return JsonResponse({
-						'success': False,
-						'message': 'Amount must be between 0.01 and 10,000 GHS.'
-					})
-			except Exception:
-				return JsonResponse({
-					'success': False,
-					'message': 'Invalid amount.'
-				})
+					message = f'Insufficient balance. Package costs ₵{package.price}, you have ₵{organization.balance}.'
+			except Package.DoesNotExist:
+				message = 'Package not found.'
+			except Exception as e:
+				message = f'Purchase failed: {str(e)}'
 
+	from .models import Package
 	sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
 	sms_provider_cost = getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03'))
 	sms_min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
-	available_sms = int(organization.balance / sms_customer_rate) if sms_customer_rate > 0 else 0
+	available_sms = organization.sms_remaining if organization.current_package else 0
+	packages = Package.objects.filter(is_active=True)
 
 	return render(request, 'org_billing.html', {
 		'organization': organization,
@@ -2058,6 +2062,7 @@ def org_billing(request, org_slug=None):
 		'sms_provider_cost': sms_provider_cost,
 		'sms_min_balance': sms_min_balance,
 		'available_sms': available_sms,
+		'packages': packages,
 		'max_payment_amount': getattr(settings, 'MAX_PAYMENT_AMOUNT', Decimal('10000')),
 		'min_payment_amount': getattr(settings, 'MIN_PAYMENT_AMOUNT', Decimal('0.01')),
 	})
@@ -2127,7 +2132,7 @@ def org_billing_callback(request, org_slug=None):
 	sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
 	sms_provider_cost = getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03'))
 	sms_min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
-	available_sms = int(organization.balance / sms_customer_rate) if sms_customer_rate > 0 else 0
+	available_sms = organization.sms_remaining if organization.current_package else 0
 
 	return render(request, 'org_billing.html', {
 		'organization': organization,

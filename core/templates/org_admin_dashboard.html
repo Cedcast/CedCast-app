@@ -4,7 +4,9 @@
 {% block content %}
     <nav class="navbar navbar-expand-lg" style="background: {{ organization.primary_color }};">
         <div class="container-fluid">
-            <a class="navbar-brand text-white d-flex align-items-center gap-2" href="#"><i class="bi bi-building-fill" aria-hidden="true"></i> <span class="brand-name">{{ organization.name }}</span></a>
+            <a class="navbar-brand text-white d-flex align-items-center gap-2" href="#"><i class="bi bi-building-fill" aria-hidden="true"></i> <span class="brand-name">{{ organization.name }}</span>
+                {% if organization.is_premium %}<span class="badge bg-warning text-dark ms-2">PREMIUM</span>{% endif %}
+            </a>
             <div class="d-flex align-items-center gap-2">
                 <div class="text-white small sender-preview d-none d-md-block">Sending as: <strong>{{ organization.sender_id|default:organization.name }}</strong></div>
 
@@ -66,7 +68,7 @@
         {% if low_balance %}
         <div class="mb-3">
             <div class="alert alert-warning">
-                <strong>Low Balance:</strong> Your account balance is low (₵{{ organization.balance|floatformat:2 }}). Please <a href="{% url 'org_billing' organization.slug %}">add credits</a> to continue sending messages.
+                <strong>Low SMS:</strong> Your SMS balance is low ({{ organization.sms_remaining }} SMS remaining). Please <a href="{% url 'org_billing' organization.slug %}">purchase more SMS</a> to continue sending messages.
             </div>
         </div>
         {% endif %}
@@ -147,9 +149,9 @@
                     <div class="col-sm-6 col-md-2 mb-2">
                         <div class="card text-center shadow-sm position-relative" style="overflow:visible;">
                             <div class="card-body">
-                                <h6 class="card-subtitle mb-2 text-muted"><i class="bi bi-cash me-1"></i> Balance</h6>
-                                <h3 class="card-title"><i class="bi bi-cash-stack stat-emoji"></i> ₵{{ organization.balance|floatformat:2 }}</h3>
-                                <p class="text-muted small mb-0">Available credits</p>
+                                <h6 class="card-subtitle mb-2 text-muted"><i class="bi bi-chat-dots me-1"></i> SMS Balance</h6>
+                                <h3 class="card-title"><i class="bi bi-chat-dots stat-emoji"></i> {{ organization.sms_remaining }}</h3>
+                                <p class="text-muted small mb-0">SMS remaining</p>
                                 <a href="{% url 'org_billing' organization.slug %}" class="stretched-link" aria-label="Manage billing"></a>
                             </div>
                         </div>

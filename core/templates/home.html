@@ -277,24 +277,59 @@
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
                                 <i class="bi bi-cash text-success me-3" style="font-size: 2rem;"></i>
-                                <h5 class="card-title mb-0">Pricing & Setup</h5>
+                                <h5 class="card-title mb-0">SMS Packages</h5>
                             </div>
-                            <div class="pricing-card p-3 bg-primary text-white rounded mb-3">
-                                <h4 class="mb-2">₵50.00 one-time setup</h4>
-                                <p class="mb-0 small">Includes registration and approval process</p>
+                            
+                            <!-- Express Package -->
+                            <div class="pricing-card p-3 bg-light border rounded mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0 text-primary">Express Package</h6>
+                                    <span class="badge bg-info">15 Days</span>
+                                </div>
+                                <p class="mb-1"><strong>300 SMS</strong> for <strong>₵15.00</strong></p>
+                                <p class="small text-muted mb-0">Perfect for urgent campaigns and quick messaging needs</p>
                             </div>
-                            <h6>How to Get Started:</h6>
-                            <ol class="small">
-                                <li>Choose your preferred sender ID</li>
-                                <li>Submit registration request</li>
-                                <li>Pay setup fee via Paystack</li>
-                                <li>Wait for approval (2-5 business days)</li>
-                                <li>Start sending branded messages!</li>
-                            </ol>
+
+                            <!-- Premium Package -->
+                            <div class="pricing-card p-3 bg-warning text-dark border rounded mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">Premium Package</h6>
+                                    <span class="badge bg-danger">PREMIUM</span>
+                                </div>
+                                <p class="mb-1"><strong>1000 SMS</strong> for <strong>₵50.00</strong></p>
+                                <p class="small mb-1">Includes premium features:</p>
+                                <ul class="small mb-0">
+                                    <li>Advanced analytics</li>
+                                    <li>Priority support</li>
+                                    <li>Custom templates</li>
+                                    <li>Non-expiry credits</li>
+                                </ul>
+                            </div>
+
+                            <!-- Business Bundle -->
+                            <div class="pricing-card p-3 bg-light border rounded mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0 text-success">Business Bundle</h6>
+                                    <span class="badge bg-success">30 Days</span>
+                                </div>
+                                <p class="mb-1"><strong>600 SMS</strong> for <strong>₵25.00</strong></p>
+                                <p class="small text-muted mb-0">Ideal for growing organizations</p>
+                            </div>
+
+                            <!-- Enterprise Premium -->
+                            <div class="pricing-card p-3 bg-warning text-dark border rounded mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">Enterprise Premium</h6>
+                                    <span class="badge bg-danger">PREMIUM</span>
+                                </div>
+                                <p class="mb-1"><strong>2500 SMS</strong> for <strong>₵100.00</strong></p>
+                                <p class="small mb-0">Maximum capacity with premium features</p>
+                            </div>
+
                             <div class="mt-3">
-                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#senderIdModal">
-                                    <i class="bi bi-tag me-2"></i>Request Custom Sender ID
-                                </button>
+                                <a href="{% url 'login' %}" class="btn btn-primary">
+                                    <i class="bi bi-tag me-2"></i>Get Started with Packages
+                                </a>
                             </div>
                         </div>
                     </div>

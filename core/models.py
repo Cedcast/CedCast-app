@@ -198,6 +198,10 @@ class Organization(models.Model):
 	onboarded = models.BooleanField(default=False)
 	# billing
 	balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+	current_package = models.ForeignKey('Package', on_delete=models.SET_NULL, null=True, blank=True, related_name='organizations')
+	package_expiry_date = models.DateTimeField(blank=True, null=True)
+	sms_remaining = models.PositiveIntegerField(default=0, help_text="SMS remaining in current package")
+	is_premium = models.BooleanField(default=False, help_text="Premium features enabled")
 
 	class Meta:
 		indexes = [
@@ -301,3 +305,26 @@ class Payment(models.Model):
 
 	def __str__(self):
 		return f"{self.organization.name} - ₵{self.amount} ({self.status})"
+
+
+class Package(models.Model):
+	"""SMS packages for organizations"""
+	PACKAGE_TYPE_CHOICES = [
+		('expiry', 'Expiry Package'),
+		('non_expiry', 'Non-Expiry Package'),
+	]
+	name = models.CharField(max_length=100)
+	description = models.TextField(blank=True, null=True)
+	price = models.DecimalField(max_digits=10, decimal_places=2)
+	sms_count = models.PositiveIntegerField(help_text="Number of SMS included in the package")
+	expiry_days = models.PositiveIntegerField(default=0, help_text="Days until package expires (0 for non-expiry)")
+	package_type = models.CharField(max_length=20, choices=PACKAGE_TYPE_CHOICES)
+	is_premium = models.BooleanField(default=False, help_text="Grants premium features")
+	is_active = models.BooleanField(default=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['price']
+
+	def __str__(self):
+		return f"{self.name} - {self.sms_count} SMS ({self.package_type})"

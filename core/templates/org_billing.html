@@ -21,16 +21,73 @@
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
+                        <h5>Current Package</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if organization.current_package %}
+                        <h4 class="text-primary">{{ organization.current_package.name }}
+                            {% if organization.is_premium %}
+                            <span class="badge bg-warning text-dark ms-2">PREMIUM</span>
+                            {% endif %}
+                        </h4>
+                        <p class="text-muted">{{ organization.current_package.description }}</p>
+                        <p><strong>SMS Remaining:</strong> {{ organization.sms_remaining }}</p>
+                        {% if organization.current_package.package_type == 'expiry' %}
+                        <p><strong>Expires:</strong> {{ organization.package_expiry_date|date:"M d, Y" }}</p>
+                        {% else %}
+                        <p><strong>Type:</strong> Non-expiry package</p>
+                        {% endif %}
+                        {% if organization.is_premium %}
+                        <p class="text-success"><i class="bi bi-star-fill"></i> Premium features enabled</p>
+                        {% endif %}
+                        {% else %}
+                        <p class="text-muted">No active package</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Available Packages</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for package in packages %}
+                        <div class="mb-3 p-3 border rounded {% if package.is_premium %}border-warning bg-light{% endif %}">
+                            {% if package.is_premium %}
+                            <div class="badge bg-warning text-dark mb-2">PREMIUM</div>
+                            {% endif %}
+                            <h6>{{ package.name }}</h6>
+                            <p class="mb-1">{{ package.description }}</p>
+                            <p class="mb-1"><strong>{{ package.sms_count }} SMS</strong> for ₵{{ package.price|floatformat:2 }}</p>
+                            <p class="text-muted small">{{ package.get_package_type_display }}
+                                {% if package.expiry_days > 0 %}({{ package.expiry_days }} days){% endif %}
+                            </p>
+                            {% if package.is_premium %}
+                            <p class="text-success small mb-1"><i class="bi bi-star-fill"></i> Includes premium features</p>
+                            {% endif %}
+                            <button class="btn btn-sm {% if package.is_premium %}btn-warning{% else %}btn-primary{% endif %} purchase-btn" 
+                                    data-package-id="{{ package.id }}" 
+                                    data-package-name="{{ package.name|escapejs }}" 
+                                    data-package-price="{{ package.price }}">Purchase</button>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No packages available</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
                         <h5>Current Balance</h5>
                     </div>
                     <div class="card-body">
                         <h3 class="text-primary">₵{{ organization.balance|floatformat:2 }}</h3>
-                        <p class="text-muted">Available SMS credits: {{ available_sms }} (approx.)</p>
-                        {% if organization.balance < sms_min_balance %}
-                        <div class="alert alert-warning mt-2">
-                            <small><i class="bi bi-exclamation-triangle"></i> Low balance warning! Minimum balance: ₵{{ sms_min_balance }}</small>
-                        </div>
-                        {% endif %}
+                        <p class="text-muted">Available for purchasing packages</p>
                     </div>
                 </div>
             </div>
@@ -51,56 +108,6 @@
                                 <i class="bi bi-shield-check"></i>
                                 Secure payments powered by Paystack
                             </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Pricing Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <h6 class="text-muted">Cost per SMS</h6>
-                                <h4 class="text-primary">₵{{ sms_customer_rate|floatformat:2 }}</h4>
-                                <small class="text-muted">(what you pay)</small>
-                            </div>
-                            <div class="col-6">
-                                <h6 class="text-muted">Minimum Balance</h6>
-                                <h4 class="text-warning">₵{{ sms_min_balance|floatformat:2 }}</h4>
-                                <small class="text-muted">(required)</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5>SMS Cost Calculator</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="calc_sms_count" class="form-label">Number of SMS</label>
-                            <input type="number" class="form-control" id="calc_sms_count" placeholder="1000" min="1">
-                        </div>
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <h6 class="text-muted">Cost per SMS</h6>
-                                <p id="calc_rate" class="h5 text-primary mb-0">₵{{ sms_customer_rate|floatformat:2 }}</p>
-                            </div>
-                            <div class="col-6">
-                                <h6 class="text-muted">Total Cost</h6>
-                                <p id="calc_total" class="h5 text-success mb-0">₵0.00</p>
-                            </div>
-                        </div>
-                        <div class="mt-3 text-center">
-                            <small class="text-muted">Calculate the total cost for your SMS campaign</small>
                         </div>
                     </div>
                 </div>
@@ -142,15 +149,53 @@
 
 {% block extra_scripts %}
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle purchase button clicks
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('purchase-btn')) {
+            const btn = e.target;
+            const packageId = btn.getAttribute('data-package-id');
+            const packageName = btn.getAttribute('data-package-name');
+            const packagePrice = btn.getAttribute('data-package-price');
+            
+            purchasePackage(packageId, packageName, packagePrice);
+        }
+    });
+});
+
+function purchasePackage(packageId, packageName, packagePrice) {
+    if (confirm('Purchase "' + packageName + '" for ₵' + packagePrice + '?')) {
+        // Send AJAX request to purchase package
+        fetch('{% url "org_billing" organization.slug %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: new URLSearchParams({
+                'action': 'purchase_package',
+                'package_id': packageId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Package purchased successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Purchase failed. Please try again.');
+        });
+    }
+}
+
 function showPaymentModal() {
     const amount = document.getElementById('amount').value;
     if (!amount || amount <= 0) {
         alert('Please enter a valid amount');
-        return;
-    }
-
-    if (amount > {{ max_payment_amount|floatformat:0 }}) {
-        alert('Maximum amount is {{ max_payment_amount|floatformat:0|intcomma }} GHS');
         return;
     }
 
@@ -168,7 +213,7 @@ function payWithPaystack(paymentMethod) {
     modal.hide();
 
     // Show loading
-    const payBtn = document.querySelector(`[onclick="payWithPaystack('${paymentMethod}')"]`);
+    const payBtn = document.querySelector('[onclick*="payWithPaystack"]');
     const originalText = payBtn.innerHTML;
     payBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
     payBtn.disabled = true;
@@ -202,27 +247,5 @@ function payWithPaystack(paymentMethod) {
         payBtn.disabled = false;
     });
 }
-
-// SMS Cost Calculator
-document.addEventListener('DOMContentLoaded', function() {
-    const smsCountInput = document.getElementById('calc_sms_count');
-    const rateEl = document.getElementById('calc_rate');
-    const totalEl = document.getElementById('calc_total');
-
-    const customerRate = parseFloat('{{ sms_customer_rate|floatformat:2 }}');
-
-    function updateCalculator() {
-        const smsCount = parseInt(smsCountInput.value) || 0;
-        const total = smsCount * customerRate;
-
-        rateEl.textContent = '₵' + customerRate.toFixed(2);
-        totalEl.textContent = '₵' + total.toFixed(2);
-    }
-
-    smsCountInput.addEventListener('input', updateCalculator);
-    // Set default value and calculate
-    smsCountInput.value = 1000;
-    updateCalculator();
-});
 </script>
 {% endblock %}
