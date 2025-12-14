@@ -123,3 +123,106 @@
         </div>
     </div>
 {% endblock %}
+
+{% block extra_scripts %}
+<script>
+function showPaymentModal() {
+    const amountInput = document.getElementById('amount');
+    const amount = parseFloat(amountInput.value);
+
+    if (!amount || amount < {{ min_payment_amount }}) {
+        alert('Please enter a valid amount (minimum ₵{{ min_payment_amount }}).');
+        amountInput.focus();
+        return;
+    }
+
+    if (amount > {{ max_payment_amount }}) {
+        alert('Amount cannot exceed ₵{{ max_payment_amount|floatformat:0 }}.');
+        amountInput.focus();
+        return;
+    }
+
+    // Update modal amount display
+    document.getElementById('modalAmount').textContent = '₵' + amount.toFixed(2);
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    modal.show();
+}
+
+function payWithPaystack(method) {
+    const amountInput = document.getElementById('amount');
+    const amount = parseFloat(amountInput.value) * 100; // Paystack expects amount in pesewas (multiply by 100)
+
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+    modal.hide();
+
+    // Initialize Paystack payment
+    const handler = PaystackPop.setup({
+        key: '{{ paystack_public_key }}',
+        email: '{{ user.email }}',
+        amount: amount,
+        currency: 'GHS',
+        ref: 'ORG_{{ organization.id }}_' + Math.floor((Math.random() * 1000000000) + 1),
+        metadata: {
+            organization_id: '{{ organization.id }}',
+            organization_slug: '{{ organization.slug }}',
+            payment_type: 'balance_topup',
+            payment_method: method
+        },
+        callback: function(response) {
+            // Payment successful
+            alert('Payment successful! Reference: ' + response.reference);
+
+            // Submit payment verification to server
+            fetch('{% url "org_billing_callback" organization.slug %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: new URLSearchParams({
+                    'reference': response.reference,
+                    'amount': (amount / 100).toFixed(2)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Balance updated successfully!');
+                    location.reload();
+                } else {
+                    alert('Payment verification failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error verifying payment. Please contact support with reference: ' + response.reference);
+            });
+        },
+        onClose: function() {
+            alert('Payment cancelled.');
+        }
+    });
+
+    handler.openIframe();
+}
+
+// Enable/disable button based on amount input
+document.getElementById('amount').addEventListener('input', function() {
+    const amount = parseFloat(this.value);
+    const btn = document.querySelector('button[onclick="showPaymentModal()"]');
+    const isValid = amount && amount >= {{ min_payment_amount }} && amount <= {{ max_payment_amount }};
+    btn.disabled = !isValid;
+});
+
+// Initialize button state
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('amount');
+    const btn = document.querySelector('button[onclick="showPaymentModal()"]');
+    const amount = parseFloat(amountInput.value);
+    const isValid = amount && amount >= {{ min_payment_amount }} && amount <= {{ max_payment_amount }};
+    btn.disabled = !isValid;
+});
+</script>
+{% endblock %}
