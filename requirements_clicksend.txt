@@ -6,7 +6,6 @@ requests>=2.0.0
 
 # Django and existing dependencies
 Django>=4.0.0
-django-humanize>=0.1.0
 python-dotenv>=0.19.0
 colorthief>=0.2.1
 Pillow>=9.0.0

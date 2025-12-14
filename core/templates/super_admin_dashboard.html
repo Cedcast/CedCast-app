@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load humanize %}
+{% load core_filters %}
 
 {% block title %}Super Admin — CedCast{% endblock %}
 
@@ -110,13 +110,13 @@
     </div>
     <div class="col-xl-3 col-md-6 mb-3">
       <div class="metric-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-        <div class="metric-value">{{ total_sms_sent_all|default:0|intcomma }}</div>
+        <div class="metric-value">{{ total_sms_sent_all|default:0|format_number }}</div>
         <div class="metric-label">Total SMS Sent</div>
       </div>
     </div>
     <div class="col-xl-3 col-md-6 mb-3">
       <div class="metric-card" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
-        <div class="metric-value">₵{{ total_balance_all|default:0|floatformat:0|intcomma }}</div>
+        <div class="metric-value">₵{{ total_balance_all|default:0|floatformat:0|format_number }}</div>
         <div class="metric-label">Total Balance</div>
       </div>
     </div>
@@ -197,7 +197,7 @@
                 <td>
                   <span class="badge bg-secondary">{{ org.get_org_type_display }}</span>
                 </td>
-                <td>{{ org.total_sms_sent|intcomma }}</td>
+                <td>{{ org.total_sms_sent|format_number }}</td>
                 <td>₵{{ org.balance|floatformat:2 }}</td>
                 <td>
                   {% if org.is_active %}
