@@ -5,7 +5,7 @@ from core.hubtel_utils import send_sms
 from django.utils.text import slugify
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import User, School, Organization, Package
 from django.http import JsonResponse, HttpResponse
 from decimal import Decimal
@@ -2020,6 +2020,8 @@ def org_billing(request, org_slug=None):
 
 	if request.method == 'POST':
 		action = request.POST.get('action')
+		is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+		
 		if action == 'purchase_package':
 			package_id = request.POST.get('package_id')
 			try:
@@ -2039,12 +2041,42 @@ def org_billing(request, org_slug=None):
 					organization.is_premium = package.is_premium
 					organization.save()
 					message = f'Package "{package.name}" purchased successfully! {package.sms_count} SMS added.'
+					if is_ajax:
+						return JsonResponse({'success': True, 'message': message})
 				else:
 					message = f'Insufficient balance. Package costs ₵{package.price}, you have ₵{organization.balance}.'
+					if is_ajax:
+						return JsonResponse({'success': False, 'message': message})
 			except Package.DoesNotExist:
 				message = 'Package not found.'
+				if is_ajax:
+					return JsonResponse({'success': False, 'message': message})
 			except Exception as e:
 				message = f'Purchase failed: {str(e)}'
+				if is_ajax:
+					return JsonResponse({'success': False, 'message': message})
+		elif action == 'purchase_sms_credits':
+			sms_count = int(request.POST.get('sms_count', 0))
+			if sms_count > 0:
+				# Calculate cost based on SMS rate
+				sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
+				total_cost = sms_count * sms_customer_rate
+				if organization.balance >= total_cost:
+					# Deduct balance and add SMS credits
+					organization.balance -= total_cost
+					organization.sms_remaining += sms_count
+					organization.save()
+					message = f'SMS credits purchased successfully! {sms_count} SMS added for ₵{total_cost}.'
+					if is_ajax:
+						return JsonResponse({'success': True, 'message': message})
+				else:
+					message = f'Insufficient balance. SMS credits cost ₵{total_cost}, you have ₵{organization.balance}.'
+					if is_ajax:
+						return JsonResponse({'success': False, 'message': message})
+			else:
+				message = 'Invalid SMS count.'
+				if is_ajax:
+					return JsonResponse({'success': False, 'message': message})
 
 	from .models import Package
 	sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
@@ -2218,3 +2250,102 @@ def super_payments_view(request):
     }
 
     return render(request, 'super_payments.html', context)
+
+
+# Package Management Views
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def super_packages_view(request):
+    """Superadmin view for managing SMS packages"""
+    packages = Package.objects.all().order_by('-created_at')
+    message = None
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'toggle_active':
+            package_id = request.POST.get('package_id')
+            try:
+                package = Package.objects.get(id=package_id)
+                package.is_active = not package.is_active
+                package.save()
+                message = f'Package "{package.name}" {"activated" if package.is_active else "deactivated"} successfully.'
+            except Package.DoesNotExist:
+                message = 'Package not found.'
+
+    context = {
+        'packages': packages,
+        'message': message,
+    }
+    return render(request, 'super_packages.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def create_package_view(request):
+    """Create a new SMS package"""
+    message = None
+
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name')
+            description = request.POST.get('description')
+            price = Decimal(request.POST.get('price'))
+            sms_count = int(request.POST.get('sms_count'))
+            expiry_days = int(request.POST.get('expiry_days', 0))
+            package_type = request.POST.get('package_type')
+            is_premium = request.POST.get('is_premium') == 'on'
+
+            package = Package.objects.create(
+                name=name,
+                description=description,
+                price=price,
+                sms_count=sms_count,
+                expiry_days=expiry_days,
+                package_type=package_type,
+                is_premium=is_premium,
+                is_active=True
+            )
+            message = f'Package "{package.name}" created successfully!'
+            return redirect('super_packages')
+        except Exception as e:
+            message = f'Error creating package: {str(e)}'
+
+    context = {
+        'message': message,
+        'package_types': Package.PACKAGE_TYPE_CHOICES,
+    }
+    return render(request, 'create_package.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def edit_package_view(request, package_id):
+    """Edit an existing SMS package"""
+    try:
+        package = Package.objects.get(id=package_id)
+    except Package.DoesNotExist:
+        return redirect('super_packages')
+
+    message = None
+
+    if request.method == 'POST':
+        try:
+            package.name = request.POST.get('name')
+            package.description = request.POST.get('description')
+            package.price = Decimal(request.POST.get('price'))
+            package.sms_count = int(request.POST.get('sms_count'))
+            package.expiry_days = int(request.POST.get('expiry_days', 0))
+            package.package_type = request.POST.get('package_type')
+            package.is_premium = request.POST.get('is_premium') == 'on'
+            package.save()
+            message = f'Package "{package.name}" updated successfully!'
+            return redirect('super_packages')
+        except Exception as e:
+            message = f'Error updating package: {str(e)}'
+
+    context = {
+        'package': package,
+        'message': message,
+        'package_types': Package.PACKAGE_TYPE_CHOICES,
+    }
+    return render(request, 'edit_package.html', context)

@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Super Admin — Edit Package{% endblock %}
+
+{% block content %}
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
+      <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:32px; margin-right:8px;" onerror="this.style.display='none'">
+      <span class="fw-bold">CedCast</span>
+    </a>
+    <div class="d-flex align-items-center gap-3">
+      <div class="dropdown">
+        <a class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" href="#">
+          <div class="avatar rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:34px; height:34px;">{{ request.user.username|slice:":1"|upper }}</div>
+          <span class="ms-2 d-none d-sm-inline">{{ request.user.username }}</span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+          <li><a class="dropdown-item" href="#">Profile</a></li>
+          <li><a class="dropdown-item" href="#">Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/logout/">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+    {% if message %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Edit Package: {{ package.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Package Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ package.name }}" required>
+                                <div class="form-text">A descriptive name for the package</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="price" class="form-label">Price (GHS) *</label>
+                                <input type="number" class="form-control" id="price" name="price" value="{{ package.price }}" step="0.01" min="0" required>
+                                <div class="form-text">Cost of the package in Ghana Cedis</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="sms_count" class="form-label">SMS Count *</label>
+                                <input type="number" class="form-control" id="sms_count" name="sms_count" value="{{ package.sms_count }}" min="1" required>
+                                <div class="form-text">Number of SMS messages included</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="package_type" class="form-label">Package Type *</label>
+                                <select class="form-select" id="package_type" name="package_type" required>
+                                    {% for value, label in package_types %}
+                                    <option value="{{ value }}" {% if package.package_type == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="expiry_days_group">
+                            <label for="expiry_days" class="form-label">Expiry Days</label>
+                            <input type="number" class="form-control" id="expiry_days" name="expiry_days" value="{{ package.expiry_days }}" min="0">
+                            <div class="form-text">Days until package expires (0 for non-expiry packages)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ package.description }}</textarea>
+                            <div class="form-text">Optional description of the package features</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_premium" name="is_premium" {% if package.is_premium %}checked{% endif %}>
+                                <label class="form-check-label" for="is_premium">
+                                    Premium Package
+                                </label>
+                                <div class="form-text">Grants access to premium features</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Update Package
+                            </button>
+                            <a href="{% url 'super_packages' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('package_type').addEventListener('change', function() {
+    const expiryGroup = document.getElementById('expiry_days_group');
+    if (this.value === 'expiry') {
+        expiryGroup.style.display = 'block';
+    } else {
+        expiryGroup.style.display = 'none';
+        document.getElementById('expiry_days').value = '0';
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('package_type').dispatchEvent(new Event('change'));
+});
+</script>
+
+{% endblock %}

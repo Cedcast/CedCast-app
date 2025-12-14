@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Super Admin — Package Management{% endblock %}
+
+{% block content %}
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
+      <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:32px; margin-right:8px;" onerror="this.style.display='none'">
+      <span class="fw-bold">CedCast</span>
+    </a>
+    <div class="d-flex align-items-center gap-3">
+      <div class="dropdown">
+        <a class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" href="#">
+          <div class="avatar rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:34px; height:34px;">{{ request.user.username|slice:":1"|upper }}</div>
+          <span class="ms-2 d-none d-sm-inline">{{ request.user.username }}</span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+          <li><a class="dropdown-item" href="#">Profile</a></li>
+          <li><a class="dropdown-item" href="#">Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="/logout/">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+    {% if message %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Package Management</h2>
+            <p class="text-muted mb-0">Create and manage SMS packages for organizations</p>
+        </div>
+        <a href="{% url 'create_package' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create Package
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">SMS Packages</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Package</th>
+                            <th class="text-center">SMS Count</th>
+                            <th class="text-center">Price</th>
+                            <th class="text-center">Type</th>
+                            <th class="text-center">Premium</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for package in packages %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <div class="fw-bold">{{ package.name }}</div>
+                                    {% if package.description %}
+                                    <small class="text-muted">{{ package.description|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info">{{ package.sms_count }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="fw-bold">₵{{ package.price }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% if package.package_type == 'expiry' %}
+                                <span class="badge bg-warning">{{ package.expiry_days }} days</span>
+                                {% else %}
+                                <span class="badge bg-success">∞</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if package.is_premium %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-star-fill"></i> Premium
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">Standard</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if package.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'edit_package' package.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to {% if package.is_active %}deactivate{% else %}activate{% endif %} this package?')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle_active">
+                                        <input type="hidden" name="package_id" value="{{ package.id }}">
+                                        <button type="submit" class="btn btn-sm {% if package.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                                            {% if package.is_active %}
+                                            <i class="bi bi-pause-circle"></i>
+                                            {% else %}
+                                            <i class="bi bi-play-circle"></i>
+                                            {% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-box-seam fs-1"></i>
+                                <p class="mb-0 mt-2">No packages found</p>
+                                <a href="{% url 'create_package' %}" class="btn btn-primary btn-sm mt-2">Create First Package</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
