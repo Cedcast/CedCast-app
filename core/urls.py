@@ -5,7 +5,7 @@ from django.urls import reverse_lazy
 
 urlpatterns = [
     path('', views.home_view, name='home'),
-    path('signup/', views.org_signup_view, name='org_signup'),
+    path('enrollment-request/', views.enrollment_request_view, name='enrollment_request'),
     path('login/', views.login_redirect, name='login'),
     path('login/super/', views.login_super_view, name='login_super'),
     path('login/org/', views.login_org_view, name='login_org'),
@@ -17,7 +17,6 @@ urlpatterns = [
     # Multi-tenant (slug-prefixed) routes
     path('<slug:school_slug>/dashboard/', views.dashboard, name='school_dashboard'),
     path('<slug:school_slug>/send-sms/', views.send_sms_view, name='school_send_sms'),
-    path('<slug:org_slug>/org/onboarding/', views.onboarding_wizard, name='onboarding_wizard'),
     # Organization tenant routes
     path('<slug:org_slug>/org/dashboard/', views.org_dashboard, name='org_dashboard'),
     path('<slug:org_slug>/org/upload-contacts/', views.org_upload_contacts, name='org_upload_contacts'),
@@ -68,5 +67,4 @@ urlpatterns = [
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(
         template_name='registration/password_reset_complete.html'
     ), name='password_reset_complete'),
-    path('signup-request/', views.signup_request, name='signup_request'),
 ]

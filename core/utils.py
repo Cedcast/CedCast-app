@@ -51,7 +51,7 @@ def normalize_phone_number(raw: str, default_country='+233') -> str | None:
 
 def validate_sms_balance(organization, recipient_count: int, settings) -> tuple[bool, str]:
     """
-    Validate if organization has sufficient SMS for sending based on package.
+    Validate if organization has sufficient balance for sending SMS based on pay-as-you-go pricing.
 
     Args:
         organization: Organization instance
@@ -61,27 +61,20 @@ def validate_sms_balance(organization, recipient_count: int, settings) -> tuple[
     Returns:
         tuple: (is_valid: bool, error_message: str)
     """
-    from django.utils import timezone
+    # Calculate cost for this SMS batch
+    sms_rate = organization.get_current_sms_rate()
+    total_cost = sms_rate * recipient_count
 
-    # Check if organization has an active package
-    if not organization.current_package:
-        return False, "No active package. Please purchase a package to send SMS."
-
-    # Check package expiry for expiry packages
-    if organization.current_package.package_type == 'expiry':
-        if not organization.package_expiry_date or organization.package_expiry_date < timezone.now():
-            return False, "Your package has expired. Please renew your package."
-
-    # Check SMS remaining
-    if organization.sms_remaining < recipient_count:
-        return False, f"Insufficient SMS in package. Required: {recipient_count}, Available: {organization.sms_remaining}. Please purchase more SMS."
+    # Check if organization has sufficient balance
+    if organization.balance < total_cost:
+        return False, f"Insufficient balance. Cost: ₵{total_cost:.2f} (₵{sms_rate:.2f} per SMS), Available: ₵{organization.balance:.2f}. Please top up your account."
 
     return True, ""
 
 
 def deduct_sms_balance(organization, recipient_count: int, settings) -> int:
     """
-    Deduct SMS count from organization package.
+    Deduct SMS cost from organization balance and update usage tracking.
 
     Args:
         organization: Organization instance
@@ -91,6 +84,16 @@ def deduct_sms_balance(organization, recipient_count: int, settings) -> int:
     Returns:
         int: Number of SMS deducted
     """
-    organization.sms_remaining -= recipient_count
+    # Calculate cost and deduct from balance
+    sms_rate = organization.get_current_sms_rate()
+    total_cost = sms_rate * recipient_count
+    organization.balance -= total_cost
+
+    # Update SMS usage tracking
+    organization.total_sms_sent += recipient_count
+
+    # Update SMS rate based on new volume
+    organization.update_sms_rate()
+
     organization.save()
     return recipient_count

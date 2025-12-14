@@ -1,12 +1,44 @@
 def home_view(request):
-	return render(request, "home.html")
+	from django.db.models import Sum, Count
+	from django.db.models.functions import TruncMonth
+	from .models import OrgMessage, OrgAlertRecipient
+
+	# Get platform statistics
+	total_orgs = Organization.objects.filter(is_active=True).count()
+	total_sms_sent = OrgAlertRecipient.objects.filter(status='sent').count()
+	total_balance = Organization.objects.filter(is_active=True).aggregate(
+		total=Sum('balance')
+	)['total'] or 0
+
+	# Get recent activity (last 30 days)
+	thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+	recent_sms = OrgAlertRecipient.objects.filter(
+		sent_at__gte=thirty_days_ago,
+		status='sent'
+	).count()
+
+	# Get active organizations with recent activity
+	active_orgs_recent = Organization.objects.filter(
+		is_active=True,
+		orgmessage__created_at__gte=thirty_days_ago
+	).distinct().count()
+
+	context = {
+		'total_orgs': total_orgs,
+		'total_sms_sent': total_sms_sent,
+		'total_balance': total_balance,
+		'recent_sms': recent_sms,
+		'active_orgs_recent': active_orgs_recent,
+	}
+
+	return render(request, "home.html", context)
 from django.conf import settings
 from core.hubtel_utils import send_sms
 from django.utils.text import slugify
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import User, School, Organization, Package
+from .models import User, School, Organization, Package, EnrollmentRequest
 from django.http import JsonResponse, HttpResponse
 from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
@@ -20,93 +52,75 @@ def health(request):
 	return HttpResponse("OK", status=200)
 
 
-def org_signup_view(request):
-	"""Public organization signup form"""
+def enrollment_request_view(request):
+	"""Handle public enrollment requests from the homepage modal."""
+	from .models import EnrollmentRequest
+	from django.core.mail import send_mail
+	from django.conf import settings
+
 	if request.method == 'POST':
 		try:
-			# Extract form data
-			name = request.POST.get('name')
-			org_type = request.POST.get('org_type')
-			admin_name = request.POST.get('admin_name')
-			admin_email = request.POST.get('admin_email')
-			admin_phone = request.POST.get('admin_phone')
-			address = request.POST.get('address')
-			phone_primary = request.POST.get('phone_primary')
-			
-			# Generate unique slug
-			base_slug = slugify(name)
-			slug = base_slug
-			counter = 1
-			while Organization.objects.filter(slug=slug).exists():
-				slug = f"{base_slug}-{counter}"
-				counter += 1
-			
-			# Create organization with pending approval
-			organization = Organization.objects.create(
-				name=name,
-				org_type=org_type,
-				slug=slug,
-				address=address,
-				phone_primary=phone_primary,
-				approval_status='pending',
-				is_active=False,  # Not active until approved
-				onboarded=False
+			enrollment_request = EnrollmentRequest.objects.create(
+				org_name=request.POST.get('org_name'),
+				org_type=request.POST.get('org_type', 'company'),
+				address=request.POST.get('address'),
+				contact_name=request.POST.get('contact_name'),
+				position=request.POST.get('position'),
+				email=request.POST.get('email'),
+				phone=request.POST.get('phone'),
+				message=request.POST.get('message'),
 			)
-			
-			# Create admin user for the organization
-			admin_user = User.objects.create_user(
-				username=admin_email,
-				email=admin_email,
-				first_name=admin_name.split()[0] if admin_name else '',
-				last_name=' '.join(admin_name.split()[1:]) if admin_name and len(admin_name.split()) > 1 else '',
-				role=User.ORG_ADMIN
-			)
-			admin_user.organization = organization
-			admin_user.save()
-			
-			# Send email notification to superadmin
+
+			# Send notification email to superadmin (if email is configured)
 			try:
-				from django.core.mail import send_mail
-				from django.template.loader import render_to_string
-				from django.conf import settings
-				
-				subject = f"New Organization Signup Request - {organization.name}"
-				context = {
-					'organization': organization,
-					'contact_name': admin_name,
-					'email': admin_email,
-					'phone': admin_phone or phone_primary,
-					'message': f"Admin: {admin_name}\nEmail: {admin_email}\nPhone: {admin_phone or phone_primary}\nAddress: {address}",
-					'requested_sender_id': '',
-					'protocol': 'https' if request.is_secure() else 'http',
-					'domain': request.get_host(),
-					'site_name': 'CedCast',
-				}
-				message = render_to_string('emails/signup_request.html', context)
-				send_mail(
-					subject,
-					message,
-					settings.DEFAULT_FROM_EMAIL,
-					['superadmin@cedcast.com'],  # TODO: Make this configurable
-					fail_silently=True
-				)
+				admin_email = getattr(settings, 'ADMIN_EMAIL', None)
+				if admin_email:
+					send_mail(
+						subject=f'New Enrollment Request: {enrollment_request.org_name}',
+						message=f"""
+New enrollment request received:
+
+Organization: {enrollment_request.org_name}
+Type: {enrollment_request.org_type}
+Contact: {enrollment_request.contact_name}
+Position: {enrollment_request.position}
+Email: {enrollment_request.email}
+Phone: {enrollment_request.phone}
+Address: {enrollment_request.address or 'Not provided'}
+
+Message:
+{enrollment_request.message or 'No additional message'}
+
+Please review this request in the admin panel.
+						""",
+						from_email=settings.DEFAULT_FROM_EMAIL,
+						recipient_list=[admin_email],
+						fail_silently=True,
+					)
 			except Exception as e:
-				# Log the error but don't fail the signup
+				# Log email error but don't fail the request
 				import logging
 				logger = logging.getLogger(__name__)
-				logger.error(f"Failed to send signup notification email: {e}")
-			
-			return render(request, 'signup_success.html', {
-				'organization': organization,
-				'admin_user': admin_user
+				logger.warning(f"Failed to send enrollment notification email: {e}")
+
+			return JsonResponse({
+				'success': True,
+				'message': 'Your enrollment request has been submitted successfully! Our team will review it and contact you within 24 hours.'
 			})
-			
+
 		except Exception as e:
-			return render(request, 'org_signup.html', {
-				'error': f'Registration failed: {str(e)}'
-			})
-	
-	return render(request, 'org_signup.html')
+			return JsonResponse({
+				'success': False,
+				'message': 'There was an error submitting your request. Please try again or contact support.'
+			}, status=400)
+
+	return JsonResponse({
+		'success': False,
+		'message': 'Invalid request method.'
+	}, status=405)
+
+
+
 
 
 @login_required
@@ -182,10 +196,6 @@ def login_view(request):
 			elif user.role == User.SCHOOL_ADMIN and user.school:
 				return redirect("school_dashboard", school_slug=user.school.slug)
 			elif user.role == User.ORG_ADMIN and getattr(user, 'organization', None):
-				org = user.organization
-				# Check if organization needs onboarding
-				if org.approval_status == 'approved' and not org.onboarded:
-					return redirect("onboarding_wizard", org_slug=org.slug)
 				return redirect("org_dashboard", org_slug=user.organization.slug)
 			return redirect("dashboard")
 		else:
@@ -209,11 +219,7 @@ def _process_login(request, template_name, allowed_roles=None):
 			if request.user.role == User.SCHOOL_ADMIN and getattr(request.user, 'school', None):
 				return redirect("school_dashboard", school_slug=request.user.school.slug)
 			if request.user.role == User.ORG_ADMIN and getattr(request.user, 'organization', None):
-				org = request.user.organization
-				# Check if organization needs onboarding
-				if org.approval_status == 'approved' and not org.onboarded:
-					return redirect("onboarding_wizard", org_slug=org.slug)
-				return redirect("org_dashboard", org_slug=org.slug)
+				return redirect("org_dashboard", org_slug=request.user.organization.slug)
 			return redirect("dashboard")
 		else:
 			# already logged in but not allowed to use this page
@@ -491,7 +497,7 @@ def dashboard(request, school_slug=None):
 
 		# Billing analytics
 		from .models import Payment
-		from django.db.models import Sum, Count
+		from django.db.models import Sum, Count, Avg
 		from decimal import Decimal
 
 		# Payment statistics
@@ -509,21 +515,10 @@ def dashboard(request, school_slug=None):
 		total_orgs = Organization.objects.count()
 		premium_percentage = (premium_orgs / total_orgs * 100) if total_orgs > 0 else 0
 
-		# Package usage statistics
-		from .models import Package
-		package_stats = []
-		for package in Package.objects.filter(is_active=True):
-			orgs_using = Organization.objects.filter(current_package=package).count()
-			total_sms_allocated = orgs_using * package.sms_count
-			package_stats.append({
-				'package': package,
-				'orgs_using': orgs_using,
-				'total_sms_allocated': total_sms_allocated,
-			})
-
-		# SMS remaining statistics
-		total_sms_remaining = Organization.objects.aggregate(total=Sum('sms_remaining'))['total'] or 0
-		orgs_with_packages = Organization.objects.filter(current_package__isnull=False).count()
+		# SMS usage statistics for pay-as-you-go
+		total_sms_sent_all = Organization.objects.aggregate(total=Sum('total_sms_sent'))['total'] or 0
+		total_balance_all = Organization.objects.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+		avg_sms_rate = Organization.objects.aggregate(avg=Avg('sms_rate'))['avg'] or Decimal('0.25')
 
 		# Recent payments trend (7 days)
 		payments_trend = []
@@ -564,9 +559,10 @@ def dashboard(request, school_slug=None):
 			"premium_orgs": premium_orgs,
 			"total_orgs": total_orgs,
 			"premium_percentage": premium_percentage,
-			"package_stats": package_stats,
-			"total_sms_remaining": total_sms_remaining,
-			"orgs_with_packages": orgs_with_packages,
+			# Pay-as-you-go analytics
+			"total_sms_sent_all": total_sms_sent_all,
+			"total_balance_all": total_balance_all,
+			"avg_sms_rate": avg_sms_rate,
 			# Pending approvals
 			"pending_approvals": pending_approvals,
 		}
@@ -753,137 +749,7 @@ def reject_org_view(request, org_id):
 		return JsonResponse({'success': False, 'error': str(e)})
 
 
-@login_required
-def onboarding_wizard(request):
-    """3-step onboarding wizard for newly approved organizations"""
-    user = request.user
-    
-    # Only allow ORG_ADMIN users with approved organizations that aren't onboarded yet
-    if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
-        return redirect('dashboard')
-    
-    organization = user.organization
-    
-    # Check if organization is approved but not onboarded
-    if organization.approval_status != 'approved' or organization.onboarded:
-        return redirect('org_dashboard', org_slug=organization.slug)
-    
-    # Get current step from session or start at step 1
-    current_step = request.session.get('onboarding_step', 1)
-    
-    # Handle step navigation
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        
-        if action == 'next':
-            # Validate current step before proceeding
-            if current_step == 1:
-                # Step 1: Package selection validation
-                package_id = request.POST.get('package_id')
-                if not package_id:
-                    return render(request, 'onboarding_wizard.html', {
-                        'organization': organization,
-                        'current_step': current_step,
-                        'error': 'Please select a package to continue.'
-                    })
-                # Store step 1 data in session
-                request.session['onboarding_package_id'] = package_id
-                
-            elif current_step == 2:
-                # Step 2: Contact import (optional, can skip)
-                # Store any uploaded contacts or skip
-                pass
-                
-            elif current_step == 3:
-                # Step 3: Sender ID setup
-                sender_id = request.POST.get('sender_id', '').strip()
-                if not sender_id:
-                    return render(request, 'onboarding_wizard.html', {
-                        'organization': organization,
-                        'current_step': current_step,
-                        'error': 'Please provide a sender ID.'
-                    })
-                # Complete onboarding
-                try:
-                    from .models import Package
-                    from .utils.crypto_utils import encrypt_value
-                    
-                    # Apply package selection
-                    package_id = request.session.get('onboarding_package_id')
-                    if package_id:
-                        package = Package.objects.get(id=package_id, is_active=True)
-                        organization.current_package = package
-                        organization.sms_remaining = package.sms_count
-                        if package.package_type == 'expiry':
-                            from django.utils import timezone
-                            organization.package_expiry_date = timezone.now() + timezone.timedelta(days=package.expiry_days)
-                        organization.is_premium = package.is_premium
-                    
-                    # Set sender ID
-                    organization.sender_id = encrypt_value(sender_id)
-                    
-                    # Mark as onboarded
-                    organization.onboarded = True
-                    organization.save()
-                    
-                    # Clear session data
-                    for key in ['onboarding_step', 'onboarding_package_id']:
-                        request.session.pop(key, None)
-                    
-                    # Redirect to dashboard with success message
-                    from django.contrib import messages
-                    messages.success(request, 'Welcome to CedCast! Your account is now fully set up.')
-                    return redirect('org_dashboard', org_slug=organization.slug)
-                    
-                except Exception as e:
-                    return render(request, 'onboarding_wizard.html', {
-                        'organization': organization,
-                        'current_step': current_step,
-                        'error': f'Setup failed: {str(e)}'
-                    })
-            
-            # Move to next step
-            current_step += 1
-            request.session['onboarding_step'] = current_step
-            
-        elif action == 'previous':
-            # Go back to previous step
-            current_step = max(1, current_step - 1)
-            request.session['onboarding_step'] = current_step
-            
-        elif action == 'skip_contacts':
-            # Skip step 2 (contact import)
-            current_step = 3
-            request.session['onboarding_step'] = current_step
-    
-    # Prepare context based on current step
-    context = {
-        'organization': organization,
-        'current_step': current_step,
-        'total_steps': 3,
-    }
-    
-    if current_step == 1:
-        # Step 1: Package selection
-        from .models import Package
-        packages = Package.objects.filter(is_active=True).order_by('price')
-        context['packages'] = packages
-        context['step_title'] = 'Choose Your Package'
-        context['step_description'] = 'Select an SMS package that fits your needs. You can change this later.'
-        
-    elif current_step == 2:
-        # Step 2: Contact import
-        context['step_title'] = 'Import Your Contacts'
-        context['step_description'] = 'Upload your contact list or skip this step and add contacts later.'
-        
-    elif current_step == 3:
-        # Step 3: Sender ID setup
-        context['step_title'] = 'Set Up Sender ID'
-        context['step_description'] = 'Choose a sender ID for your SMS messages. This will be displayed to recipients.'
-        # Pre-fill with organization name if available
-        context['suggested_sender_id'] = organization.name[:11].upper() if organization.name else ''
-    
-    return render(request, 'onboarding_wizard.html', context)
+
 
 
 @login_required
@@ -1349,7 +1215,7 @@ def org_dashboard(request, org_slug=None):
 		"hubtel_dry_run": getattr(settings, 'HUBTEL_DRY_RUN', False),
 		"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
 		"is_suspended": not organization.is_active,
-		"low_balance": organization.sms_remaining < 50 if organization.current_package else False,
+		"low_balance": organization.balance < organization.get_current_sms_rate() * 10,  # Low balance if can't send 10 SMS
 	})
 
 
@@ -1663,14 +1529,15 @@ def org_send_sms(request, org_slug=None):
 								logger.info(f"SMS queued for retry for contact {ar.contact.id}, attempt {ar.retry_count}")
 							ar.save()
 
-					# Deduct SMS from package
-					sms_deducted = 0
+					# Deduct SMS cost from balance
+					sms_cost = 0
 					if processed > 0:
 						from .utils import deduct_sms_balance
 						sms_deducted = deduct_sms_balance(org, processed, settings)
+						sms_cost = org.get_current_sms_rate() * processed
 
 					if processed > 0:
-						success = f"Message sent to {processed} recipients. SMS used: {sms_deducted}. Remaining SMS: {org.sms_remaining}."
+						success = f"Message sent to {processed} recipients. Cost: ₵{sms_cost:.2f} (₵{org.sms_rate:.2f} per SMS). Balance: ₵{org.balance:.2f}."
 					else:
 						error = 'Failed to send any messages. Please try again.'
 		else:
@@ -2322,52 +2189,7 @@ def hubtel_webhook(request):
 		return JsonResponse({'error': str(e)}, status=500)
 
 
-def signup_request(request):
-	if request.method == 'POST':
-		org_name = request.POST.get('org_name')
-		contact_name = request.POST.get('contact_name')
-		email = request.POST.get('email')
-		phone = request.POST.get('phone')
-		message = request.POST.get('message', '')
-		service_type = request.POST.get('service_type', 'signup')
-		requested_sender_id = request.POST.get('requested_sender_id', '')
 
-		# Create subject based on service type
-		if service_type == 'sender_id':
-			subject = f"Sender ID Request: {requested_sender_id} - {org_name}"
-			full_message = f"SERVICE TYPE: Custom Sender ID Request\nOrganization: {org_name}\nRequested Sender ID: {requested_sender_id}\nContact: {contact_name}\nEmail: {email}\nPhone: {phone}\nAdditional Notes: {message}"
-		else:
-			subject = f"Signup Request: {org_name}"
-			full_message = f"Organization: {org_name}\nContact: {contact_name}\nEmail: {email}\nPhone: {phone}\nMessage: {message}"
-
-		# Create a support ticket or send email to superadmin
-		from .models import SupportTicket
-		ticket = SupportTicket.objects.create(
-			organization=None,  # No org yet
-			created_by=None,
-			subject=subject,
-			message=full_message
-		)
-
-		# Optionally send email
-		try:
-			from django.core.mail import send_mail
-			send_mail(
-				subject,
-				f"A new request has been submitted.\n\n{ticket.message}",
-				'noreply@cedcast.com',  # From
-				['superadmin@cedcast.com'],  # To superadmin
-				fail_silently=True
-			)
-		except Exception:
-			pass
-
-		if service_type == 'sender_id':
-			return render(request, 'signup_success.html', {'message': 'Your custom sender ID request has been submitted! We will process it within 2-5 business days. Setup fee: ₵50.00.'})
-		else:
-			return render(request, 'signup_success.html', {'message': 'Your signup request has been submitted. We will contact you soon!'})
-
-	return redirect('home')
 
 
 @login_required
@@ -2386,59 +2208,18 @@ def org_billing(request, org_slug=None):
 		action = request.POST.get('action')
 		is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 		
-		if action == 'purchase_package':
-			package_id = request.POST.get('package_id')
-			try:
-				package = Package.objects.get(id=package_id, is_active=True)
-				if organization.balance >= package.price:
-					# Deduct balance
-					organization.balance -= package.price
-					# Set package
-					organization.current_package = package
-					organization.sms_remaining = package.sms_count
-					if package.package_type == 'expiry':
-						from django.utils import timezone
-						organization.package_expiry_date = timezone.now() + timezone.timedelta(days=package.expiry_days)
-					else:
-						organization.package_expiry_date = None
-					# Set premium status
-					organization.is_premium = package.is_premium
-					organization.save()
-					message = f'Package "{package.name}" purchased successfully! {package.sms_count} SMS added.'
-					if is_ajax:
-						return JsonResponse({'success': True, 'message': message})
-				else:
-					message = f'Insufficient balance. Package costs ₵{package.price}, you have ₵{organization.balance}.'
-					if is_ajax:
-						return JsonResponse({'success': False, 'message': message})
-			except Package.DoesNotExist:
-				message = 'Package not found.'
+		if action == 'top_up_balance':
+			amount = Decimal(request.POST.get('amount', '0'))
+			if amount > 0:
+				# In a real implementation, this would integrate with Paystack
+				# For now, we'll simulate balance top-up
+				organization.balance += amount
+				organization.save()
+				message = f'Balance topped up successfully! ₵{amount:.2f} added. New balance: ₵{organization.balance:.2f}.'
 				if is_ajax:
-					return JsonResponse({'success': False, 'message': message})
-			except Exception as e:
-				message = f'Purchase failed: {str(e)}'
-				if is_ajax:
-					return JsonResponse({'success': False, 'message': message})
-		elif action == 'purchase_sms_credits':
-			sms_count = int(request.POST.get('sms_count', 0))
-			if sms_count > 0:
-				# Calculate cost based on SMS rate
-				sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
-				total_cost = sms_count * sms_customer_rate
-				if organization.balance >= total_cost:
-					# Deduct balance and add SMS credits
-					organization.balance -= total_cost
-					organization.sms_remaining += sms_count
-					organization.save()
-					message = f'SMS credits purchased successfully! {sms_count} SMS added for ₵{total_cost}.'
-					if is_ajax:
-						return JsonResponse({'success': True, 'message': message})
-				else:
-					message = f'Insufficient balance. SMS credits cost ₵{total_cost}, you have ₵{organization.balance}.'
-					if is_ajax:
-						return JsonResponse({'success': False, 'message': message})
+					return JsonResponse({'success': True, 'message': message})
 			else:
-				message = 'Invalid SMS count.'
+				message = 'Invalid amount.'
 				if is_ajax:
 					return JsonResponse({'success': False, 'message': message})
 
@@ -2446,8 +2227,6 @@ def org_billing(request, org_slug=None):
 	sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
 	sms_provider_cost = getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03'))
 	sms_min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
-	available_sms = organization.sms_remaining if organization.current_package else 0
-	packages = Package.objects.filter(is_active=True)
 
 	return render(request, 'org_billing.html', {
 		'organization': organization,
@@ -2457,8 +2236,8 @@ def org_billing(request, org_slug=None):
 		'sms_customer_rate': sms_customer_rate,
 		'sms_provider_cost': sms_provider_cost,
 		'sms_min_balance': sms_min_balance,
-		'available_sms': available_sms,
-		'packages': packages,
+		'current_sms_rate': organization.get_current_sms_rate(),
+		'total_sms_sent': organization.total_sms_sent,
 		'max_payment_amount': getattr(settings, 'MAX_PAYMENT_AMOUNT', Decimal('10000')),
 		'min_payment_amount': getattr(settings, 'MIN_PAYMENT_AMOUNT', Decimal('0.01')),
 	})
@@ -2528,12 +2307,10 @@ def org_billing_callback(request, org_slug=None):
 	sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
 	sms_provider_cost = getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03'))
 	sms_min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
-	available_sms = organization.sms_remaining if organization.current_package else 0
 
 	return render(request, 'org_billing.html', {
 		'organization': organization,
 		'balance': organization.balance,
-		'available_sms': available_sms,
 		'sms_customer_rate': sms_customer_rate,
 		'sms_provider_cost': sms_provider_cost,
 		'sms_min_balance': sms_min_balance,

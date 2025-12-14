@@ -209,9 +209,9 @@ class Organization(models.Model):
 	rejection_reason = models.TextField(blank=True, null=True)
 	# billing
 	balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-	current_package = models.ForeignKey('Package', on_delete=models.SET_NULL, null=True, blank=True, related_name='organizations')
-	package_expiry_date = models.DateTimeField(blank=True, null=True)
-	sms_remaining = models.PositiveIntegerField(default=0, help_text="SMS remaining in current package")
+	# SMS usage tracking for pay-as-you-go billing
+	total_sms_sent = models.PositiveIntegerField(default=0, help_text="Total SMS sent by organization")
+	sms_rate = models.DecimalField(max_digits=5, decimal_places=4, default=Decimal('0.25'), help_text="Cost per SMS in cedis")
 	is_premium = models.BooleanField(default=False, help_text="Premium features enabled")
 
 	class Meta:
@@ -219,6 +219,27 @@ class Organization(models.Model):
 			models.Index(fields=['is_active', 'onboarded']),
 			models.Index(fields=['slug']),
 		]
+
+	def get_current_sms_rate(self):
+		"""Calculate current SMS rate based on volume tiers"""
+		# Volume-based pricing: higher volume = lower rate
+		if self.total_sms_sent >= 10000:  # 10k+ SMS
+			return Decimal('0.14')
+		elif self.total_sms_sent >= 5000:  # 5k-10k SMS
+			return Decimal('0.16')
+		elif self.total_sms_sent >= 1000:  # 1k-5k SMS
+			return Decimal('0.18')
+		elif self.total_sms_sent >= 500:   # 500-1k SMS
+			return Decimal('0.20')
+		elif self.total_sms_sent >= 100:   # 100-500 SMS
+			return Decimal('0.22')
+		else:  # 0-100 SMS
+			return Decimal('0.25')
+
+	def update_sms_rate(self):
+		"""Update the stored SMS rate based on current volume"""
+		self.sms_rate = self.get_current_sms_rate()
+		self.save(update_fields=['sms_rate'])
 
 	def __str__(self):
 		return f"{self.name} ({self.org_type})"
@@ -339,3 +360,55 @@ class Package(models.Model):
 
 	def __str__(self):
 		return f"{self.name} - {self.sms_count} SMS ({self.package_type})"
+
+
+class EnrollmentRequest(models.Model):
+	"""Model for public enrollment requests that need superadmin approval"""
+	STATUS_CHOICES = [
+		('pending', 'Pending Review'),
+		('approved', 'Approved'),
+		('rejected', 'Rejected'),
+	]
+
+	ORG_TYPE_CHOICES = [
+		('company', 'Company'),
+		('school', 'School'),
+		('ngo', 'NGO'),
+		('pharmacy', 'Pharmacy'),
+		('restaurant', 'Restaurant'),
+		('other', 'Other'),
+	]
+
+	# Organization details
+	org_name = models.CharField(max_length=255)
+	org_type = models.CharField(max_length=20, choices=ORG_TYPE_CHOICES, default='company')
+	address = models.TextField(blank=True, null=True)
+
+	# Contact person details
+	contact_name = models.CharField(max_length=255)
+	position = models.CharField(max_length=100, blank=True, null=True)
+	email = models.EmailField()
+	phone = models.CharField(max_length=20)
+
+	# Additional information
+	message = models.TextField(blank=True, null=True, help_text="Additional information from the requester")
+
+	# Status and processing
+	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+	reviewed_at = models.DateTimeField(blank=True, null=True)
+	reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_requests')
+	review_notes = models.TextField(blank=True, null=True)
+
+	# Timestamps
+	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		ordering = ['-created_at']
+		indexes = [
+			models.Index(fields=['status', 'created_at']),
+			models.Index(fields=['email']),
+		]
+
+	def __str__(self):
+		return f"{self.org_name} - {self.contact_name} ({self.status})"

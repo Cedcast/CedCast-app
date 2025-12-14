@@ -1,208 +1,395 @@
-<!DOCTYPE html>
-<html>
-<head>
-    {% load static %}
-    <title>Onboarding - CedCast</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'dashboard' %}">
-                <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:28px; margin-right:8px; object-fit:contain;" onerror="this.style.display='none'">
-                <span class="align-middle">CedCast</span>
-            </a>
-            <div class="d-flex">
-                <a href="{% url 'dashboard' %}" class="btn btn-outline-light me-2">Dashboard</a>
-                <a href="/logout/" class="btn btn-outline-light">Logout</a>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Organization Management — CedCast{% endblock %}
+
+{% block body_class %}bg-light{% endblock %}
+
+{% block content %}
+<!-- Modern Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
+      <svg width="32" height="32" viewBox="0 0 32 32" class="me-2">
+        <circle cx="16" cy="16" r="15" fill="#0d6efd" stroke="#ffffff" stroke-width="1"/>
+        <text x="16" y="12" font-family="Arial, sans-serif" font-size="6" font-weight="bold" text-anchor="middle" fill="white">CedCast</text>
+        <circle cx="16" cy="20" r="1.5" fill="#ffffff" opacity="0.8"/>
+        <circle cx="12" cy="22" r="1" fill="#ffffff" opacity="0.6"/>
+        <circle cx="20" cy="22" r="1" fill="#ffffff" opacity="0.6"/>
+      </svg>
+      <span class="fw-bold">CedCast</span>
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'dashboard' %}">
+            <i class="bi bi-house-door me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'enroll_tenant' %}">
+            <i class="bi bi-person-plus-fill me-1"></i>Enroll Organization
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="{% url 'super_orgs' %}">
+            <i class="bi bi-building me-1"></i>Organizations
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'global_templates' %}">
+            <i class="bi bi-file-text me-1"></i>Templates
+          </a>
+        </li>
+      </ul>
+
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userMenu" data-bs-toggle="dropdown">
+            <div class="avatar rounded-circle bg-light text-primary d-inline-flex align-items-center justify-content-center me-2" style="width:32px; height:32px; font-weight:600;">
+              {{ request.user.username|slice:":1"|upper }}
             </div>
-        </div>
-    </nav>
-
-    <div class="container">
-        <h3>Onboarding & Organization Management</h3>
-        {% if notice %}
-            <div class="alert alert-info">{{ notice }}</div>
-        {% endif %}
-
-        <div class="row">
-            <div class="col-md-5">
-                <div class="card mb-3">
-                    <div class="card-header">Configure Sender ID</div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Organization Slug</label>
-                            <input id="cfg-slug" class="form-control" placeholder="organization-slug">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Sender ID</label>
-                            <input id="cfg-sender" class="form-control" placeholder="CEDCAST or +233501234567">
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#configureModal">Configure</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">Suspend / Activate Organization</div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Organization Slug</label>
-                            <input id="act-slug" class="form-control" placeholder="organization-slug">
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#suspendModal">Suspend</button>
-                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#activateModal">Activate</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-7">
-                <div class="card">
-                    <div class="card-header">Organizations</div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-striped mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Slug</th>
-                                        <th>Sender ID</th>
-                                        <th>Onboarded</th>
-                                        <th>Active</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for org in orgs %}
-                                    <tr>
-                                        <td>{{ org.name }}</td>
-                                        <td>{{ org.slug }}</td>
-                                        <td>{{ org.sender_id|default:'—' }}</td>
-                                        <td>{% if org.onboarded %}Yes{% else %}No{% endif %}</td>
-                                        <td>{% if org.is_active %}Yes{% else %}No{% endif %}</td>
-                                        <td>
-                                            <a href="{% url 'super_edit_org' org_slug=org.slug %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr><td colspan="5" class="text-center">No organizations found.</td></tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <span class="d-none d-md-inline">{{ request.user.username }}</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="/logout/">
+              <i class="bi bi-box-arrow-right me-2"></i>Logout
+            </a></li>
+          </ul>
+        </li>
+      </ul>
     </div>
-</body>
-</html>
+  </div>
+</nav>
+
+<div class="container-fluid py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+      <li class="breadcrumb-item active">Organization Management</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="dashboard-card">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h1 class="h3 mb-2">
+              <i class="bi bi-building text-primary me-2"></i>
+              Organization Management
+            </h1>
+            <p class="text-muted mb-0">Manage organization settings, sender IDs, and account status.</p>
+          </div>
+          <div class="col-md-4 text-end">
+            <a href="{% url 'enroll_tenant' %}" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-1"></i>Enroll New Organization
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notice Alert -->
+  {% if notice %}
+  <div class="alert alert-info border-radius-lg shadow-soft mb-4">
+    <i class="bi bi-info-circle me-2"></i>{{ notice }}
+  </div>
+  {% endif %}
+
+  <div class="row">
+    <!-- Management Tools Sidebar -->
+    <div class="col-lg-4 mb-4">
+      <!-- Configure Sender ID -->
+      <div class="dashboard-card mb-4">
+        <div class="card-header bg-info text-white">
+          <h6 class="mb-0">
+            <i class="bi bi-broadcast me-2"></i>Configure Sender ID
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Organization Slug</label>
+            <input id="cfg-slug" class="form-control" placeholder="organization-slug">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Sender ID</label>
+            <input id="cfg-sender" class="form-control" placeholder="CEDCAST or +233501234567">
+          </div>
+          <div class="d-grid">
+            <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#configureModal">
+              <i class="bi bi-gear me-1"></i>Configure
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Status Management -->
+      <div class="dashboard-card">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0">
+            <i class="bi bi-toggle-on me-2"></i>Account Status
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Organization Slug</label>
+            <input id="act-slug" class="form-control" placeholder="organization-slug">
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <button class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#suspendModal">
+                <i class="bi bi-pause-circle me-1"></i>Suspend
+              </button>
+            </div>
+            <div class="col-6">
+              <button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#activateModal">
+                <i class="bi bi-play-circle me-1"></i>Activate
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Organizations Table -->
+    <div class="col-lg-8">
+      <div class="dashboard-card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="bi bi-list-ul me-2"></i>All Organizations
+          </h5>
+          <span class="badge bg-light text-primary">{{ orgs|length }} organizations</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="border-0">Organization</th>
+                  <th class="border-0">Slug</th>
+                  <th class="border-0">Sender ID</th>
+                  <th class="border-0 text-center">Status</th>
+                  <th class="border-0 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for org in orgs %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      {% if org.logo %}
+                        <img src="{{ org.logo.url }}" alt="{{ org.name }}" class="rounded me-3" style="width:40px; height:40px; object-fit:cover;">
+                      {% else %}
+                        <div class="bg-secondary text-white rounded me-3 d-flex align-items-center justify-content-center fw-bold" style="width:40px; height:40px;">
+                          {{ org.name|slice:":1"|upper }}
+                        </div>
+                      {% endif %}
+                      <div>
+                        <div class="fw-bold">{{ org.name }}</div>
+                        <small class="text-muted">{{ org.org_type|title }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <code class="small">{{ org.slug }}</code>
+                  </td>
+                  <td>
+                    {% if org.sender_id %}
+                      <span class="badge bg-success">{{ org.sender_id }}</span>
+                    {% else %}
+                      <span class="text-muted small">Not set</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    {% if org.onboarded and org.is_active %}
+                      <span class="badge bg-success">
+                        <i class="bi bi-check-circle me-1"></i>Active
+                      </span>
+                    {% elif org.onboarded and not org.is_active %}
+                      <span class="badge bg-warning text-dark">
+                        <i class="bi bi-pause-circle me-1"></i>Suspended
+                      </span>
+                    {% else %}
+                      <span class="badge bg-secondary">
+                        <i class="bi bi-clock me-1"></i>Pending
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    <a href="{% url 'super_edit_org' org_slug=org.slug %}" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-pencil me-1"></i>Edit
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center py-4">
+                    <div class="text-muted">
+                      <i class="bi bi-building display-4 mb-3"></i>
+                      <p>No organizations found.</p>
+                      <a href="{% url 'enroll_tenant' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Enroll First Organization
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modals -->
-<!-- Configure Modal -->
-<div class="modal fade" id="configureModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Configure Sender ID</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>You're about to set the sender ID for the organization. This may require approval from the provider.</p>
-                    <input type="hidden" name="slug" id="modal-cfg-slug" />
-                    <input type="hidden" name="sender_id" id="modal-cfg-sender" />
-                    <p class="small text-muted">Organization: <strong id="modal-cfg-slug-label"></strong></p>
-                    <p class="small text-muted">Sender ID: <strong id="modal-cfg-sender-label"></strong></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="action" value="configure" class="btn btn-primary">Confirm</button>
-                </div>
-            </form>
+<!-- Configure Sender ID Modal -->
+<div class="modal fade" id="configureModal" tabindex="-1" aria-labelledby="configureModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title" id="configureModalLabel">
+            <i class="bi bi-broadcast me-2"></i>Configure Sender ID
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+        <div class="modal-body">
+          <p class="mb-3">You're about to set the sender ID for this organization. This may require approval from the SMS provider.</p>
+          <input type="hidden" name="slug" id="modal-cfg-slug" />
+          <input type="hidden" name="sender_id" id="modal-cfg-sender" />
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-bold">Organization</label>
+              <div class="form-control-plaintext" id="modal-cfg-slug-label">-</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-bold">Sender ID</label>
+              <div class="form-control-plaintext" id="modal-cfg-sender-label">-</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" name="action" value="configure" class="btn btn-info">
+            <i class="bi bi-check-circle me-1"></i>Confirm Configuration
+          </button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <!-- Suspend Modal -->
-<div class="modal fade" id="suspendModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Suspend Organization</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Suspending an organization will prevent its users from sending messages. Are you sure?</p>
-                    <input type="hidden" name="slug" id="modal-suspend-slug" />
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="action" value="suspend" class="btn btn-warning">Suspend</button>
-                </div>
-            </form>
+<div class="modal fade" id="suspendModal" tabindex="-1" aria-labelledby="suspendModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title" id="suspendModalLabel">
+            <i class="bi bi-pause-circle me-2"></i>Suspend Organization
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+        <div class="modal-body">
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Warning:</strong> Suspending this organization will prevent all users from sending messages until reactivated.
+          </div>
+          <input type="hidden" name="slug" id="modal-suspend-slug" />
+          <p class="mb-0">Organization: <strong id="modal-suspend-slug-label">-</strong></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" name="action" value="suspend" class="btn btn-warning">
+            <i class="bi bi-pause-circle me-1"></i>Suspend Organization
+          </button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <!-- Activate Modal -->
-<div class="modal fade" id="activateModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Activate Organization</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Activating an organization will allow its users to resume sending messages.</p>
-                    <input type="hidden" name="slug" id="modal-activate-slug" />
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="action" value="activate" class="btn btn-success">Activate</button>
-                </div>
-            </form>
+<div class="modal fade" id="activateModal" tabindex="-1" aria-labelledby="activateModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="activateModalLabel">
+            <i class="bi bi-play-circle me-2"></i>Activate Organization
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+        <div class="modal-body">
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>
+            Activating this organization will allow users to resume sending messages.
+          </div>
+          <input type="hidden" name="slug" id="modal-activate-slug" />
+          <p class="mb-0">Organization: <strong id="modal-activate-slug-label">-</strong></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" name="action" value="activate" class="btn btn-success">
+            <i class="bi bi-play-circle me-1"></i>Activate Organization
+          </button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function(){
-        // populate configure modal with values
-        var cfgBtn = document.querySelector('[data-bs-target="#configureModal"]');
-        if(cfgBtn){
-                cfgBtn.addEventListener('click', function(){
-                        var slug = document.getElementById('cfg-slug').value || '';
-                        var sender = document.getElementById('cfg-sender').value || '';
-                        document.getElementById('modal-cfg-slug').value = slug;
-                        document.getElementById('modal-cfg-sender').value = sender;
-                        document.getElementById('modal-cfg-slug-label').textContent = slug;
-                        document.getElementById('modal-cfg-sender-label').textContent = sender;
-                });
-        }
-        var suspendBtn = document.querySelector('[data-bs-target="#suspendModal"]');
-        if(suspendBtn){
-                suspendBtn.addEventListener('click', function(){
-                        var slug = document.getElementById('act-slug').value || '';
-                        document.getElementById('modal-suspend-slug').value = slug;
-                });
-        }
-        var activateBtn = document.querySelector('[data-bs-target="#activateModal"]');
-        if(activateBtn){
-                activateBtn.addEventListener('click', function(){
-                        var slug = document.getElementById('act-slug').value || '';
-                        document.getElementById('modal-activate-slug').value = slug;
-                });
-        }
+    // Configure modal population
+    const cfgBtn = document.querySelector('[data-bs-target="#configureModal"]');
+    if(cfgBtn){
+        cfgBtn.addEventListener('click', function(){
+            const slug = document.getElementById('cfg-slug').value || '';
+            const sender = document.getElementById('cfg-sender').value || '';
+            document.getElementById('modal-cfg-slug').value = slug;
+            document.getElementById('modal-cfg-sender').value = sender;
+            document.getElementById('modal-cfg-slug-label').textContent = slug;
+            document.getElementById('modal-cfg-sender-label').textContent = sender;
+        });
+    }
+
+    // Suspend modal population
+    const suspendBtn = document.querySelector('[data-bs-target="#suspendModal"]');
+    if(suspendBtn){
+        suspendBtn.addEventListener('click', function(){
+            const slug = document.getElementById('act-slug').value || '';
+            document.getElementById('modal-suspend-slug').value = slug;
+            document.getElementById('modal-suspend-slug-label').textContent = slug;
+        });
+    }
+
+    // Activate modal population
+    const activateBtn = document.querySelector('[data-bs-target="#activateModal"]');
+    if(activateBtn){
+        activateBtn.addEventListener('click', function(){
+            const slug = document.getElementById('act-slug').value || '';
+            document.getElementById('modal-activate-slug').value = slug;
+            document.getElementById('modal-activate-slug-label').textContent = slug;
+        });
+    }
 });
 </script>
+{% endblock %}
