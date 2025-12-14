@@ -1,19 +1,157 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Signup Request Submitted — CedCast{% endblock %}
+
+{% block extra_head %}
+<style>
+.success-icon {
+    color: #28a745;
+    font-size: 5rem;
+    margin-bottom: 1.5rem;
+}
+.status-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+.next-steps {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 2rem;
+}
+.step-number {
+    background: #667eea;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 1rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
-                        <h2 class="mt-3">Request Submitted!</h2>
-                        <p class="lead">{{ message }}</p>
-                        <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Success Message -->
+            <div class="card status-card text-center mb-4">
+                <div class="card-body py-5">
+                    <i class="bi bi-check-circle-fill success-icon"></i>
+                    <h1 class="display-5 fw-bold mb-3">Registration Submitted!</h1>
+                    <p class="lead mb-0">Thank you for choosing CedCast. Your organization signup request has been received.</p>
+                </div>
+            </div>
+
+            <!-- Organization Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-building me-2"></i>Organization Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Organization:</strong> {{ organization.name }}</p>
+                            <p><strong>Type:</strong> {{ organization.get_org_type_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Admin:</strong> {{ admin_user.get_full_name }}</p>
+                            <p><strong>Email:</strong> {{ admin_user.email }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Approval Process -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Approval Process</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Status:</strong> Pending Approval
+                    </div>
+                    <p>Your organization registration is currently under review by our team. This process typically takes 1-2 business days.</p>
+
+                    <div class="row text-center mt-3">
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <i class="bi bi-envelope-check text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Application Received</h6>
+                            <small class="text-success">✓ Completed</small>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <i class="bi bi-person-check text-warning" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Under Review</h6>
+                            <small class="text-warning">⟳ In Progress</small>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <i class="bi bi-rocket-takeoff text-muted" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>Account Activated</h6>
+                            <small class="text-muted">○ Pending</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="next-steps">
+                <h4 class="text-center mb-4">What Happens Next?</h4>
+
+                <div class="mb-3">
+                    <span class="step-number">1</span>
+                    <strong>Verification:</strong> Our team will verify your organization details and contact information.
+                </div>
+
+                <div class="mb-3">
+                    <span class="step-number">2</span>
+                    <strong>Approval:</strong> Once approved, you'll receive an email with login instructions.
+                </div>
+
+                <div class="mb-3">
+                    <span class="step-number">3</span>
+                    <strong>Onboarding:</strong> Complete our 3-step setup wizard to configure SMS packages and import contacts.
+                </div>
+
+                <div class="mb-3">
+                    <span class="step-number">4</span>
+                    <strong>Go Live:</strong> Start sending SMS alerts to your organization within minutes!
+                </div>
+            </div>
+
+            <!-- Contact Support -->
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <h5>Need Help?</h5>
+                    <p class="text-muted">Questions about your application or need assistance?</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="mailto:support@cedcast.com" class="btn btn-outline-primary">
+                            <i class="bi bi-envelope me-2"></i>Email Support
+                        </a>
+                        <a href="tel:+233501234567" class="btn btn-outline-success">
+                            <i class="bi bi-telephone me-2"></i>Call Us
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back to Home -->
+            <div class="text-center mt-4">
+                <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-house me-2"></i>Back to Homepage
+                </a>
+            </div>
         </div>
     </div>
+</div>
 {% endblock %}

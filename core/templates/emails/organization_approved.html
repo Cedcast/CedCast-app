@@ -1,0 +1,27 @@
+{% autoescape off %}
+Subject: Welcome to CedCast! Your account has been approved
+
+Dear {{ admin_name }},
+
+Congratulations! Your organization "{{ organization.name }}" has been approved for the CedCast SMS platform.
+
+Your Account Details:
+- Organization: {{ organization.name }}
+- Admin Username: {{ admin_username }}
+- Temporary Password: {{ temp_password }}
+
+Next Steps:
+1. Log in to your account at: {{ protocol }}://{{ domain }}{% url 'login_org' %}
+2. Complete the onboarding wizard to set up your SMS package and sender ID
+3. Start sending SMS messages to your contacts
+
+Important: Please change your password after first login for security.
+
+If you have any questions, feel free to contact our support team.
+
+Welcome aboard!
+The CedCast Team
+
+---
+This is an automated message. Please do not reply to this email.
+{% endautoescape %}

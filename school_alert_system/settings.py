@@ -219,7 +219,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email configuration: prefer SMTP when EMAIL_HOST is set, otherwise use console backend for dev
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@example.com')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@cedcast.com')
 if os.environ.get('EMAIL_HOST'):
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = os.environ.get('EMAIL_HOST')
@@ -230,6 +230,9 @@ if os.environ.get('EMAIL_HOST'):
 else:
     # Development-friendly default: print password reset emails to console
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Site domain for email links
+SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'cedcast.com')
 
 
 # Custom user model for multi-tenancy

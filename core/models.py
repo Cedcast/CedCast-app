@@ -37,6 +37,7 @@ class OrgSMSTemplate(models.Model):
 	name = models.CharField(max_length=100)
 	content = models.TextField()
 	created_at = models.DateTimeField(auto_now_add=True)
+	is_pre_built = models.BooleanField(default=False, help_text="Whether this is a pre-built template")
 
 	def __str__(self):
 		return f"{self.name} ({self.organization.name})"
@@ -196,6 +197,16 @@ class Organization(models.Model):
 	# administrative flags
 	is_active = models.BooleanField(default=True)
 	onboarded = models.BooleanField(default=False)
+	# approval workflow
+	APPROVAL_CHOICES = [
+		('pending', 'Pending Approval'),
+		('approved', 'Approved'),
+		('rejected', 'Rejected'),
+	]
+	approval_status = models.CharField(max_length=20, choices=APPROVAL_CHOICES, default='pending')
+	approved_at = models.DateTimeField(blank=True, null=True)
+	approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_organizations')
+	rejection_reason = models.TextField(blank=True, null=True)
 	# billing
 	balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 	current_package = models.ForeignKey('Package', on_delete=models.SET_NULL, null=True, blank=True, related_name='organizations')

@@ -5,6 +5,7 @@ from django.urls import reverse_lazy
 
 urlpatterns = [
     path('', views.home_view, name='home'),
+    path('signup/', views.org_signup_view, name='org_signup'),
     path('login/', views.login_redirect, name='login'),
     path('login/super/', views.login_super_view, name='login_super'),
     path('login/org/', views.login_org_view, name='login_org'),
@@ -16,6 +17,7 @@ urlpatterns = [
     # Multi-tenant (slug-prefixed) routes
     path('<slug:school_slug>/dashboard/', views.dashboard, name='school_dashboard'),
     path('<slug:school_slug>/send-sms/', views.send_sms_view, name='school_send_sms'),
+    path('<slug:org_slug>/org/onboarding/', views.onboarding_wizard, name='onboarding_wizard'),
     # Organization tenant routes
     path('<slug:org_slug>/org/dashboard/', views.org_dashboard, name='org_dashboard'),
     path('<slug:org_slug>/org/upload-contacts/', views.org_upload_contacts, name='org_upload_contacts'),
@@ -48,6 +50,8 @@ urlpatterns = [
     path('super/onboarding/', views.onboarding_view, name='onboarding'),
     path('super/orgs/', views.onboarding_view, name='super_orgs'),
     path('super/orgs/<slug:org_slug>/edit/', views.super_edit_org_view, name='super_edit_org'),
+    path('super/approve-org/<int:org_id>/', views.approve_org_view, name='approve_org'),
+    path('super/reject-org/<int:org_id>/', views.reject_org_view, name='reject_org'),
     # Password reset (uses Django auth views with our templates)
     path('password_reset/', auth_views.PasswordResetView.as_view(
         template_name='registration/password_reset_form.html',

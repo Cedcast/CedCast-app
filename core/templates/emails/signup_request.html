@@ -1,0 +1,23 @@
+{% autoescape off %}
+Subject: New Organization Signup Request - {{ organization.name }}
+
+A new organization has submitted a signup request for CedCast SMS platform.
+
+Organization Details:
+- Name: {{ organization.name }}
+- Type: {{ organization.get_org_type_display }}
+- Contact Person: {{ contact_name }}
+- Email: {{ email }}
+- Phone: {{ phone }}
+- Address: {{ organization.address|default:"Not provided" }}
+- Requested Sender ID: {{ requested_sender_id|default:"Not specified" }}
+
+Additional Notes:
+{{ message|default:"No additional notes provided." }}
+
+Please review and approve/reject this request via the admin dashboard:
+{{ protocol }}://{{ domain }}{% url 'dashboard' %}
+
+Thanks,
+CedCast System
+{% endautoescape %}

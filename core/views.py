@@ -10,6 +10,7 @@ from .models import User, School, Organization, Package
 from django.http import JsonResponse, HttpResponse
 from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 import json
 import os
 
@@ -17,6 +18,96 @@ import os
 def health(request):
 	"""Simple health check endpoint for Render and load balancers."""
 	return HttpResponse("OK", status=200)
+
+
+def org_signup_view(request):
+	"""Public organization signup form"""
+	if request.method == 'POST':
+		try:
+			# Extract form data
+			name = request.POST.get('name')
+			org_type = request.POST.get('org_type')
+			admin_name = request.POST.get('admin_name')
+			admin_email = request.POST.get('admin_email')
+			admin_phone = request.POST.get('admin_phone')
+			address = request.POST.get('address')
+			phone_primary = request.POST.get('phone_primary')
+			
+			# Generate unique slug
+			base_slug = slugify(name)
+			slug = base_slug
+			counter = 1
+			while Organization.objects.filter(slug=slug).exists():
+				slug = f"{base_slug}-{counter}"
+				counter += 1
+			
+			# Create organization with pending approval
+			organization = Organization.objects.create(
+				name=name,
+				org_type=org_type,
+				slug=slug,
+				address=address,
+				phone_primary=phone_primary,
+				approval_status='pending',
+				is_active=False,  # Not active until approved
+				onboarded=False
+			)
+			
+			# Create admin user for the organization
+			admin_user = User.objects.create_user(
+				username=admin_email,
+				email=admin_email,
+				first_name=admin_name.split()[0] if admin_name else '',
+				last_name=' '.join(admin_name.split()[1:]) if admin_name and len(admin_name.split()) > 1 else '',
+				role=User.ORG_ADMIN
+			)
+			admin_user.organization = organization
+			admin_user.save()
+			
+			# Send email notification to superadmin
+			try:
+				from django.core.mail import send_mail
+				from django.template.loader import render_to_string
+				from django.conf import settings
+				
+				subject = f"New Organization Signup Request - {organization.name}"
+				context = {
+					'organization': organization,
+					'contact_name': admin_name,
+					'email': admin_email,
+					'phone': admin_phone or phone_primary,
+					'message': f"Admin: {admin_name}\nEmail: {admin_email}\nPhone: {admin_phone or phone_primary}\nAddress: {address}",
+					'requested_sender_id': '',
+					'protocol': 'https' if request.is_secure() else 'http',
+					'domain': request.get_host(),
+					'site_name': 'CedCast',
+				}
+				message = render_to_string('emails/signup_request.html', context)
+				send_mail(
+					subject,
+					message,
+					settings.DEFAULT_FROM_EMAIL,
+					['superadmin@cedcast.com'],  # TODO: Make this configurable
+					fail_silently=True
+				)
+			except Exception as e:
+				# Log the error but don't fail the signup
+				import logging
+				logger = logging.getLogger(__name__)
+				logger.error(f"Failed to send signup notification email: {e}")
+			
+			return render(request, 'signup_success.html', {
+				'organization': organization,
+				'admin_user': admin_user
+			})
+			
+		except Exception as e:
+			return render(request, 'org_signup.html', {
+				'error': f'Registration failed: {str(e)}'
+			})
+	
+	return render(request, 'org_signup.html')
+
 
 @login_required
 def profile_view(request):
@@ -91,6 +182,10 @@ def login_view(request):
 			elif user.role == User.SCHOOL_ADMIN and user.school:
 				return redirect("school_dashboard", school_slug=user.school.slug)
 			elif user.role == User.ORG_ADMIN and getattr(user, 'organization', None):
+				org = user.organization
+				# Check if organization needs onboarding
+				if org.approval_status == 'approved' and not org.onboarded:
+					return redirect("onboarding_wizard", org_slug=org.slug)
 				return redirect("org_dashboard", org_slug=user.organization.slug)
 			return redirect("dashboard")
 		else:
@@ -114,7 +209,11 @@ def _process_login(request, template_name, allowed_roles=None):
 			if request.user.role == User.SCHOOL_ADMIN and getattr(request.user, 'school', None):
 				return redirect("school_dashboard", school_slug=request.user.school.slug)
 			if request.user.role == User.ORG_ADMIN and getattr(request.user, 'organization', None):
-				return redirect("org_dashboard", org_slug=request.user.organization.slug)
+				org = request.user.organization
+				# Check if organization needs onboarding
+				if org.approval_status == 'approved' and not org.onboarded:
+					return redirect("onboarding_wizard", org_slug=org.slug)
+				return redirect("org_dashboard", org_slug=org.slug)
 			return redirect("dashboard")
 		else:
 			# already logged in but not allowed to use this page
@@ -444,6 +543,9 @@ def dashboard(request, school_slug=None):
 				'total_paid': total_paid,
 			})
 
+		# Pending organization approvals
+		pending_approvals = Organization.objects.filter(approval_status='pending').order_by('-created_at')
+
 		context = {"schools": schools, "school_stats": school_stats, "org_stats": org_stats, "notice": notice,
 			"total_messages": total_msgs, "total_sent": total_sent,
 			"messages_trend": messages_trend, "orgs_trend": orgs_trend, "delivery_trend": delivery_trend,
@@ -465,6 +567,8 @@ def dashboard(request, school_slug=None):
 			"package_stats": package_stats,
 			"total_sms_remaining": total_sms_remaining,
 			"orgs_with_packages": orgs_with_packages,
+			# Pending approvals
+			"pending_approvals": pending_approvals,
 		}
 		return render(request, "super_admin_dashboard.html", context)
 
@@ -535,6 +639,251 @@ def dashboard(request, school_slug=None):
 		if user.role == User.ORG_ADMIN and getattr(user, 'organization', None):
 			return redirect("org_dashboard", org_slug=user.organization.slug)
 		return redirect("login")
+
+
+@login_required
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)
+def approve_org_view(request, org_id):
+	"""Approve a pending organization"""
+	if request.method != 'POST':
+		return JsonResponse({'success': False, 'error': 'Method not allowed'})
+	
+	try:
+		organization = Organization.objects.get(id=org_id, approval_status='pending')
+		organization.approval_status = 'approved'
+		organization.approved_at = timezone.now()
+		organization.approved_by = request.user
+		organization.is_active = True
+		# Don't mark as onboarded yet - they need to complete the wizard
+		organization.save()
+		
+		# Send approval email to organization admin
+		try:
+			admin_user = User.objects.filter(organization=organization, role=User.ORG_ADMIN).first()
+			if admin_user and admin_user.email:
+				from django.core.mail import send_mail
+				from django.template.loader import render_to_string
+				from django.conf import settings
+				
+				subject = f"Welcome to CedCast! Your account has been approved"
+				context = {
+					'admin_name': admin_user.get_full_name() or admin_user.username,
+					'organization': organization,
+					'admin_username': admin_user.username,
+					'temp_password': 'Please use the password reset link sent separately',
+					'protocol': 'https',  # Assume production uses HTTPS
+					'domain': getattr(settings, 'SITE_DOMAIN', 'cedcast.com'),
+					'site_name': 'CedCast',
+				}
+				message = render_to_string('emails/organization_approved.html', context)
+				send_mail(
+					subject,
+					message,
+					settings.DEFAULT_FROM_EMAIL,
+					[admin_user.email],
+					fail_silently=True
+				)
+		except Exception as e:
+			# Log the error but don't fail the approval
+			import logging
+			logger = logging.getLogger(__name__)
+			logger.error(f"Failed to send approval email: {e}")
+		
+		return JsonResponse({'success': True})
+	except Organization.DoesNotExist:
+		return JsonResponse({'success': False, 'error': 'Organization not found or not pending'})
+	except Exception as e:
+		return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)
+def reject_org_view(request, org_id):
+	"""Reject a pending organization"""
+	if request.method != 'POST':
+		return JsonResponse({'success': False, 'error': 'Method not allowed'})
+	
+	try:
+		reason = request.POST.get('reason', '').strip()
+		if not reason:
+			return JsonResponse({'success': False, 'error': 'Rejection reason is required'})
+		
+		organization = Organization.objects.get(id=org_id, approval_status='pending')
+		organization.approval_status = 'rejected'
+		organization.rejection_reason = reason
+		organization.approved_at = timezone.now()
+		organization.approved_by = request.user
+		organization.save()
+		
+		# Send rejection email to organization admin
+		try:
+			admin_user = User.objects.filter(organization=organization, role=User.ORG_ADMIN).first()
+			if admin_user and admin_user.email:
+				from django.core.mail import send_mail
+				from django.template.loader import render_to_string
+				from django.conf import settings
+				
+				subject = f"CedCast Account Application Update"
+				context = {
+					'contact_name': admin_user.get_full_name() or admin_user.username,
+					'org_name': organization.name,
+					'rejection_reason': reason,
+					'protocol': 'https',  # Assume production uses HTTPS
+					'domain': getattr(settings, 'SITE_DOMAIN', 'cedcast.com'),
+					'site_name': 'CedCast',
+				}
+				message = render_to_string('emails/organization_rejected.html', context)
+				send_mail(
+					subject,
+					message,
+					settings.DEFAULT_FROM_EMAIL,
+					[admin_user.email],
+					fail_silently=True
+				)
+		except Exception as e:
+			# Log the error but don't fail the rejection
+			import logging
+			logger = logging.getLogger(__name__)
+			logger.error(f"Failed to send rejection email: {e}")
+		
+		return JsonResponse({'success': True})
+	except Organization.DoesNotExist:
+		return JsonResponse({'success': False, 'error': 'Organization not found or not pending'})
+	except Exception as e:
+		return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def onboarding_wizard(request):
+    """3-step onboarding wizard for newly approved organizations"""
+    user = request.user
+    
+    # Only allow ORG_ADMIN users with approved organizations that aren't onboarded yet
+    if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
+        return redirect('dashboard')
+    
+    organization = user.organization
+    
+    # Check if organization is approved but not onboarded
+    if organization.approval_status != 'approved' or organization.onboarded:
+        return redirect('org_dashboard', org_slug=organization.slug)
+    
+    # Get current step from session or start at step 1
+    current_step = request.session.get('onboarding_step', 1)
+    
+    # Handle step navigation
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'next':
+            # Validate current step before proceeding
+            if current_step == 1:
+                # Step 1: Package selection validation
+                package_id = request.POST.get('package_id')
+                if not package_id:
+                    return render(request, 'onboarding_wizard.html', {
+                        'organization': organization,
+                        'current_step': current_step,
+                        'error': 'Please select a package to continue.'
+                    })
+                # Store step 1 data in session
+                request.session['onboarding_package_id'] = package_id
+                
+            elif current_step == 2:
+                # Step 2: Contact import (optional, can skip)
+                # Store any uploaded contacts or skip
+                pass
+                
+            elif current_step == 3:
+                # Step 3: Sender ID setup
+                sender_id = request.POST.get('sender_id', '').strip()
+                if not sender_id:
+                    return render(request, 'onboarding_wizard.html', {
+                        'organization': organization,
+                        'current_step': current_step,
+                        'error': 'Please provide a sender ID.'
+                    })
+                # Complete onboarding
+                try:
+                    from .models import Package
+                    from .utils.crypto_utils import encrypt_value
+                    
+                    # Apply package selection
+                    package_id = request.session.get('onboarding_package_id')
+                    if package_id:
+                        package = Package.objects.get(id=package_id, is_active=True)
+                        organization.current_package = package
+                        organization.sms_remaining = package.sms_count
+                        if package.package_type == 'expiry':
+                            from django.utils import timezone
+                            organization.package_expiry_date = timezone.now() + timezone.timedelta(days=package.expiry_days)
+                        organization.is_premium = package.is_premium
+                    
+                    # Set sender ID
+                    organization.sender_id = encrypt_value(sender_id)
+                    
+                    # Mark as onboarded
+                    organization.onboarded = True
+                    organization.save()
+                    
+                    # Clear session data
+                    for key in ['onboarding_step', 'onboarding_package_id']:
+                        request.session.pop(key, None)
+                    
+                    # Redirect to dashboard with success message
+                    from django.contrib import messages
+                    messages.success(request, 'Welcome to CedCast! Your account is now fully set up.')
+                    return redirect('org_dashboard', org_slug=organization.slug)
+                    
+                except Exception as e:
+                    return render(request, 'onboarding_wizard.html', {
+                        'organization': organization,
+                        'current_step': current_step,
+                        'error': f'Setup failed: {str(e)}'
+                    })
+            
+            # Move to next step
+            current_step += 1
+            request.session['onboarding_step'] = current_step
+            
+        elif action == 'previous':
+            # Go back to previous step
+            current_step = max(1, current_step - 1)
+            request.session['onboarding_step'] = current_step
+            
+        elif action == 'skip_contacts':
+            # Skip step 2 (contact import)
+            current_step = 3
+            request.session['onboarding_step'] = current_step
+    
+    # Prepare context based on current step
+    context = {
+        'organization': organization,
+        'current_step': current_step,
+        'total_steps': 3,
+    }
+    
+    if current_step == 1:
+        # Step 1: Package selection
+        from .models import Package
+        packages = Package.objects.filter(is_active=True).order_by('price')
+        context['packages'] = packages
+        context['step_title'] = 'Choose Your Package'
+        context['step_description'] = 'Select an SMS package that fits your needs. You can change this later.'
+        
+    elif current_step == 2:
+        # Step 2: Contact import
+        context['step_title'] = 'Import Your Contacts'
+        context['step_description'] = 'Upload your contact list or skip this step and add contacts later.'
+        
+    elif current_step == 3:
+        # Step 3: Sender ID setup
+        context['step_title'] = 'Set Up Sender ID'
+        context['step_description'] = 'Choose a sender ID for your SMS messages. This will be displayed to recipients.'
+        # Pre-fill with organization name if available
+        context['suggested_sender_id'] = organization.name[:11].upper() if organization.name else ''
+    
+    return render(request, 'onboarding_wizard.html', context)
 
 
 @login_required
@@ -1783,16 +2132,23 @@ def org_templates(request, org_slug=None):
 	if request.method == 'POST':
 		name = request.POST.get('name')
 		content = request.POST.get('content')
-		templates_count = OrgSMSTemplate.objects.filter(organization=organization).count()
+		templates_count = OrgSMSTemplate.objects.filter(organization=organization, is_pre_built=False).count()
 		if templates_count >= 5:
-			error = 'You may only create up to 5 templates.'
+			error = 'You may only create up to 5 custom templates.'
 		elif not name or not content:
 			error = 'Name and content are required.'
 		else:
-			OrgSMSTemplate.objects.create(organization=organization, name=name, content=content)
+			OrgSMSTemplate.objects.create(organization=organization, name=name, content=content, is_pre_built=False)
 
-	templates = OrgSMSTemplate.objects.filter(organization=organization).order_by('-created_at')
-	return render(request, 'org_templates.html', {'organization': organization, 'templates': templates, 'error': error})
+	# Get both custom and pre-built templates
+	custom_templates = OrgSMSTemplate.objects.filter(organization=organization, is_pre_built=False).order_by('-created_at')
+	pre_built_templates = OrgSMSTemplate.objects.filter(organization=organization, is_pre_built=True).order_by('name')
+	return render(request, 'org_templates.html', {
+		'organization': organization, 
+		'custom_templates': custom_templates, 
+		'pre_built_templates': pre_built_templates, 
+		'error': error
+	})
 
 
 @login_required
@@ -1808,6 +2164,10 @@ def org_template_edit(request, org_slug=None, template_id=None):
 	try:
 		tpl = OrgSMSTemplate.objects.get(id=template_id, organization=organization)
 	except OrgSMSTemplate.DoesNotExist:
+		return redirect('org_templates', org_slug=organization.slug)
+
+	# Don't allow editing pre-built templates
+	if tpl.is_pre_built:
 		return redirect('org_templates', org_slug=organization.slug)
 
 	error = None
@@ -1838,6 +2198,10 @@ def org_template_delete(request, org_slug=None, template_id=None):
 	try:
 		tpl = OrgSMSTemplate.objects.get(id=template_id, organization=organization)
 	except OrgSMSTemplate.DoesNotExist:
+		return redirect('org_templates', org_slug=organization.slug)
+
+	# Don't allow deleting pre-built templates
+	if tpl.is_pre_built:
 		return redirect('org_templates', org_slug=organization.slug)
 
 	if request.method == 'POST':
