@@ -51,7 +51,7 @@ def normalize_phone_number(raw: str, default_country='+233') -> str | None:
 
 def validate_sms_balance(organization, num_messages, settings):
 	"""
-	Validate if organization has sufficient SMS in package.
+	Validate if organization has sufficient balance for SMS sending (pay-as-you-go model).
 
 	Args:
 		organization: Organization instance
@@ -61,27 +61,24 @@ def validate_sms_balance(organization, num_messages, settings):
 	Returns:
 		tuple: (is_valid: bool, error_message: str or None)
 	"""
-	from django.utils import timezone
+	# Calculate cost for messages (₵0.25 per SMS)
+	cost_per_sms = organization.sms_rate if hasattr(organization, 'sms_rate') else 0.25
+	total_cost = num_messages * cost_per_sms
 
-	# Check if organization has an active package
-	if not organization.current_package:
-		return False, "No active package. Please purchase a package to send SMS."
+	# Check if organization has sufficient balance
+	if organization.balance < total_cost:
+		return False, f"Insufficient balance. Required: ₵{total_cost:.2f}, Available: ₵{organization.balance:.2f}. Please top up your account."
 
-	# Check package expiry for expiry packages
-	if organization.current_package.package_type == 'expiry':
-		if not organization.package_expiry_date or organization.package_expiry_date < timezone.now():
-			return False, "Your package has expired. Please renew your package."
-
-	# Check SMS remaining
-	if organization.sms_remaining < num_messages:
-		return False, f"Insufficient SMS in package. Required: {num_messages}, Available: {organization.sms_remaining}. Please purchase more SMS."
+	# Check if organization is active
+	if not organization.is_active:
+		return False, "Organization account is not active. Please contact support."
 
 	return True, None
 
 
 def deduct_sms_balance(organization, num_messages, settings):
 	"""
-	Deduct SMS count from organization package.
+	Deduct SMS cost from organization balance (pay-as-you-go model).
 
 	Args:
 		organization: Organization instance
@@ -89,11 +86,21 @@ def deduct_sms_balance(organization, num_messages, settings):
 		settings: Django settings object
 
 	Returns:
-		int: Number of SMS deducted
+		float: Amount deducted from balance
 	"""
-	organization.sms_remaining -= num_messages
+	# Calculate cost for messages (₵0.25 per SMS)
+	cost_per_sms = organization.sms_rate if hasattr(organization, 'sms_rate') else 0.25
+	total_cost = num_messages * cost_per_sms
+
+	# Deduct from balance
+	organization.balance -= total_cost
 	organization.save()
-	return num_messages
+
+	# Update total SMS sent counter
+	organization.total_sms_sent += num_messages
+	organization.save()
+
+	return total_cost
 
 
 from . import crypto_utils
