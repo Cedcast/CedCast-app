@@ -649,7 +649,7 @@
                         <i class="bi bi-info-circle me-2"></i>
                         <strong>Custom Sender ID Setup:</strong> ₵50.00 one-time fee. Approval typically takes 2-5 business days.
                     </div>
-                    <form method="post" action="{% url 'signup_request' %}">
+                    <form method="post" action="{% url 'enrollment_request' %}">
                         {% csrf_token %}
                         <input type="hidden" name="service_type" value="sender_id">
                         <div class="row">
