@@ -39,6 +39,7 @@ urlpatterns = [
     # Super-admin pages (use 'super/' prefix to avoid colliding with Django admin)
     path('super/enroll/', views.enroll_tenant_view, name='enroll_tenant'),
     path('super/system-logs/', views.system_logs_view, name='system_logs'),
+    path('super/audit-message-logs/', views.audit_message_logs_view, name='audit_message_logs'),
     path('super/global-templates/', views.global_templates_view, name='global_templates'),
     path('super/global-templates/create/', views.create_global_template_view, name='create_global_template'),
     path('super/global-templates/<int:template_id>/edit/', views.edit_global_template_view, name='edit_global_template'),
@@ -51,6 +52,8 @@ urlpatterns = [
     path('super/orgs/<slug:org_slug>/edit/', views.super_edit_org_view, name='super_edit_org'),
     path('super/approve-org/<int:org_id>/', views.approve_org_view, name='approve_org'),
     path('super/reject-org/<int:org_id>/', views.reject_org_view, name='reject_org'),
+    path('super/approve-enrollment/<int:request_id>/', views.approve_enrollment_request, name='approve_enrollment'),
+    path('super/reject-enrollment/<int:request_id>/', views.reject_enrollment_request, name='reject_enrollment'),
     # Password reset (uses Django auth views with our templates)
     path('password_reset/', auth_views.PasswordResetView.as_view(
         template_name='registration/password_reset_form.html',

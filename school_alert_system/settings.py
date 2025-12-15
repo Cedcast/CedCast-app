@@ -282,7 +282,7 @@ PAYSTACK_BASE_URL = 'https://api.paystack.co'
 SMS_PROVIDER_COST = Decimal(os.environ.get('SMS_PROVIDER_COST', '0.03'))  # Default 0.03 GHS
 
 # What you charge customers per SMS (must be > SMS_PROVIDER_COST for profit)
-SMS_CUSTOMER_RATE = Decimal(os.environ.get('SMS_CUSTOMER_RATE', '0.10'))  # Default 0.10 GHS
+SMS_CUSTOMER_RATE = Decimal(os.environ.get('SMS_CUSTOMER_RATE', '0.14'))  # Default 0.14 GHS
 
 # Minimum balance required before allowing sends
 SMS_MIN_BALANCE = Decimal(os.environ.get('SMS_MIN_BALANCE', '1.00'))  # Default 1.00 GHS
@@ -296,3 +296,7 @@ MIN_PAYMENT_AMOUNT = Decimal('25.00')  # Minimum payment amount in GHS
 DEFAULT_DASHBOARD_MESSAGES_LIMIT = 10  # Limit messages shown on dashboard
 TREND_DAYS = 7  # Number of days for trend calculations
 ORG_MESSAGE_MAX_RETRIES = int(os.environ.get('ORG_MESSAGE_MAX_RETRIES', '3'))  # Max retry attempts for failed SMS
+
+# Superadmin contact information for system notifications
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL')
+ADMIN_PHONE = os.environ.get('ADMIN_PHONE')

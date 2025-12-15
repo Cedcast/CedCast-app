@@ -82,7 +82,6 @@
                                 </div>
                                 <h5 class="card-title visually-hidden">{{ organization.name }}</h5>
                                 <div class="list-group list-group-flush" id="sidebarList">
-                                    <a href="{% url 'org_send_sms' organization.slug %}" class="list-group-item list-group-item-action pinned-quicksend" title="Quick Send"><i class="bi bi-lightning-fill me-2"></i><span class="label">Quick Send</span></a>
                                     <a href="{% url 'org_dashboard' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-speedometer2 me-2"></i><span class="label">Dashboard</span></a>
                                     <a href="{% url 'org_send_sms' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-send-fill me-2"></i><span class="label">Send Messages</span></a>
                                     <a href="{% url 'org_upload_contacts' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-person-lines-fill me-2"></i><span class="label">Contacts</span></a>
@@ -90,7 +89,6 @@
                                     <a href="{% url 'org_templates' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-folder-fill me-2"></i><span class="label">Templates</span></a>
                                     <a href="{% url 'org_message_logs' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-journal-text me-2"></i><span class="label">Message Logs</span></a>
                                     {% if user.is_superuser or user.is_staff or user.role == 'org_admin' or user.role == 'owner' %}
-                                        <a href="{% url 'org_users' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-person-badge-fill me-2"></i><span class="label">Users</span></a>
                                         <a href="{% url 'org_settings' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-gear-fill me-2"></i><span class="label">Settings</span></a>
                                         <a href="{% url 'org_billing' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-cash-stack me-2"></i><span class="label">Billing</span></a>
                                     {% endif %}

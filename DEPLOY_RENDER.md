@@ -14,6 +14,8 @@ Render deployment checklist
    - HUBTEL_CLIENT_SECRET=...
    - HUBTEL_DEFAULT_SENDER=233XXXXXXXXX
    - HUBTEL_WEBHOOK_SECRET=super-secret-random-string
+   - ADMIN_EMAIL=superadmin@yourdomain.com
+   - ADMIN_PHONE=+233XXXXXXXXX
    - HUBTEL_DRY_RUN=false
 
 3. Database

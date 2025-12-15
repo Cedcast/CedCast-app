@@ -235,18 +235,292 @@ body {
   }
 }
 
-/* Utility classes */
-.text-gradient {
-  background: linear-gradient(135deg, var(--primary-color), #0056b3);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Glassmorphism Effects */
+.glassmorphism-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-.shadow-soft {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+.glassmorphism-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
-.border-radius-lg {
-  border-radius: var(--border-radius) !important;
+/* Gradient Backgrounds */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+/* Modern Logo */
+.logo-container {
+  position: relative;
+}
+
+.logo-svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Modern Avatar */
+.avatar-modern {
+  width: 36px;
+  height: 36px;
+  font-size: 0.9rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+/* Hero Section */
+.hero-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.1);
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+}
+
+.hero-stats {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hero-cta .btn {
+  background: rgba(255, 255, 255, 0.95);
+  color: #667eea;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.hero-cta .btn:hover {
+  background: white;
+  color: #5a67d8;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Modern Metric Cards */
+.metric-card-modern {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.9), rgba(118, 75, 162, 0.9));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.6s;
+}
+
+.metric-card-modern:hover::before {
+  transform: translateX(100%);
+}
+
+.metric-card-modern:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.metric-icon {
+  opacity: 0.9;
+}
+
+.metric-trend {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Action Cards */
+.action-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.action-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  color: white;
+}
+
+.action-icon {
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.action-card:hover .action-icon {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Modern Table */
+.table-hover-modern {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.table-hover-modern thead th {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 1rem;
+}
+
+.table-hover-modern tbody tr {
+  background: rgba(255, 255, 255, 0.02);
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.table-hover-modern tbody tr:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.01);
+}
+
+.table-row-hover {
+  transition: all 0.2s ease;
+}
+
+.table-row-hover:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Organization Avatar */
+.org-avatar {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+/* Modern Badges */
+.badge-modern {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+}
+
+/* Status Items */
+.status-item {
+  transition: all 0.3s ease;
+}
+
+.status-item:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  transform: translateX(4px);
+}
+
+/* Quick Stats */
+.quick-stat-item {
+  transition: all 0.2s ease;
+}
+
+.quick-stat-item:hover {
+  transform: translateX(2px);
+}
+
+/* Empty State */
+.empty-state-icon {
+  opacity: 0.3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-card {
+    padding: 2rem !important;
+  }
+
+  .hero-stats {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .metric-card-modern {
+    padding: 1.5rem !important;
+  }
+
+  .metric-card-modern .display-4 {
+    font-size: 2rem !important;
+  }
+
+  .action-card {
+    padding: 1.5rem !important;
+  }
+
+  .glassmorphism-card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Animation Classes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Loading States */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  z-index: 10;
 }

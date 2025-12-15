@@ -6,9 +6,6 @@ def home_view(request):
 	# Get platform statistics
 	total_orgs = Organization.objects.filter(is_active=True).count()
 	total_sms_sent = OrgAlertRecipient.objects.filter(status='sent').count()
-	total_balance = Organization.objects.filter(is_active=True).aggregate(
-		total=Sum('balance')
-	)['total'] or 0
 
 	# Get recent activity (last 30 days)
 	thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
@@ -26,7 +23,6 @@ def home_view(request):
 	context = {
 		'total_orgs': total_orgs,
 		'total_sms_sent': total_sms_sent,
-		'total_balance': total_balance,
 		'recent_sms': recent_sms,
 		'active_orgs_recent': active_orgs_recent,
 	}
@@ -38,6 +34,8 @@ from django.utils.text import slugify
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.db import transaction
 from .models import User, School, Organization, Package, EnrollmentRequest
 from django.http import JsonResponse, HttpResponse
 from decimal import Decimal
@@ -103,6 +101,19 @@ Please review this request in the admin panel.
 				logger = logging.getLogger(__name__)
 				logger.warning(f"Failed to send enrollment notification email: {e}")
 
+			# Send SMS notification to superadmin (if phone is configured)
+			try:
+				admin_phone = getattr(settings, 'ADMIN_PHONE', None)
+				if admin_phone:
+					sms_message = f"New enrollment request: {enrollment_request.org_name} from {enrollment_request.contact_name}. Check admin panel."
+					# Use None for tenant since this is a system notification
+					send_sms(admin_phone, sms_message, None)
+			except Exception as e:
+				# Log SMS error but don't fail the request
+				import logging
+				logger = logging.getLogger(__name__)
+				logger.warning(f"Failed to send enrollment notification SMS: {e}")
+
 			return JsonResponse({
 				'success': True,
 				'message': 'Your enrollment request has been submitted successfully! Our team will review it and contact you within 24 hours.'
@@ -160,6 +171,10 @@ def send_sms_view(request, school_slug=None):
 		selected_class = request.POST.get("student_class")
 		if sms_body:
 			try:
+				# Get parents whose wards are in the selected class
+				from .models import Ward
+				wards = Ward.objects.filter(school=school, student_class=selected_class)
+				parents = set(ward.parent for ward in wards)
 				for parent in parents:
 					# try to capture provider message id when sending from the UI
 					try:
@@ -169,12 +184,14 @@ def send_sms_view(request, school_slug=None):
 						ar_qs = AlertRecipient.objects.filter(parent=parent, message__content=sms_body).order_by('-id')
 						if ar_qs.exists():
 							ar = ar_qs.first()
-							ar.provider_message_id = message_id
-							ar.save()
+							if ar:
+								ar.provider_message_id = message_id
+								ar.save()
 					except Exception:
 						# ignore per-recipient failures in the UI loop
 						pass
 				message_sent = True
+				sent_class = selected_class
 			except Exception as e:
 				error = str(e)
 	return render(request, "send_sms.html", {"school": school, "message_sent": message_sent, "error": error, "sent_class": sent_class})
@@ -191,12 +208,12 @@ def login_view(request):
 		if user is not None:
 			login(request, user)
 			# Redirect by role
-			if user.role == User.SUPER_ADMIN:
+			if user.role == User.SUPER_ADMIN:  # type: ignore
 				return redirect("dashboard")
-			elif user.role == User.SCHOOL_ADMIN and user.school:
-				return redirect("school_dashboard", school_slug=user.school.slug)
-			elif user.role == User.ORG_ADMIN and getattr(user, 'organization', None):
-				return redirect("org_dashboard", org_slug=user.organization.slug)
+			elif user.role == User.SCHOOL_ADMIN and user.school:  # type: ignore
+				return redirect("school_dashboard", school_slug=user.school.slug)  # type: ignore
+			elif user.role == User.ORG_ADMIN and getattr(user, 'organization', None):  # type: ignore
+				return redirect("org_dashboard", org_slug=user.organization.slug)  # type: ignore
 			return redirect("dashboard")
 		else:
 			return render(request, "login.html", {"error": "Invalid credentials"})
@@ -256,12 +273,12 @@ def _process_login(request, template_name, allowed_roles=None):
 
 			# perform login and redirect by role
 			login(request, user)
-			if user.role == User.SUPER_ADMIN:
+			if user.role == User.SUPER_ADMIN:  # type: ignore
 				return redirect("dashboard")
-			elif user.role == User.SCHOOL_ADMIN and getattr(user, 'school', None):
-				return redirect("school_dashboard", school_slug=user.school.slug)
-			elif user.role == User.ORG_ADMIN and getattr(user, 'organization', None):
-				return redirect("org_dashboard", org_slug=user.organization.slug)
+			elif user.role == User.SCHOOL_ADMIN and getattr(user, 'school', None):  # type: ignore
+				return redirect("school_dashboard", school_slug=user.school.slug)  # type: ignore
+			elif user.role == User.ORG_ADMIN and getattr(user, 'organization', None):  # type: ignore
+				return redirect("org_dashboard", org_slug=user.organization.slug)  # type: ignore
 			return redirect("dashboard")
 		else:
 			return render(request, template_name, {"error": "Invalid credentials", 'recaptcha_site_key': recaptcha_site})
@@ -439,7 +456,8 @@ def dashboard(request, school_slug=None):
 			delivery_rate = (sent_recipients / total_recipients * 100) if total_recipients else 0
 			# decrypt sender id for display (secrets are stored encrypted)
 			from .utils.crypto_utils import decrypt_value
-			sender_display = decrypt_value(org.sender_id) if getattr(org, 'sender_id', None) else None
+			sender_id = getattr(org, 'sender_id', None)
+			sender_display = decrypt_value(sender_id) if sender_id else None
 			org_stats.append({
 				'organization': org,
 				'total_messages': total_messages,
@@ -541,6 +559,11 @@ def dashboard(request, school_slug=None):
 		# Pending organization approvals
 		pending_approvals = Organization.objects.filter(approval_status='pending').order_by('-created_at')
 
+		# Pending enrollment requests
+		from .models import EnrollmentRequest
+		pending_enrollment_requests = EnrollmentRequest.objects.filter(status='pending').order_by('-created_at')[:10]  # Show latest 10
+		total_pending_requests = EnrollmentRequest.objects.filter(status='pending').count()
+
 		context = {"schools": schools, "school_stats": school_stats, "org_stats": org_stats, "notice": notice,
 			"total_messages": total_msgs, "total_sent": total_sent,
 			"messages_trend": messages_trend, "orgs_trend": orgs_trend, "delivery_trend": delivery_trend,
@@ -565,6 +588,9 @@ def dashboard(request, school_slug=None):
 			"avg_sms_rate": avg_sms_rate,
 			# Pending approvals
 			"pending_approvals": pending_approvals,
+			# Enrollment requests
+			"pending_enrollment_requests": pending_enrollment_requests,
+			"total_pending_requests": total_pending_requests,
 		}
 		return render(request, "super_admin_dashboard.html", context)
 
@@ -638,7 +664,7 @@ def dashboard(request, school_slug=None):
 
 
 @login_required
-@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)  # type: ignore
 def approve_org_view(request, org_id):
 	"""Approve a pending organization"""
 	if request.method != 'POST':
@@ -693,7 +719,7 @@ def approve_org_view(request, org_id):
 
 
 @login_required
-@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)  # type: ignore
 def reject_org_view(request, org_id):
 	"""Reject a pending organization"""
 	if request.method != 'POST':
@@ -753,6 +779,170 @@ def reject_org_view(request, org_id):
 
 
 @login_required
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)  # type: ignore
+def approve_enrollment_request(request, request_id):
+	"""Approve an enrollment request and create the organization"""
+	if request.method != 'POST':
+		return JsonResponse({'success': False, 'error': 'Method not allowed'})
+	
+	try:
+		from .models import EnrollmentRequest
+		enrollment_request = EnrollmentRequest.objects.get(id=request_id, status='pending')
+		
+		# Create the organization
+		from django.utils.text import slugify
+		org_slug = slugify(enrollment_request.org_name)
+		# Ensure unique slug
+		counter = 1
+		original_slug = org_slug
+		while Organization.objects.filter(slug=org_slug).exists():
+			org_slug = f"{original_slug}-{counter}"
+			counter += 1
+		
+		organization = Organization.objects.create(
+			name=enrollment_request.org_name,
+			slug=org_slug,
+			org_type=enrollment_request.org_type,
+			address=enrollment_request.address,
+			contact_person=enrollment_request.contact_name,
+			email=enrollment_request.email,
+			phone=enrollment_request.phone,
+			approval_status='approved',
+			approved_at=timezone.now(),
+			approved_by=request.user,
+			is_active=True,
+			balance=Decimal('0.00')
+		)
+		
+		# Create the organization admin user
+		admin_username = f"admin_{org_slug}"
+		counter = 1
+		original_username = admin_username
+		while User.objects.filter(username=admin_username).exists():
+			admin_username = f"{original_username}{counter}"
+			counter += 1
+		
+		# Generate a temporary password
+		import secrets
+		import string
+		temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+		
+		admin_user = User.objects.create_user(
+			username=admin_username,
+			email=enrollment_request.email,
+			password=temp_password,
+			first_name=enrollment_request.contact_name.split()[0] if enrollment_request.contact_name else '',
+			last_name=' '.join(enrollment_request.contact_name.split()[1:]) if enrollment_request.contact_name and len(enrollment_request.contact_name.split()) > 1 else '',
+			role=User.ORG_ADMIN,
+			organization=organization
+		)
+		
+		# Update enrollment request status
+		enrollment_request.status = 'approved'
+		enrollment_request.reviewed_at = timezone.now()
+		enrollment_request.reviewed_by = request.user
+		enrollment_request.save()
+		
+		# Send approval email with login credentials
+		try:
+			from django.core.mail import send_mail
+			from django.template.loader import render_to_string
+			from django.conf import settings
+			
+			subject = f"Welcome to CedCast! Your account has been approved"
+			context = {
+				'contact_name': enrollment_request.contact_name,
+				'organization': organization,
+				'admin_username': admin_username,
+				'temp_password': temp_password,
+				'protocol': 'https',
+				'domain': getattr(settings, 'SITE_DOMAIN', 'cedcast.com'),
+				'site_name': 'CedCast',
+			}
+			message = render_to_string('emails/enrollment_approved.html', context)
+			send_mail(
+				subject,
+				message,
+				settings.DEFAULT_FROM_EMAIL,
+				[enrollment_request.email],
+				fail_silently=True
+			)
+		except Exception as e:
+			import logging
+			logger = logging.getLogger(__name__)
+			logger.error(f"Failed to send enrollment approval email: {e}")
+		
+		return JsonResponse({'success': True})
+	except EnrollmentRequest.DoesNotExist:
+		return JsonResponse({'success': False, 'error': 'Enrollment request not found or not pending'})
+	except Exception as e:
+		import logging
+		logger = logging.getLogger(__name__)
+		logger.error(f"Error approving enrollment request: {e}")
+		return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)  # type: ignore
+def reject_enrollment_request(request, request_id):
+	"""Reject an enrollment request"""
+	if request.method != 'POST':
+		return JsonResponse({'success': False, 'error': 'Method not allowed'})
+	
+	try:
+		from .models import EnrollmentRequest
+		reason = request.POST.get('reason', '').strip()
+		if not reason:
+			return JsonResponse({'success': False, 'error': 'Rejection reason is required'})
+		
+		enrollment_request = EnrollmentRequest.objects.get(id=request_id, status='pending')
+		enrollment_request.status = 'rejected'
+		enrollment_request.review_notes = reason
+		enrollment_request.reviewed_at = timezone.now()
+		enrollment_request.reviewed_by = request.user
+		enrollment_request.save()
+		
+		# Send rejection email
+		try:
+			from django.core.mail import send_mail
+			from django.template.loader import render_to_string
+			from django.conf import settings
+			
+			subject = f"CedCast Enrollment Request Update"
+			context = {
+				'contact_name': enrollment_request.contact_name,
+				'org_name': enrollment_request.org_name,
+				'rejection_reason': reason,
+				'protocol': 'https',
+				'domain': getattr(settings, 'SITE_DOMAIN', 'cedcast.com'),
+				'site_name': 'CedCast',
+			}
+			message = render_to_string('emails/enrollment_rejected.html', context)
+			send_mail(
+				subject,
+				message,
+				settings.DEFAULT_FROM_EMAIL,
+				[enrollment_request.email],
+				fail_silently=True
+			)
+		except Exception as e:
+			import logging
+			logger = logging.getLogger(__name__)
+			logger.error(f"Failed to send enrollment rejection email: {e}")
+		
+		return JsonResponse({'success': True})
+	except EnrollmentRequest.DoesNotExist:
+		return JsonResponse({'success': False, 'error': 'Enrollment request not found or not pending'})
+	except Exception as e:
+		import logging
+		logger = logging.getLogger(__name__)
+		logger.error(f"Error rejecting enrollment request: {e}")
+		return JsonResponse({'success': False, 'error': str(e)})
+
+
+
+
+@login_required
 def system_logs_view(request):
     # Super Admin only
     if not request.user.role == User.SUPER_ADMIN:
@@ -761,6 +951,64 @@ def system_logs_view(request):
     from django.contrib.admin.models import LogEntry
     logs = LogEntry.objects.all().order_by('-action_time')[:200]
     return render(request, 'system_logs.html', {'logs': logs})
+
+
+@login_required
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)
+def audit_message_logs_view(request):
+    """Comprehensive audit view of all organization message logs including deleted ones"""
+    from .models import OrgAlertRecipient
+    
+    # filters
+    status = request.GET.get('status')
+    date_from = request.GET.get('from')
+    date_to = request.GET.get('to')
+    org_slug = request.GET.get('org')
+    show_deleted = request.GET.get('show_deleted', 'false') == 'true'
+    
+    logs = OrgAlertRecipient.objects.select_related('message__organization', 'contact').all()
+    
+    # Always show deleted logs for audit purposes
+    if not show_deleted:
+        logs = logs.filter(is_deleted=False)
+    
+    if status:
+        logs = logs.filter(status=status)
+    if org_slug:
+        logs = logs.filter(message__organization__slug=org_slug)
+        
+    # Parse date filter inputs (expected YYYY-MM-DD). Use sent_at__date to avoid timezone-aware/datetime issues.
+    import datetime as _dt
+    if date_from:
+        try:
+            dfrom = _dt.date.fromisoformat(date_from)
+            logs = logs.filter(sent_at__date__gte=dfrom)
+        except Exception:
+            # ignore bad input
+            date_from = None
+    if date_to:
+        try:
+            dto = _dt.date.fromisoformat(date_to)
+            logs = logs.filter(sent_at__date__lte=dto)
+        except Exception:
+            date_to = None
+    
+    logs = logs.order_by('-sent_at')
+    
+    # Get organizations for filter dropdown
+    organizations = Organization.objects.filter(is_active=True).order_by('name')
+    
+    context = {
+        'logs': logs,
+        'status': status,
+        'from': date_from,
+        'to': date_to,
+        'org_slug': org_slug,
+        'organizations': organizations,
+        'show_deleted': show_deleted,
+    }
+    
+    return render(request, 'audit_message_logs.html', context)
 
 
 @login_required
@@ -1296,8 +1544,8 @@ def enroll_tenant_view(request):
 				temp_pw = secrets.token_urlsafe(10)
 				new_user = UserModel.objects.create_user(username=username, email=admin_email or '', password=temp_pw)
 				# set role and link to org
-				new_user.role = getattr(User, 'ORG_ADMIN', 'org_admin')
-				new_user.organization = org
+				new_user.role = getattr(User, 'ORG_ADMIN', 'org_admin')  # type: ignore
+				new_user.organization = org  # type: ignore
 				if first:
 					new_user.first_name = first
 				if last:
@@ -1639,11 +1887,24 @@ def org_message_logs(request, org_slug=None):
 		return redirect('dashboard')
 	org = user.organization
 	from .models import OrgAlertRecipient
+	
+	# Handle delete request
+	if request.method == 'POST' and 'delete_log' in request.POST:
+		log_id = request.POST.get('log_id')
+		try:
+			log = OrgAlertRecipient.objects.get(id=log_id, message__organization=org)
+			log.is_deleted = True
+			log.save()
+			messages.success(request, 'Message log deleted successfully.')
+		except OrgAlertRecipient.DoesNotExist:
+			messages.error(request, 'Log not found.')
+		return redirect('org_message_logs', org_slug=org.slug)
+	
 	# filters
 	status = request.GET.get('status')
 	date_from = request.GET.get('from')
 	date_to = request.GET.get('to')
-	logs = OrgAlertRecipient.objects.filter(message__organization=org)
+	logs = OrgAlertRecipient.objects.filter(message__organization=org, is_deleted=False)
 	if status:
 		logs = logs.filter(status=status)
 		# Parse date filter inputs (expected YYYY-MM-DD). Use sent_at__date to avoid timezone-aware/datetime issues.
@@ -2248,21 +2509,71 @@ def org_billing_callback(request, org_slug=None):
 	try:
 		organization = Organization.objects.get(slug=org_slug)
 	except Organization.DoesNotExist:
+		if request.method == "POST":
+			return JsonResponse({'success': False, 'message': 'Organization not found'}, status=404)
 		return redirect('home')
 
-	message = None
 	paystack_public_key = getattr(settings, 'PAYSTACK_PUBLIC_KEY', None)
-	reference = request.GET.get('reference')
+	message = None
 
+	# Handle AJAX verification from inline Paystack popup
+	if request.method == "POST":
+		reference = request.POST.get('reference')
+		if not reference:
+			return JsonResponse({'success': False, 'message': 'Missing payment reference'}, status=400)
+		try:
+			from . import paystack_utils
+			verification = paystack_utils.verify_payment(reference)
+			data = verification.get('data', {}) or {}
+			status = data.get('status')
+			amount_raw = data.get('amount')
+			amount = Decimal(amount_raw or 0) / 100
+			tx_id = data.get('id')
+
+			from .models import Payment
+			from django.utils import timezone
+			if status == 'success' and amount > 0:
+				with transaction.atomic():
+					payment, created = Payment.objects.select_for_update().get_or_create(
+						paystack_reference=reference,
+						defaults={
+							'organization': organization,
+							'amount': amount,
+							'paystack_transaction_id': tx_id,
+							'status': 'success',
+							'processed_at': timezone.now(),
+						}
+					)
+					if created:
+						organization.balance = (organization.balance or Decimal('0')) + amount
+						organization.save(update_fields=['balance'])
+				return JsonResponse({'success': True, 'message': 'Payment verified', 'balance': str(organization.balance)})
+
+			# record failed attempt if not already stored
+			Payment.objects.get_or_create(
+				paystack_reference=reference,
+				defaults={
+					'organization': organization,
+					'amount': amount,
+					'paystack_transaction_id': tx_id,
+					'status': status or 'failed',
+					'processed_at': timezone.now(),
+				}
+			)
+			return JsonResponse({'success': False, 'message': 'Payment not successful', 'status': status}, status=400)
+		except Exception as e:
+			return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+	# Fallback GET handling (e.g., if Paystack redirects)
+	reference = request.GET.get('reference')
 	if reference:
 		try:
 			from . import paystack_utils
 			verification = paystack_utils.verify_payment(reference)
-
-			if verification['data']['status'] == 'success':
-				amount = Decimal(verification['data']['amount']) / 100  # Convert from pesewas
+			data = verification.get('data', {}) or {}
+			if data.get('status') == 'success':
+				amount = Decimal(data.get('amount', 0)) / 100
 				if amount > 0:
-					# Create payment record
 					from .models import Payment
 					from django.utils import timezone
 					payment, created = Payment.objects.get_or_create(
@@ -2270,34 +2581,20 @@ def org_billing_callback(request, org_slug=None):
 						defaults={
 							'organization': organization,
 							'amount': amount,
-							'paystack_transaction_id': verification['data'].get('id'),
+							'paystack_transaction_id': data.get('id'),
 							'status': 'success',
 							'processed_at': timezone.now(),
 						}
 					)
-
 					if created:
 						organization.balance += amount
-						organization.save()
+						organization.save(update_fields=['balance'])
 						message = f'Payment successful! Balance added: GHS {amount}. New balance: GHS {organization.balance}'
 					else:
 						message = f'Payment already processed. Current balance: GHS {organization.balance}'
 				else:
 					message = 'Payment successful but amount not found.'
 			else:
-				# Create failed payment record
-				from .models import Payment
-				from django.utils import timezone
-				Payment.objects.get_or_create(
-					paystack_reference=reference,
-					defaults={
-						'organization': organization,
-						'amount': Decimal(verification['data'].get('amount', 0)) / 100,
-						'paystack_transaction_id': verification['data'].get('id'),
-						'status': 'failed',
-						'processed_at': timezone.now(),
-					}
-				)
 				message = 'Payment was not successful.'
 		except Exception as e:
 			message = f'Payment verification failed: {str(e)}'

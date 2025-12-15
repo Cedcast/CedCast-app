@@ -155,12 +155,15 @@ class OrgAlertRecipient(models.Model):
 	provider_status = models.CharField(max_length=100, blank=True, null=True)
 	retry_count = models.IntegerField(default=0)
 	last_retry_at = models.DateTimeField(blank=True, null=True)
+	# Soft delete for org admin visibility
+	is_deleted = models.BooleanField(default=False)
 
 	class Meta:
 		indexes = [
 			models.Index(fields=['status', 'sent_at']),
 			models.Index(fields=['message', 'status']),
 			models.Index(fields=['contact', 'status']),
+			models.Index(fields=['is_deleted']),
 		]
 
 	def __str__(self):
