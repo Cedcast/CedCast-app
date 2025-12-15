@@ -67,7 +67,7 @@ def enrollment_request_view(request):
 				email=request.POST.get('email'),
 				phone=request.POST.get('phone'),
 				message=request.POST.get('message'),
-				status='approved',  # Auto-approve all requests for direct processing
+				status='pending',  # Require super admin review before approval
 			)
 
 			# Send notification email to superadmin (if email is configured)
@@ -77,7 +77,7 @@ def enrollment_request_view(request):
 					send_mail(
 						subject=f'New Enrollment Request: {enrollment_request.org_name}',
 						message=f"""
-New enrollment request received and ready for account creation:
+New enrollment request received and pending review:
 
 Organization: {enrollment_request.org_name}
 Type: {enrollment_request.org_type}
@@ -90,7 +90,7 @@ Address: {enrollment_request.address or 'Not provided'}
 Message:
 {enrollment_request.message or 'No additional message'}
 
-Please create an account for this organization in the admin dashboard.
+Please review this request in the super admin dashboard and approve or reject as appropriate.
 						""",
 						from_email=settings.DEFAULT_FROM_EMAIL,
 						recipient_list=[admin_email],
@@ -106,7 +106,7 @@ Please create an account for this organization in the admin dashboard.
 			try:
 				admin_phone = getattr(settings, 'ADMIN_PHONE', None)
 				if admin_phone:
-					sms_message = f"New enrollment request: {enrollment_request.org_name} from {enrollment_request.contact_name}. Create account in admin dashboard."
+					sms_message = f"New enrollment request: {enrollment_request.org_name} from {enrollment_request.contact_name}. Review in super admin dashboard."
 					# Use None for tenant since this is a system notification
 					send_sms(admin_phone, sms_message, None)
 			except Exception as e:
@@ -566,6 +566,9 @@ def dashboard(request, school_slug=None):
 		# Approved enrollment requests that need manual account creation
 		approved_enrollment_requests = EnrollmentRequest.objects.filter(status='approved').order_by('-reviewed_at')[:10]  # Show latest 10
 
+		# Pending enrollment requests that need review
+		pending_enrollment_requests = EnrollmentRequest.objects.filter(status='pending').order_by('-created_at')[:10]  # Show latest 10
+
 		context = {"schools": schools, "school_stats": school_stats, "org_stats": org_stats, "notice": notice,
 			"total_messages": total_msgs, "total_sent": total_sent,
 			"messages_trend": messages_trend, "orgs_trend": orgs_trend, "delivery_trend": delivery_trend,
@@ -592,6 +595,7 @@ def dashboard(request, school_slug=None):
 			"pending_approvals": pending_approvals,
 			# Enrollment requests
 			"approved_enrollment_requests": approved_enrollment_requests,
+			"pending_enrollment_requests": pending_enrollment_requests,
 			# Recent payment transactions
 			"recent_payment_transactions": recent_payment_transactions,
 		}
