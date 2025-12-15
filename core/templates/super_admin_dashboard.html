@@ -166,6 +166,61 @@
         </div>
     </div>
 
+    <!-- Pending Enrollment Requests - Need Review -->
+    {% if pending_enrollment_requests %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Pending Enrollment Requests</h5>
+            <span class="badge bg-warning">{{ pending_enrollment_requests|length }} Awaiting Review</span>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                New enrollment requests require review. Approve to enable account creation or reject if requirements aren't met.
+            </div>
+            <div class="row g-3">
+                {% for request in pending_enrollment_requests %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-warning">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title mb-1">{{ request.org_name }}</h6>
+                                <small class="text-muted">{{ request.created_at|date:"M d, Y" }}</small>
+                            </div>
+                            <div class="small text-muted mb-3">
+                                <div><i class="bi bi-person me-1"></i>{{ request.contact_name }}</div>
+                                <div><i class="bi bi-envelope me-1"></i>{{ request.email }}</div>
+                                <div><i class="bi bi-telephone me-1"></i>{{ request.phone }}</div>
+                                {% if request.org_type %}
+                                <div><i class="bi bi-building me-1"></i>{{ request.org_type|title }}</div>
+                                {% endif %}
+                                {% if request.address %}
+                                <div><i class="bi bi-geo-alt me-1"></i>{{ request.address|truncatechars:30 }}</div>
+                                {% endif %}
+                                {% if request.message %}
+                                <div class="mt-2"><strong>Message:</strong> {{ request.message|truncatechars:50 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-success btn-sm flex-fill" onclick="approveRequest({{ request.id }})">
+                                    <i class="bi bi-check-circle me-1"></i>Approve
+                                </button>
+                                <button class="btn btn-danger btn-sm flex-fill" onclick="rejectRequest({{ request.id }})">
+                                    <i class="bi bi-x-circle me-1"></i>Reject
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="viewRequestDetails({{ request.id }})">
+                                    <i class="bi bi-eye me-1"></i>Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- New Enrollment Requests - Ready for Account Creation -->
     {% if approved_enrollment_requests %}
     <div class="card mb-4">
@@ -202,6 +257,9 @@
                                 <a href="{% url 'enroll_tenant' %}?prefill={{ request.id }}" class="btn btn-primary btn-sm flex-fill">
                                     <i class="bi bi-plus-circle me-1"></i>Create Account
                                 </a>
+                                <button class="btn btn-danger btn-sm" onclick="declineApprovedRequest({{ request.id }})">
+                                    <i class="bi bi-x-circle me-1"></i>Decline
+                                </button>
                                 <button class="btn btn-outline-secondary btn-sm" onclick="viewRequestDetails({{ request.id }})">
                                     <i class="bi bi-eye me-1"></i>Details
                                 </button>
@@ -587,7 +645,7 @@ document.head.appendChild(style);
 // Enrollment request management functions
 function approveRequest(requestId) {
   if (confirm('Are you sure you want to approve this enrollment request?')) {
-    fetch(`/admin/approve-enrollment/${requestId}/`, {
+    fetch(`/super/approve-enrollment/${requestId}/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -611,31 +669,110 @@ function approveRequest(requestId) {
 }
 
 function rejectRequest(requestId) {
-  const reason = prompt('Please provide a reason for rejection:');
-  if (reason !== null && reason.trim() !== '') {
-    fetch(`/admin/reject-enrollment/${requestId}/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-      },
-      body: JSON.stringify({ reason: reason })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        alert('Enrollment request rejected.');
-        location.reload();
-      } else {
-        alert('Error: ' + data.message);
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('An error occurred while processing the request.');
-    });
-  }
+  // Store the request ID for the modal submission
+  window.currentRejectRequestId = requestId;
+
+  // Clear previous reason
+  document.getElementById('rejectionReason').value = '';
+
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+  modal.show();
 }
+
+function submitRejection() {
+  const requestId = window.currentRejectRequestId;
+  const reason = document.getElementById('rejectionReason').value.trim();
+
+  if (!reason) {
+    alert('Please provide a rejection reason.');
+    return;
+  }
+
+  // Disable button to prevent double submission
+  const btn = document.getElementById('confirmRejectBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Rejecting...';
+
+  fetch(`/super/reject-enrollment/${requestId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+    body: JSON.stringify({ reason: reason })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Hide modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
+      modal.hide();
+
+      alert('Enrollment request rejected successfully.');
+      location.reload();
+    } else {
+      alert('Error: ' + (data.error || 'Unknown error occurred'));
+      // Re-enable button
+      btn.disabled = false;
+      btn.innerHTML = 'Reject Request';
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('An error occurred while processing the request.');
+    // Re-enable button
+    btn.disabled = false;
+    btn.innerHTML = 'Reject Request';
+  });
+}
+
+// Function to decline an already approved request
+function declineApprovedRequest(requestId) {
+  // Store the request ID for the modal submission
+  window.currentRejectRequestId = requestId;
+
+  // Clear previous reason
+  document.getElementById('rejectionReason').value = '';
+
+  // Update modal title to reflect this is declining an approved request
+  document.getElementById('rejectModalLabel').textContent = 'Decline Approved Enrollment Request';
+
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+  modal.show();
+}
+
+// Add event listener for the reject button
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('confirmRejectBtn').addEventListener('click', submitRejection);
+});
 </script>
+
+<!-- Rejection Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="rejectModalLabel">Reject Enrollment Request</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Please provide a reason for rejecting this enrollment request. This will be sent to the applicant via email.</p>
+        <form id="rejectForm">
+          <div class="mb-3">
+            <label for="rejectionReason" class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="rejectionReason" rows="4" placeholder="Please explain why this enrollment request is being rejected..." required></textarea>
+            <div class="form-text">Be specific about requirements that weren't met or other issues.</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmRejectBtn">Reject Request</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
