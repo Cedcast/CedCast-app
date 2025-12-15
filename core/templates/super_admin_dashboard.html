@@ -697,10 +697,9 @@ function submitRejection() {
   fetch(`/super/reject-enrollment/${requestId}/`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
     },
-    body: JSON.stringify({ reason: reason })
+    body: new URLSearchParams({ reason: reason })
   })
   .then(response => response.json())
   .then(data => {
@@ -759,10 +758,10 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
       <div class="modal-body">
         <p>Please provide a reason for rejecting this enrollment request. This will be sent to the applicant via email.</p>
-        <form id="rejectForm">
+        <form id="rejectForm" onsubmit="return false;">
           <div class="mb-3">
             <label for="rejectionReason" class="form-label">Rejection Reason <span class="text-danger">*</span></label>
-            <textarea class="form-control" id="rejectionReason" rows="4" placeholder="Please explain why this enrollment request is being rejected..." required></textarea>
+            <textarea class="form-control" id="rejectionReason" rows="4" placeholder="Please explain why this enrollment request is being rejected..."></textarea>
             <div class="form-text">Be specific about requirements that weren't met or other issues.</div>
           </div>
         </form>

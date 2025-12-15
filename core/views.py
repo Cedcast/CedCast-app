@@ -852,7 +852,7 @@ def reject_enrollment_request(request, request_id):
 		if not reason:
 			return JsonResponse({'success': False, 'error': 'Rejection reason is required'})
 		
-		enrollment_request = EnrollmentRequest.objects.get(id=request_id, status='pending')
+		enrollment_request = EnrollmentRequest.objects.get(id=request_id, status__in=['pending', 'approved'])
 		enrollment_request.status = 'rejected'
 		enrollment_request.review_notes = reason
 		enrollment_request.reviewed_at = timezone.now()
