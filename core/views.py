@@ -545,6 +545,9 @@ def dashboard(request, school_slug=None):
 			day_payments = Payment.objects.filter(status='success', created_at__date=d).count()
 			payments_trend.append(day_payments)
 
+		# Recent payment transactions (last 10 successful payments)
+		recent_payment_transactions = Payment.objects.filter(status='success').select_related('organization').order_by('-created_at')[:10]
+
 		# Top paying organizations
 		top_orgs = Organization.objects.filter(balance__gt=Decimal('0')).order_by('-balance')[:5]
 		top_payers = []
@@ -595,6 +598,8 @@ def dashboard(request, school_slug=None):
 			"pending_enrollment_requests": pending_enrollment_requests,
 			"total_pending_requests": total_pending_requests,
 			"approved_enrollment_requests": approved_enrollment_requests,
+			# Recent payment transactions
+			"recent_payment_transactions": recent_payment_transactions,
 		}
 		return render(request, "super_admin_dashboard.html", context)
 

@@ -61,6 +61,9 @@
 </nav>
 
 <div class="container-fluid py-4">
+    <!-- CSRF Token for AJAX requests -->
+    {% csrf_token %}
+
     <!-- Alert for dry-run mode -->
     {% if hubtel_dry_run or clicksend_dry_run %}
     <div class="alert alert-warning">
@@ -249,6 +252,62 @@
                     </div>
                 </div>
                 {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Payment Transactions -->
+    {% if recent_payment_transactions %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Payment Transactions</h5>
+            <a href="{% url 'super_payments' %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-arrow-right me-1"></i>View All Transactions
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Organization</th>
+                            <th>Amount</th>
+                            <th>Reference</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in recent_payment_transactions %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-building text-primary me-2"></i>
+                                    <div>
+                                        <div class="fw-bold">{{ payment.organization.name }}</div>
+                                        <small class="text-muted">{{ payment.organization.slug }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">₵{{ payment.amount|floatformat:2 }}</span>
+                            </td>
+                            <td>
+                                <code class="small">{{ payment.paystack_reference|truncatechars:20 }}</code>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ payment.created_at|date:"M d, Y H:i" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i>{{ payment.status|title }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
