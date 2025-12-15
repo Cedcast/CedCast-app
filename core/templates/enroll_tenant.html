@@ -203,7 +203,7 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label">Last Name</label>
-                <input type="text" name="last_name" class="form-control" placeholder="Optional" value="{{ prefill_data.contact_name|split:' '|slice:'1:'|join:' ' }}">
+                <input type="text" name="last_name" class="form-control" placeholder="Optional" value="{{ prefill_data.contact_name|split:' '|slice_filter:'1:'|join:' ' }}">
               </div>
             </div>
 
