@@ -166,17 +166,17 @@
         </div>
     </div>
 
-    <!-- Approved Enrollment Requests - Ready for Account Creation -->
+    <!-- New Enrollment Requests - Ready for Account Creation -->
     {% if approved_enrollment_requests %}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Approved Enrollment Requests</h5>
+            <h5 class="mb-0">New Enrollment Requests</h5>
             <span class="badge bg-success">{{ approved_enrollment_requests|length }} Ready for Setup</span>
         </div>
         <div class="card-body">
             <div class="alert alert-info">
                 <i class="bi bi-info-circle me-2"></i>
-                These enrollment requests have been approved. Use the details below to manually create organization accounts.
+                New organizations have requested enrollment. Use the details below to manually create their accounts.
             </div>
             <div class="row g-3">
                 {% for request in approved_enrollment_requests %}
