@@ -232,6 +232,55 @@
     </div>
     {% endif %}
 
+    <!-- Approved Enrollment Requests - Ready for Account Creation -->
+    {% if approved_enrollment_requests %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Approved Enrollment Requests</h5>
+            <span class="badge bg-success">{{ approved_enrollment_requests|length }} Ready for Setup</span>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                These enrollment requests have been approved. Use the details below to manually create organization accounts.
+            </div>
+            <div class="row g-3">
+                {% for request in approved_enrollment_requests %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-success">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title mb-1">{{ request.org_name }}</h6>
+                                <small class="text-muted">{{ request.reviewed_at|date:"M d, Y" }}</small>
+                            </div>
+                            <div class="small text-muted mb-3">
+                                <div><i class="bi bi-person me-1"></i>{{ request.contact_name }}</div>
+                                <div><i class="bi bi-envelope me-1"></i>{{ request.email }}</div>
+                                <div><i class="bi bi-telephone me-1"></i>{{ request.phone }}</div>
+                                {% if request.org_type %}
+                                <div><i class="bi bi-building me-1"></i>{{ request.org_type|title }}</div>
+                                {% endif %}
+                                {% if request.address %}
+                                <div><i class="bi bi-geo-alt me-1"></i>{{ request.address|truncatechars:30 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'enroll_tenant' %}?prefill={{ request.id }}" class="btn btn-primary btn-sm flex-fill">
+                                    <i class="bi bi-plus-circle me-1"></i>Create Account
+                                </a>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="viewRequestDetails({{ request.id }})">
+                                    <i class="bi bi-eye me-1"></i>Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- System Status -->
     <div class="row">
         <div class="col-12">
@@ -308,6 +357,12 @@ function rejectRequest(requestId) {
             alert('Error: ' + data.error);
         }
     });
+}
+
+function viewRequestDetails(requestId) {
+    // For now, just redirect to enroll page with prefill
+    // In future, could show a modal with full details
+    window.location.href = `/super/enroll/?prefill=${requestId}`;
 }
 </script>
 

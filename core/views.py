@@ -563,6 +563,9 @@ def dashboard(request, school_slug=None):
 		from .models import EnrollmentRequest
 		pending_enrollment_requests = EnrollmentRequest.objects.filter(status='pending').order_by('-created_at')[:10]  # Show latest 10
 		total_pending_requests = EnrollmentRequest.objects.filter(status='pending').count()
+		
+		# Approved enrollment requests that need manual account creation
+		approved_enrollment_requests = EnrollmentRequest.objects.filter(status='approved').order_by('-reviewed_at')[:10]  # Show latest 10
 
 		context = {"schools": schools, "school_stats": school_stats, "org_stats": org_stats, "notice": notice,
 			"total_messages": total_msgs, "total_sent": total_sent,
@@ -591,6 +594,7 @@ def dashboard(request, school_slug=None):
 			# Enrollment requests
 			"pending_enrollment_requests": pending_enrollment_requests,
 			"total_pending_requests": total_pending_requests,
+			"approved_enrollment_requests": approved_enrollment_requests,
 		}
 		return render(request, "super_admin_dashboard.html", context)
 
@@ -781,7 +785,7 @@ def reject_org_view(request, org_id):
 @login_required
 @user_passes_test(lambda u: u.role == User.SUPER_ADMIN)  # type: ignore
 def approve_enrollment_request(request, request_id):
-	"""Approve an enrollment request and create the organization"""
+	"""Approve an enrollment request - mark as approved for manual processing"""
 	if request.method != 'POST':
 		return JsonResponse({'success': False, 'error': 'Method not allowed'})
 	
@@ -789,72 +793,22 @@ def approve_enrollment_request(request, request_id):
 		from .models import EnrollmentRequest
 		enrollment_request = EnrollmentRequest.objects.get(id=request_id, status='pending')
 		
-		# Create the organization
-		from django.utils.text import slugify
-		org_slug = slugify(enrollment_request.org_name)
-		# Ensure unique slug
-		counter = 1
-		original_slug = org_slug
-		while Organization.objects.filter(slug=org_slug).exists():
-			org_slug = f"{original_slug}-{counter}"
-			counter += 1
-		
-		organization = Organization.objects.create(
-			name=enrollment_request.org_name,
-			slug=org_slug,
-			org_type=enrollment_request.org_type,
-			address=enrollment_request.address,
-			contact_person=enrollment_request.contact_name,
-			email=enrollment_request.email,
-			phone=enrollment_request.phone,
-			approval_status='approved',
-			approved_at=timezone.now(),
-			approved_by=request.user,
-			is_active=True,
-			balance=Decimal('0.00')
-		)
-		
-		# Create the organization admin user
-		admin_username = f"admin_{org_slug}"
-		counter = 1
-		original_username = admin_username
-		while User.objects.filter(username=admin_username).exists():
-			admin_username = f"{original_username}{counter}"
-			counter += 1
-		
-		# Generate a temporary password
-		import secrets
-		import string
-		temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
-		
-		admin_user = User.objects.create_user(
-			username=admin_username,
-			email=enrollment_request.email,
-			password=temp_password,
-			first_name=enrollment_request.contact_name.split()[0] if enrollment_request.contact_name else '',
-			last_name=' '.join(enrollment_request.contact_name.split()[1:]) if enrollment_request.contact_name and len(enrollment_request.contact_name.split()) > 1 else '',
-			role=User.ORG_ADMIN,
-			organization=organization
-		)
-		
-		# Update enrollment request status
+		# Just mark as approved - super admin will manually create the organization
 		enrollment_request.status = 'approved'
 		enrollment_request.reviewed_at = timezone.now()
 		enrollment_request.reviewed_by = request.user
 		enrollment_request.save()
 		
-		# Send approval email with login credentials
+		# Send approval email to inform them their request was approved
 		try:
 			from django.core.mail import send_mail
 			from django.template.loader import render_to_string
 			from django.conf import settings
 			
-			subject = f"Welcome to CedCast! Your account has been approved"
+			subject = f"CedCast Enrollment Request Approved - {enrollment_request.org_name}"
 			context = {
 				'contact_name': enrollment_request.contact_name,
-				'organization': organization,
-				'admin_username': admin_username,
-				'temp_password': temp_password,
+				'organization_name': enrollment_request.org_name,
 				'protocol': 'https',
 				'domain': getattr(settings, 'SITE_DOMAIN', 'cedcast.com'),
 				'site_name': 'CedCast',
@@ -1483,6 +1437,27 @@ def enroll_tenant_view(request):
 	# an UnboundLocalError when rendering the form (POST may set this).
 	notice = None
 	generated_credentials = None
+	prefill_data = None
+
+	# Check for prefill parameter (approved enrollment request)
+	prefill_id = request.GET.get('prefill')
+	if prefill_id:
+		try:
+			from .models import EnrollmentRequest
+			enrollment_request = EnrollmentRequest.objects.get(id=prefill_id, status='approved')
+			prefill_data = {
+				'id': enrollment_request.id,
+				'name': enrollment_request.org_name,
+				'entity_type': 'organization',  # Default to organization
+				'org_type': enrollment_request.org_type,
+				'contact_name': enrollment_request.contact_name,
+				'email': enrollment_request.email,
+				'phone_primary': enrollment_request.phone,
+				'address': enrollment_request.address or '',
+				'message': enrollment_request.message or '',
+			}
+		except EnrollmentRequest.DoesNotExist:
+			notice = "Enrollment request not found or not approved."
 
 	# Add logging import so we can record unexpected exceptions to the app logs.
 	import logging
@@ -1614,7 +1589,7 @@ def enroll_tenant_view(request):
 				notice += f" Admin account created: username={generated_credentials['username']}"
 
 	try:
-		return render(request, 'enroll_tenant.html', {'notice': notice, 'generated_credentials': generated_credentials})
+		return render(request, 'enroll_tenant.html', {'notice': notice, 'generated_credentials': generated_credentials, 'prefill_data': prefill_data})
 	except Exception:
 		# Log the full traceback to the configured logger and re-raise so Django
 		# still returns a 500 to the client. The logged traceback will appear in

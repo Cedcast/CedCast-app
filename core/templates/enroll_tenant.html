@@ -142,6 +142,14 @@
   </div>
   {% endif %}
 
+  <!-- Pre-fill Notice -->
+  {% if prefill_data %}
+  <div class="alert alert-info border-radius-lg shadow-soft mb-4">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Pre-filled from Approved Request:</strong> Form has been populated with details from enrollment request #{{ prefill_data.id }}. Review and complete the setup.
+  </div>
+  {% endif %}
+
   <!-- Enrollment Form -->
   <div class="row">
     <div class="col-lg-8">
@@ -160,13 +168,13 @@
               <div class="col-md-4">
                 <label class="form-label fw-bold">Entity Type</label>
                 <select name="entity_type" class="form-select form-select-lg">
-                  <option value="school">School</option>
-                  <option value="organization">Organization</option>
+                  <option value="school" {% if prefill_data.entity_type == 'school' %}selected{% endif %}>School</option>
+                  <option value="organization" {% if prefill_data.entity_type == 'organization' or not prefill_data %}selected{% endif %}>Organization</option>
                 </select>
               </div>
               <div class="col-md-8">
                 <label class="form-label fw-bold">Organization Name <span class="text-danger">*</span></label>
-                <input type="text" name="name" class="form-control form-control-lg" required placeholder="Enter organization name">
+                <input type="text" name="name" class="form-control form-control-lg" required placeholder="Enter organization name" value="{{ prefill_data.name }}">
               </div>
             </div>
 
@@ -174,13 +182,13 @@
             <div class="mb-4">
               <label class="form-label fw-bold">Organization Type</label>
               <select name="org_type" class="form-select form-select-lg">
-                <option value="company">Company</option>
-                <option value="school">School</option>
-                <option value="church">Church</option>
-                <option value="pharmacy">Pharmacy</option>
-                <option value="restaurant">Restaurant</option>
-                <option value="hotel">Hotel</option>
-                <option value="union">Union</option>
+                <option value="company" {% if prefill_data.org_type == 'company' %}selected{% endif %}>Company</option>
+                <option value="school" {% if prefill_data.org_type == 'school' %}selected{% endif %}>School</option>
+                <option value="church" {% if prefill_data.org_type == 'church' %}selected{% endif %}>Church</option>
+                <option value="pharmacy" {% if prefill_data.org_type == 'pharmacy' %}selected{% endif %}>Pharmacy</option>
+                <option value="restaurant" {% if prefill_data.org_type == 'restaurant' %}selected{% endif %}>Restaurant</option>
+                <option value="hotel" {% if prefill_data.org_type == 'hotel' %}selected{% endif %}>Hotel</option>
+                <option value="union" {% if prefill_data.org_type == 'union' %}selected{% endif %}>Union</option>
               </select>
             </div>
 
@@ -191,11 +199,11 @@
             <div class="row g-3 mb-4">
               <div class="col-md-6">
                 <label class="form-label">First Name</label>
-                <input type="text" name="first_name" class="form-control" placeholder="Optional">
+                <input type="text" name="first_name" class="form-control" placeholder="Optional" value="{{ prefill_data.contact_name|split:' '|first }}">
               </div>
               <div class="col-md-6">
                 <label class="form-label">Last Name</label>
-                <input type="text" name="last_name" class="form-control" placeholder="Optional">
+                <input type="text" name="last_name" class="form-control" placeholder="Optional" value="{{ prefill_data.contact_name|split:' '|slice:'1:'|join:' ' }}">
               </div>
             </div>
 
@@ -206,7 +214,7 @@
             <div class="row g-3 mb-4">
               <div class="col-md-6">
                 <label class="form-label">Primary Phone</label>
-                <input type="text" name="phone_primary" class="form-control" placeholder="+233501234567">
+                <input type="text" name="phone_primary" class="form-control" placeholder="+233501234567" value="{{ prefill_data.phone_primary }}">
               </div>
               <div class="col-md-6">
                 <label class="form-label">Secondary Phone</label>
@@ -214,7 +222,7 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label">Admin Email</label>
-                <input type="email" name="admin_email" class="form-control" placeholder="admin@example.com">
+                <input type="email" name="admin_email" class="form-control" placeholder="admin@example.com" value="{{ prefill_data.email }}">
               </div>
               <div class="col-md-6">
                 <label class="form-label">Desired Sender ID</label>
@@ -225,7 +233,7 @@
             <!-- Address -->
             <div class="mb-4">
               <label class="form-label fw-bold">Address</label>
-              <textarea name="address" class="form-control" rows="3" placeholder="Enter organization address"></textarea>
+              <textarea name="address" class="form-control" rows="3" placeholder="Enter organization address">{{ prefill_data.address }}</textarea>
             </div>
 
             <!-- Submit Button -->
