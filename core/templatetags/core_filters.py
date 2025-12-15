@@ -43,11 +43,20 @@ def slice_filter(value, arg):
 
 
 @register.filter
-def join(value, arg):
+def format_number(value):
     """
-    Join a list with a separator.
-    Usage: {{ list|join:" " }}
+    Format a number with commas as thousands separators.
+    Similar to Django's intcomma filter but doesn't require humanize.
     """
-    if isinstance(value, (list, tuple)):
-        return str(arg).join(str(item) for item in value)
-    return value
+    if value is None:
+        return "0"
+
+    try:
+        # Convert to int/float if it's a string
+        if isinstance(value, str):
+            value = float(value) if '.' in value else int(value)
+
+        # Format with commas
+        return f"{value:,}"
+    except (ValueError, TypeError):
+        return str(value)
