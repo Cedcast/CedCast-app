@@ -562,11 +562,6 @@ def dashboard(request, school_slug=None):
 		# Pending organization approvals
 		pending_approvals = Organization.objects.filter(approval_status='pending').order_by('-created_at')
 
-		# Pending enrollment requests
-		from .models import EnrollmentRequest
-		pending_enrollment_requests = EnrollmentRequest.objects.filter(status='pending').order_by('-created_at')[:10]  # Show latest 10
-		total_pending_requests = EnrollmentRequest.objects.filter(status='pending').count()
-		
 		# Approved enrollment requests that need manual account creation
 		approved_enrollment_requests = EnrollmentRequest.objects.filter(status='approved').order_by('-reviewed_at')[:10]  # Show latest 10
 
@@ -595,8 +590,6 @@ def dashboard(request, school_slug=None):
 			# Pending approvals
 			"pending_approvals": pending_approvals,
 			# Enrollment requests
-			"pending_enrollment_requests": pending_enrollment_requests,
-			"total_pending_requests": total_pending_requests,
 			"approved_enrollment_requests": approved_enrollment_requests,
 			# Recent payment transactions
 			"recent_payment_transactions": recent_payment_transactions,

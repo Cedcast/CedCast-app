@@ -166,48 +166,6 @@
         </div>
     </div>
 
-    <!-- Pending Enrollment Requests -->
-    {% if pending_enrollment_requests %}
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Pending Enrollment Requests</h5>
-            <span class="badge bg-warning">{{ pending_enrollment_requests|length }} Pending</span>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                {% for request in pending_enrollment_requests %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 border-warning">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="card-title mb-1">{{ request.organization_name }}</h6>
-                                <small class="text-muted">{{ request.created_at|date:"M d, Y" }}</small>
-                            </div>
-                            <div class="small text-muted mb-3">
-                                <div><i class="bi bi-person me-1"></i>{{ request.contact_person }}</div>
-                                <div><i class="bi bi-envelope me-1"></i>{{ request.email }}</div>
-                                <div><i class="bi bi-telephone me-1"></i>{{ request.phone }}</div>
-                                {% if request.school_type %}
-                                <div><i class="bi bi-building me-1"></i>{{ request.school_type }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-success btn-sm flex-fill" onclick="approveRequest({{ request.id }})">
-                                    <i class="bi bi-check-circle me-1"></i>Approve
-                                </button>
-                                <button class="btn btn-danger btn-sm flex-fill" onclick="rejectRequest({{ request.id }})">
-                                    <i class="bi bi-x-circle me-1"></i>Reject
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
     <!-- Approved Enrollment Requests - Ready for Account Creation -->
     {% if approved_enrollment_requests %}
     <div class="card mb-4">
@@ -351,46 +309,6 @@
 
 <!-- JavaScript for enrollment actions -->
 <script>
-function approveRequest(requestId) {
-    if (confirm('Are you sure you want to approve this enrollment request?')) {
-        fetch(`/super/approve-enrollment/${requestId}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + data.error);
-            }
-        });
-    }
-}
-
-function rejectRequest(requestId) {
-    const reason = prompt('Reason for rejection (optional):');
-    fetch(`/super/reject-enrollment/${requestId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ reason: reason }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error: ' + data.error);
-        }
-    });
-}
-
 function viewRequestDetails(requestId) {
     // For now, just redirect to enroll page with prefill
     // In future, could show a modal with full details
