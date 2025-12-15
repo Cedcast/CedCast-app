@@ -1534,6 +1534,14 @@ def enroll_tenant_view(request):
 			if generated_credentials:
 				notice += f" Admin account created: username={generated_credentials['username']}"
 
+			# Delete the enrollment request if it was used for prefill
+			if prefill_id:
+				try:
+					from .models import EnrollmentRequest
+					EnrollmentRequest.objects.filter(id=prefill_id).delete()
+				except Exception:
+					pass  # Silently ignore if deletion fails
+
 		else:
 			from .models import School as SchoolModel
 			if base_slug:
@@ -1586,6 +1594,14 @@ def enroll_tenant_view(request):
 			notice = f"School '{school.name}' created."
 			if generated_credentials:
 				notice += f" Admin account created: username={generated_credentials['username']}"
+
+			# Delete the enrollment request if it was used for prefill
+			if prefill_id:
+				try:
+					from .models import EnrollmentRequest
+					EnrollmentRequest.objects.filter(id=prefill_id).delete()
+				except Exception:
+					pass  # Silently ignore if deletion fails
 
 	try:
 		return render(request, 'enroll_tenant.html', {'notice': notice, 'generated_credentials': generated_credentials, 'prefill_data': prefill_data})
