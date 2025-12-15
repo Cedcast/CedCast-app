@@ -4,316 +4,314 @@
 
 {% block title %}Super Admin — CedCast{% endblock %}
 
-{% block body_class %}bg-gradient-primary{% endblock %}
-
 {% block content %}
-<!-- Modern Glassmorphism Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-transparent shadow-lg border-bottom border-white border-opacity-10">
-  <div class="container-fluid">
-    <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
-      <div class="logo-container me-3">
-        <svg width="40" height="40" viewBox="0 0 40 40" class="logo-svg">
-          <defs>
-            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color:#667eea"/>
-              <stop offset="100%" style="stop-color:#764ba2"/>
-            </linearGradient>
-          </defs>
-          <circle cx="20" cy="20" r="18" fill="url(#logoGradient)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-          <text x="20" y="16" font-family="Arial, sans-serif" font-size="8" font-weight="bold" text-anchor="middle" fill="white">CedCast</text>
-          <circle cx="20" cy="26" r="2" fill="rgba(255,255,255,0.8)"/>
-          <circle cx="14" cy="29" r="1.5" fill="rgba(255,255,255,0.6)"/>
-          <circle cx="26" cy="29" r="1.5" fill="rgba(255,255,255,0.6)"/>
-        </svg>
-      </div>
-      <div>
-        <div class="fw-bold fs-5">CedCast</div>
-        <small class="text-white-50">Super Admin</small>
-      </div>
-    </a>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}">
+            <i class="bi bi-shield-check me-2"></i>CedCast Super Admin
+        </a>
 
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item">
-          <a class="nav-link active fw-semibold" href="{% url 'dashboard' %}">
-            <i class="bi bi-house-door-fill me-2"></i>Dashboard
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link fw-semibold" href="{% url 'super_orgs' %}">
-            <i class="bi bi-building-fill me-2"></i>Organizations
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link fw-semibold" href="{% url 'global_templates' %}">
-            <i class="bi bi-file-earmark-text-fill me-2"></i>Templates
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link fw-semibold" href="{% url 'system_logs' %}">
-            <i class="bi bi-journal-text me-2"></i>Logs
-          </a>
-        </li>
-      </ul>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="{% url 'dashboard' %}">
+                        <i class="bi bi-house-door me-1"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'super_orgs' %}">
+                        <i class="bi bi-building me-1"></i>Organizations
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'global_templates' %}">
+                        <i class="bi bi-file-earmark-text me-1"></i>Templates
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'system_logs' %}">
+                        <i class="bi bi-journal-text me-1"></i>Logs
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'audit_message_logs' %}">
+                        <i class="bi bi-shield me-1"></i>Audit Logs
+                    </a>
+                </li>
+            </ul>
 
-      <ul class="navbar-nav">
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle d-flex align-items-center text-white" href="#" id="userMenu" data-bs-toggle="dropdown">
-            <div class="avatar-modern rounded-circle bg-white bg-opacity-20 text-white d-inline-flex align-items-center justify-content-center me-2 fw-bold">
-              {{ request.user.username|slice:":1"|upper }}
-            </div>
-            <span class="d-none d-md-inline fw-semibold">{{ request.user.username }}</span>
-          </a>
-          <ul class="dropdown-menu dropdown-menu-end glassmorphism-card border-0 shadow-lg">
-            <li><a class="dropdown-item text-white" href="/logout/">
-              <i class="bi bi-box-arrow-right me-2"></i>Logout
-            </a></li>
-          </ul>
-        </li>
-      </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userMenu" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle me-1"></i>{{ request.user.username }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/logout/">
+                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                        </a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
     </div>
-  </div>
 </nav>
 
-<div class="container-fluid py-5">
-  <!-- Alert for dry-run mode -->
-  {% if hubtel_dry_run or clicksend_dry_run %}
-  <div class="alert alert-warning glassmorphism-card border-warning border-opacity-25 text-warning shadow-lg mb-4">
-    <div class="d-flex align-items-center">
-      <i class="bi bi-info-circle-fill fs-4 me-3"></i>
-      <div>
-        <strong>Test Mode Active</strong>
-        <div class="small opacity-75">
-          {% if hubtel_dry_run %}Hubtel{% endif %}
-          {% if clicksend_dry_run %}{% if hubtel_dry_run %} & {% endif %}ClickSend{% endif %}
-          are running in dry-run mode — outgoing messages are simulated.
-        </div>
-      </div>
+<div class="container-fluid py-4">
+    <!-- Alert for dry-run mode -->
+    {% if hubtel_dry_run or clicksend_dry_run %}
+    <div class="alert alert-warning">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>Test Mode Active:</strong>
+        {% if hubtel_dry_run %}Hubtel{% endif %}
+        {% if clicksend_dry_run %}{% if hubtel_dry_run %} & {% endif %}ClickSend{% endif %}
+        are running in dry-run mode — outgoing messages are simulated.
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Hero Section -->
-  <div class="row mb-5">
-    <div class="col-12">
-      <div class="hero-card glassmorphism-card p-5 text-white">
-        <div class="row align-items-center">
-          <div class="col-lg-8">
-            <div class="hero-badge mb-3">
-              <i class="bi bi-star-fill me-2"></i>
-              Welcome back, Super Admin
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="h3 mb-1">Welcome back, {{ request.user.username }}</h1>
+                            <p class="text-muted mb-0">Monitor system performance and manage organizations</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{% url 'enroll_tenant' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i>Enroll Organization
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <h1 class="display-4 fw-bold mb-3">{{ request.user.username }}</h1>
-            <p class="lead opacity-90 mb-4">
-              Command your SMS empire with precision. Monitor global performance, onboard new organizations,
-              and maintain system excellence across all operations.
-            </p>
-            <div class="hero-stats d-flex gap-4 mb-4">
-              <div class="text-center">
-                <div class="h3 fw-bold mb-1">{{ total_orgs|default:0 }}</div>
-                <small class="opacity-75">Organizations</small>
-              </div>
-              <div class="text-center">
-                <div class="h3 fw-bold mb-1">{{ total_sms_sent_all|default:0|format_number }}</div>
-                <small class="opacity-75">SMS Sent</small>
-              </div>
-              <div class="text-center">
-                <div class="h3 fw-bold mb-1">₵{{ total_balance_all|default:0|floatformat:0|format_number }}</div>
-                <small class="opacity-75">Total Balance</small>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4 text-center">
-            <div class="hero-cta">
-              <a href="{% url 'enroll_tenant' %}" class="btn btn-light btn-lg px-5 py-3 fw-bold shadow-lg">
-                <i class="bi bi-plus-circle-fill me-2 fs-5"></i>
-                Enroll New Organization
-              </a>
-              <p class="small text-white-50 mt-3 mb-0">Expand your SMS network</p>
-            </div>
-          </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Key Metrics Grid -->
-  <div class="row mb-5 g-4">
-    <div class="col-xl-2 col-md-4">
-      <div class="metric-card-modern glassmorphism-card p-4 text-center text-white">
-        <div class="metric-icon mb-3">
-          <i class="bi bi-building-fill fs-1"></i>
-        </div>
-        <div class="metric-value display-4 fw-bold mb-2">{{ total_orgs|default:0 }}</div>
-        <div class="metric-label h6 opacity-90">Active Organizations</div>
-        <div class="metric-trend small text-success mt-2">
-          <i class="bi bi-arrow-up-circle-fill me-1"></i>+12% this month
-        </div>
-      </div>
-    </div>
-    <div class="col-xl-2 col-md-4">
-      <div class="metric-card-modern glassmorphism-card p-4 text-center text-white" style="background: linear-gradient(135deg, rgba(25, 135, 84, 0.9), rgba(32, 201, 151, 0.9));">
-        <div class="metric-icon mb-3">
-          <i class="bi bi-chat-dots-fill fs-1"></i>
-        </div>
-        <div class="metric-value display-4 fw-bold mb-2">{{ total_sms_sent_all|default:0|format_number }}</div>
-        <div class="metric-label h6 opacity-90">Total SMS Sent</div>
-        <div class="metric-trend small text-success mt-2">
-          <i class="bi bi-arrow-up-circle-fill me-1"></i>+8% this week
-        </div>
-      </div>
-    </div>
-    <div class="col-xl-2 col-md-4">
-      <div class="metric-card-modern glassmorphism-card p-4 text-center text-white" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.9), rgba(253, 126, 20, 0.9));">
-        <div class="metric-icon mb-3">
-          <i class="bi bi-cash-stack fs-1"></i>
-        </div>
-        <div class="metric-value display-4 fw-bold mb-2">₵{{ total_balance_all|default:0|floatformat:0|format_number }}</div>
-        <div class="metric-label h6 opacity-90">Total Balance</div>
-        <div class="metric-trend small text-success mt-2">
-          <i class="bi bi-arrow-up-circle-fill me-1"></i>+15% this month
-        </div>
-      </div>
-    </div>
-    <div class="col-xl-2 col-md-4">
-      <div class="metric-card-modern glassmorphism-card p-4 text-center text-white" style="background: linear-gradient(135deg, rgba(111, 66, 193, 0.9), rgba(232, 62, 140, 0.9));">
-        <div class="metric-icon mb-3">
-          <i class="bi bi-graph-up fs-1"></i>
-        </div>
-        <div class="metric-value display-4 fw-bold mb-2">₵{{ avg_sms_rate|default:0.25|floatformat:2 }}</div>
-        <div class="metric-label h6 opacity-90">Avg SMS Rate</div>
-        <div class="metric-trend small text-success mt-2">
-          <i class="bi bi-dash-circle-fill me-1"></i>Stable
-        </div>
-      </div>
-    </div>
-    <div class="col-xl-2 col-md-4">
-      <div class="metric-card-modern glassmorphism-card p-4 text-center text-white" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.9), rgba(255, 107, 129, 0.9));">
-        <div class="metric-icon mb-3">
-          <i class="bi bi-envelope-exclamation-fill fs-1"></i>
-        </div>
-        <div class="metric-value display-4 fw-bold mb-2">{{ total_pending_requests|default:0 }}</div>
-        <div class="metric-label h6 opacity-90">Pending Requests</div>
-        <div class="metric-trend small text-warning mt-2">
-          <i class="bi bi-clock-fill me-1"></i>Needs Review
-        </div>
-      </div>
-    </div>
-    <div class="col-xl-2 col-md-4">
-      <div class="metric-card-modern glassmorphism-card p-4 text-center text-white" style="background: linear-gradient(135deg, rgba(23, 162, 184, 0.9), rgba(86, 204, 242, 0.9));">
-        <div class="metric-icon mb-3">
-          <i class="bi bi-check-circle-fill fs-1"></i>
-        </div>
-        <div class="metric-value display-4 fw-bold mb-2">{{ pending_approvals|length }}</div>
-        <div class="metric-label h6 opacity-90">Pending Approvals</div>
-        <div class="metric-trend small text-info mt-2">
-          <i class="bi bi-info-circle-fill me-1"></i>Organizations
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Pending Enrollment Requests Section -->
-  {% if pending_enrollment_requests %}
-  <div class="glassmorphism-card p-4 mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
-        <h3 class="text-white mb-1">
-          <i class="bi bi-envelope-exclamation-fill me-2"></i>Pending Enrollment Requests
-        </h3>
-        <p class="text-white-50 mb-0">Organizations awaiting approval</p>
-      </div>
-      <div class="badge bg-warning text-dark fs-6 px-3 py-2">
-        {{ total_pending_requests }} Pending
-      </div>
     </div>
 
-    <div class="row g-3">
-      {% for request in pending_enrollment_requests %}
-      <div class="col-lg-6 col-xl-4">
-        <div class="glassmorphism-card p-3 h-100" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
-          <div class="d-flex justify-content-between align-items-start mb-3">
-            <div>
-              <h5 class="text-white mb-1">{{ request.organization_name }}</h5>
-              <small class="text-white-50">{{ request.created_at|date:"M d, Y H:i" }}</small>
+    <!-- Key Metrics -->
+    <div class="row mb-4 g-3">
+        <div class="col-xl-3 col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-building text-primary fs-1 mb-2"></i>
+                    <h3 class="h4 mb-1">{{ total_orgs|default:0 }}</h3>
+                    <p class="text-muted small mb-0">Organizations</p>
+                </div>
             </div>
-            <span class="badge bg-warning text-dark">Pending</span>
-          </div>
-
-          <div class="mb-3">
-            <div class="text-white-75 small mb-1">
-              <i class="bi bi-person-fill me-1"></i>{{ request.contact_person }}
-            </div>
-            <div class="text-white-75 small mb-1">
-              <i class="bi bi-envelope-fill me-1"></i>{{ request.email }}
-            </div>
-            <div class="text-white-75 small mb-1">
-              <i class="bi bi-telephone-fill me-1"></i>{{ request.phone }}
-            </div>
-            {% if request.school_type %}
-            <div class="text-white-75 small">
-              <i class="bi bi-building me-1"></i>{{ request.school_type }}
-            </div>
-            {% endif %}
-          </div>
-
-          <div class="d-flex gap-2">
-            <button class="btn btn-success btn-sm flex-fill" onclick="approveRequest({{ request.id }})">
-              <i class="bi bi-check-circle-fill me-1"></i>Approve
-            </button>
-            <button class="btn btn-danger btn-sm flex-fill" onclick="rejectRequest({{ request.id }})">
-              <i class="bi bi-x-circle-fill me-1"></i>Reject
-            </button>
-          </div>
         </div>
-      </div>
-      {% endfor %}
+        <div class="col-xl-3 col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-chat-dots text-success fs-1 mb-2"></i>
+                    <h3 class="h4 mb-1">{{ total_sms_sent_all|default:0|format_number }}</h3>
+                    <p class="text-muted small mb-0">SMS Sent</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-cash text-warning fs-1 mb-2"></i>
+                    <h3 class="h4 mb-1">₵{{ total_balance_all|default:0|floatformat:0|format_number }}</h3>
+                    <p class="text-muted small mb-0">Total Balance</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-person-plus text-info fs-1 mb-2"></i>
+                    <h3 class="h4 mb-1">{{ pending_enrollments|length }}</h3>
+                    <p class="text-muted small mb-0">Pending Enrollments</p>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-  {% endif %}
 
-  <!-- Quick Actions Grid -->
-  <div class="row mb-5">
-    <div class="col-12">
-      <div class="glassmorphism-card p-4">
-        <div class="d-flex align-items-center mb-4">
-          <i class="bi bi-lightning-charge-fill text-warning fs-4 me-3"></i>
-          <h3 class="h4 mb-0 fw-bold">Quick Actions</h3>
+    <!-- Recent Activity -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for activity in recent_activities|default:[]|slice:":10" %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <small class="text-muted">{{ activity.timestamp|date:"M d, H:i" }}</small>
+                                    <div class="fw-medium">{{ activity.description }}</div>
+                                </div>
+                                <span class="badge bg-{{ activity.type|default:'secondary' }}">{{ activity.type|default:'info' }}</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-clock-history fs-1 mb-2"></i>
+                            <p>No recent activity</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="row g-3">
-          <div class="col-md-6 col-lg-3">
-            <a href="{% url 'enroll_tenant' %}" class="action-card glassmorphism-card p-4 text-center text-decoration-none h-100">
-              <div class="action-icon mb-3">
-                <i class="bi bi-person-plus-fill fs-2 text-primary"></i>
-              </div>
-              <h5 class="fw-bold mb-2">Enroll Organization</h5>
-              <p class="small text-muted mb-0">Add new organizations to the platform</p>
-            </a>
-          </div>
-          <div class="col-md-6 col-lg-3">
-            <a href="{% url 'super_orgs' %}" class="action-card glassmorphism-card p-4 text-center text-decoration-none h-100">
-              <div class="action-icon mb-3">
-                <i class="bi bi-building-fill fs-2 text-success"></i>
-              </div>
-              <h5 class="fw-bold mb-2">Manage Organizations</h5>
-              <p class="small text-muted mb-0">View and edit all organizations</p>
-            </a>
-          </div>
-          <div class="col-md-6 col-lg-3">
-            <a href="{% url 'global_templates' %}" class="action-card glassmorphism-card p-4 text-center text-decoration-none h-100">
-              <div class="action-icon mb-3">
-                <i class="bi bi-file-earmark-text-fill fs-2 text-info"></i>
-              </div>
-              <h5 class="fw-bold mb-2">Global Templates</h5>
-              <p class="small text-muted mb-0">Manage SMS templates</p>
-            </a>
-          </div>
-          <div class="col-md-6 col-lg-3">
-            <a href="{% url 'system_logs' %}" class="action-card glassmorphism-card p-4 text-center text-decoration-none h-100">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'enroll_tenant' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle me-1"></i>Enroll Organization
+                        </a>
+                        <a href="{% url 'super_orgs' %}" class="btn btn-outline-success">
+                            <i class="bi bi-building me-1"></i>Manage Organizations
+                        </a>
+                        <a href="{% url 'global_templates' %}" class="btn btn-outline-info">
+                            <i class="bi bi-file-earmark-text me-1"></i>Global Templates
+                        </a>
+                        <a href="{% url 'system_logs' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-journal-text me-1"></i>System Logs
+                        </a>
+                        <a href="{% url 'audit_message_logs' %}" class="btn btn-outline-warning">
+                            <i class="bi bi-shield me-1"></i>Audit Logs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Enrollment Requests -->
+    {% if pending_enrollment_requests %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Pending Enrollment Requests</h5>
+            <span class="badge bg-warning">{{ pending_enrollment_requests|length }} Pending</span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for request in pending_enrollment_requests %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-warning">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title mb-1">{{ request.organization_name }}</h6>
+                                <small class="text-muted">{{ request.created_at|date:"M d, Y" }}</small>
+                            </div>
+                            <div class="small text-muted mb-3">
+                                <div><i class="bi bi-person me-1"></i>{{ request.contact_person }}</div>
+                                <div><i class="bi bi-envelope me-1"></i>{{ request.email }}</div>
+                                <div><i class="bi bi-telephone me-1"></i>{{ request.phone }}</div>
+                                {% if request.school_type %}
+                                <div><i class="bi bi-building me-1"></i>{{ request.school_type }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-success btn-sm flex-fill" onclick="approveRequest({{ request.id }})">
+                                    <i class="bi bi-check-circle me-1"></i>Approve
+                                </button>
+                                <button class="btn btn-danger btn-sm flex-fill" onclick="rejectRequest({{ request.id }})">
+                                    <i class="bi bi-x-circle me-1"></i>Reject
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- System Status -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">System Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <i class="bi bi-server text-success fs-1 mb-2"></i>
+                            <h6>Database</h6>
+                            <span class="badge bg-success">Online</span>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="bi bi-cloud text-primary fs-1 mb-2"></i>
+                            <h6>SMS Services</h6>
+                            <span class="badge bg-primary">Active</span>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="bi bi-envelope text-info fs-1 mb-2"></i>
+                            <h6>Email Service</h6>
+                            <span class="badge bg-info">Active</span>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="bi bi-shield-check text-warning fs-1 mb-2"></i>
+                            <h6>Security</h6>
+                            <span class="badge bg-warning">Secure</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for enrollment actions -->
+<script>
+function approveRequest(requestId) {
+    if (confirm('Are you sure you want to approve this enrollment request?')) {
+        fetch(`/super-admin/approve-enrollment/${requestId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+}
+
+function rejectRequest(requestId) {
+    const reason = prompt('Reason for rejection (optional):');
+    fetch(`/super-admin/reject-enrollment/${requestId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: reason }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+</script>
+
+{% endblock %}
               <div class="action-icon mb-3">
                 <i class="bi bi-journal-text fs-2 text-secondary"></i>
               </div>
