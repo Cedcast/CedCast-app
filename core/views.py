@@ -1430,6 +1430,7 @@ def org_dashboard(request, org_slug=None):
 		"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
 		"is_suspended": not organization.is_active,
 		"low_balance": organization.balance < organization.get_current_sms_rate() * 10,  # Low balance if can't send 10 SMS
+		"critical_balance": organization.balance < Decimal('5.00'),  # Critical balance warning at 5 GHS
 	})
 
 

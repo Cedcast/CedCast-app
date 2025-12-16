@@ -72,6 +72,15 @@
             </div>
         </div>
         {% endif %}
+        {% if critical_balance %}
+        <div class="mb-3">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Critical Balance Alert!</strong> Your account balance is below ₵5.00 (Current: ₵{{ organization.balance|floatformat:2 }}). 
+                <a href="{% url 'org_billing' organization.slug %}" class="alert-link">Click here to top up</a> immediately to avoid service interruption.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+        {% endif %}
         <div class="row">
                     <div class="col-md-3 mb-3" id="sidebarCol">
                         <div class="card shadow-sm sidebar-card">
@@ -281,6 +290,48 @@ document.addEventListener('DOMContentLoaded', function(){
     renderSpark('spark_templates', '#6c757d');
     renderSpark('spark_sent', '#0dcaf0');
     renderSpark('spark_delivery', '#28a745');
+
+    // Critical balance popup notification
+    {% if critical_balance %}
+    setTimeout(function() {
+        const balanceModal = new bootstrap.Modal(document.getElementById('criticalBalanceModal'), {
+            backdrop: 'static',
+            keyboard: false
+        });
+        balanceModal.show();
+    }, 2000); // Show after 2 seconds
+    {% endif %}
 });
 </script>
+
+<!-- Critical Balance Modal -->
+<div class="modal fade" id="criticalBalanceModal" tabindex="-1" aria-labelledby="criticalBalanceModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="criticalBalanceModalLabel">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>Critical Balance Alert
+        </h5>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <i class="bi bi-cash-coin text-danger" style="font-size: 4rem;"></i>
+        </div>
+        <h5 class="text-center mb-3">Your Account Balance is Critically Low!</h5>
+        <div class="alert alert-danger">
+          <strong>Current Balance:</strong> ₵{{ organization.balance|floatformat:2 }}<br>
+          <strong>Minimum Required:</strong> ₵5.00
+        </div>
+        <p class="mb-0">Your SMS service may be interrupted if you don't top up immediately. Add funds now to ensure uninterrupted service.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Remind Me Later</button>
+        <a href="{% url 'org_billing' organization.slug %}" class="btn btn-danger">
+          <i class="bi bi-plus-circle me-1"></i>Add Balance Now
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
