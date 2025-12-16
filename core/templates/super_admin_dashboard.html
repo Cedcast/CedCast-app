@@ -166,6 +166,41 @@
         </div>
     </div>
 
+    <!-- Enrollment Management Overview -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Enrollment Management</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded bg-light">
+                        <div class="h4 text-warning mb-1">{{ pending_enrollment_requests|length }}</div>
+                        <div class="small text-muted">Pending Review</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded bg-success">
+                        <div class="h4 text-white mb-1">{{ approved_enrollment_requests|length }}</div>
+                        <div class="small text-white">Ready for Setup</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded bg-info">
+                        <div class="h4 text-white mb-1">{{ total_enrollment_requests|default:0 }}</div>
+                        <div class="small text-white">Total This Month</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded bg-secondary">
+                        <div class="h4 text-white mb-1">{{ rejected_enrollment_requests|default:0 }}</div>
+                        <div class="small text-white">Rejected</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Pending Enrollment Requests - Need Review -->
     {% if pending_enrollment_requests %}
     <div class="card mb-4">
@@ -202,13 +237,16 @@
                                 {% endif %}
                             </div>
                             <div class="d-flex gap-2">
-                                <button class="btn btn-success btn-sm flex-fill" onclick="approveRequest({{ request.id }})">
+                                <button class="btn btn-success btn-sm flex-fill" onclick="approveRequest({{ request.id }}, event)" 
+                                        title="Approve this request to enable account creation" data-bs-toggle="tooltip">
                                     <i class="bi bi-check-circle me-1"></i>Approve
                                 </button>
-                                <button class="btn btn-danger btn-sm flex-fill" onclick="rejectRequest({{ request.id }})">
+                                <button class="btn btn-danger btn-sm flex-fill" onclick="rejectRequest({{ request.id }})"
+                                        title="Reject this request with a reason" data-bs-toggle="tooltip">
                                     <i class="bi bi-x-circle me-1"></i>Reject
                                 </button>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="viewRequestDetails({{ request.id }})">
+                                <button class="btn btn-outline-secondary btn-sm" onclick="viewRequestDetails({{ request.id }})"
+                                        title="View full request details" data-bs-toggle="tooltip">
                                     <i class="bi bi-eye me-1"></i>Details
                                 </button>
                             </div>
@@ -254,13 +292,16 @@
                                 {% endif %}
                             </div>
                             <div class="d-flex gap-2">
-                                <a href="{% url 'enroll_tenant' %}?prefill={{ request.id }}" class="btn btn-primary btn-sm flex-fill">
+                                <a href="{% url 'enroll_tenant' %}?prefill={{ request.id }}" class="btn btn-primary btn-sm flex-fill"
+                                   title="Create organization/school account for this request" data-bs-toggle="tooltip">
                                     <i class="bi bi-plus-circle me-1"></i>Create Account
                                 </a>
-                                <button class="btn btn-danger btn-sm" onclick="declineApprovedRequest({{ request.id }})">
+                                <button class="btn btn-danger btn-sm" onclick="declineApprovedRequest({{ request.id }})"
+                                        title="Decline this approved request with a reason" data-bs-toggle="tooltip">
                                     <i class="bi bi-x-circle me-1"></i>Decline
                                 </button>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="viewRequestDetails({{ request.id }})">
+                                <button class="btn btn-outline-secondary btn-sm" onclick="viewRequestDetails({{ request.id }})"
+                                        title="View full request details" data-bs-toggle="tooltip">
                                     <i class="bi bi-eye me-1"></i>Details
                                 </button>
                             </div>
@@ -643,7 +684,7 @@ style.textContent = `
 document.head.appendChild(style);
 
 // Enrollment request management functions
-function approveRequest(requestId) {
+function approveRequest(requestId, event) {
   if (confirm('Are you sure you want to approve this enrollment request?')) {
     fetch(`/super/approve-enrollment/${requestId}/`, {
       method: 'POST',
@@ -655,10 +696,20 @@ function approveRequest(requestId) {
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        alert('Enrollment request approved successfully!');
-        location.reload();
+        showToast('Enrollment request approved successfully!', 'success');
+        
+        // Animate the card before reload
+        const requestCard = event.target.closest('.card');
+        if (requestCard) {
+          requestCard.style.transition = 'all 0.3s ease';
+          requestCard.style.opacity = '0';
+          requestCard.style.transform = 'scale(0.95)';
+          setTimeout(() => location.reload(), 300);
+        } else {
+          setTimeout(() => location.reload(), 1000);
+        }
       } else {
-        alert('Error: ' + data.message);
+        showToast('Error: ' + (data.error || 'Unknown error occurred'), 'error');
       }
     })
     .catch(error => {
@@ -708,10 +759,24 @@ function submitRejection() {
       const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
       modal.hide();
 
-      alert('Enrollment request rejected successfully.');
-      location.reload();
+      // Show success toast
+      showToast('Enrollment request rejected successfully!', 'success');
+      
+      // Remove the request card with animation
+      const requestCard = document.querySelector(`[data-request-id="${requestId}"]`);
+      if (requestCard) {
+        requestCard.style.transition = 'all 0.3s ease';
+        requestCard.style.opacity = '0';
+        requestCard.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          requestCard.remove();
+          location.reload(); // Reload to update counts
+        }, 300);
+      } else {
+        setTimeout(() => location.reload(), 1000);
+      }
     } else {
-      alert('Error: ' + (data.error || 'Unknown error occurred'));
+      showToast('Error: ' + (data.error || 'Unknown error occurred'), 'error');
       // Re-enable button
       btn.disabled = false;
       btn.innerHTML = 'Reject Request';
@@ -745,7 +810,63 @@ function declineApprovedRequest(requestId) {
 // Add event listener for the reject button
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('confirmRejectBtn').addEventListener('click', submitRejection);
+  
+  // Initialize tooltips
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
 });
+
+// Toast notification function
+function showToast(message, type = 'info') {
+  // Remove existing toasts
+  const existingToasts = document.querySelectorAll('.toast-notification');
+  existingToasts.forEach(toast => toast.remove());
+
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.className = `toast-notification alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} position-fixed`;
+  toast.style.cssText = `
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideInRight 0.3s ease;
+  `;
+  toast.innerHTML = `
+    <div class="d-flex align-items-center">
+      <i class="bi ${type === 'success' ? 'bi-check-circle' : type === 'error' ? 'bi-exclamation-triangle' : 'bi-info-circle'} me-2"></i>
+      <div>${message}</div>
+      <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+    </div>
+  `;
+
+  document.body.appendChild(toast);
+
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    if (toast.parentElement) {
+      toast.style.animation = 'slideOutRight 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }
+  }, 5000);
+}
+
+// Add toast animations
+const toastStyles = document.createElement('style');
+toastStyles.textContent = `
+  @keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+  }
+`;
+document.head.appendChild(toastStyles);
 </script>
 
 <!-- Rejection Modal -->

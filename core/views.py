@@ -569,6 +569,13 @@ def dashboard(request, school_slug=None):
 		# Pending enrollment requests that need review
 		pending_enrollment_requests = EnrollmentRequest.objects.filter(status='pending').order_by('-created_at')[:10]  # Show latest 10
 
+		# Additional enrollment request statistics
+		from django.utils import timezone
+		from datetime import timedelta
+		thirty_days_ago = timezone.now() - timedelta(days=30)
+		total_enrollment_requests = EnrollmentRequest.objects.filter(created_at__gte=thirty_days_ago).count()
+		rejected_enrollment_requests = EnrollmentRequest.objects.filter(status='rejected', reviewed_at__gte=thirty_days_ago).count()
+
 		context = {"schools": schools, "school_stats": school_stats, "org_stats": org_stats, "notice": notice,
 			"total_messages": total_msgs, "total_sent": total_sent,
 			"messages_trend": messages_trend, "orgs_trend": orgs_trend, "delivery_trend": delivery_trend,
@@ -596,6 +603,8 @@ def dashboard(request, school_slug=None):
 			# Enrollment requests
 			"approved_enrollment_requests": approved_enrollment_requests,
 			"pending_enrollment_requests": pending_enrollment_requests,
+			"total_enrollment_requests": total_enrollment_requests,
+			"rejected_enrollment_requests": rejected_enrollment_requests,
 			# Recent payment transactions
 			"recent_payment_transactions": recent_payment_transactions,
 		}
