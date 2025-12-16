@@ -1706,6 +1706,26 @@ def org_send_sms(request, org_slug=None):
 			action = 'schedule' if scheduled_time else 'send_now'
 
 		if sms_body and contact_qs.exists():
+			# Validate balance BEFORE creating message records
+			if action == 'send_now':
+				from .utils import validate_sms_balance
+				is_valid, balance_error = validate_sms_balance(org, contact_qs.count(), settings)
+				if not is_valid:
+					error = balance_error
+					# Return early - don't create message or send anything
+					return render(request, 'org_send_sms.html', {
+						'organization': org, 
+						'contacts': contacts, 
+						'groups': groups, 
+						'templates': templates, 
+						'sms_body': sms_body, 
+						'error': error, 
+						'success': success, 
+						'recaptcha_site_key': getattr(settings, 'RECAPTCHA_SITE_KEY', None), 
+						'hubtel_dry_run': getattr(settings, 'HUBTEL_DRY_RUN', False), 
+						'clicksend_dry_run': getattr(settings, 'CLICKSEND_DRY_RUN', False)
+					})
+			
 			import datetime
 			from django.utils import timezone
 			scheduled_dt = timezone.now()
@@ -1735,62 +1755,58 @@ def org_send_sms(request, org_slug=None):
 					# defer failure until (and unless) it's actually used as a fallback.
 					clicksend_utils = None
 
-				# Check package before sending
-				from .utils import validate_sms_balance
-				is_valid, balance_error = validate_sms_balance(org, contact_qs.count(), settings)
-				if not is_valid:
-					error = balance_error
-				else:
-					processed = 0
-					for ar in getattr(msg, 'recipients_status').all():
-						phone = ar.contact.phone_number
+				# Balance already validated before message creation
+				# Proceed with sending
+				processed = 0
+				for ar in getattr(msg, 'recipients_status').all():
+					phone = ar.contact.phone_number
+					try:
+						# prefer Hubtel; fallback to ClickSend
+						sent_id = None
 						try:
-							# prefer Hubtel; fallback to ClickSend
-							sent_id = None
-							try:
-								sent_id = hubtel_utils.send_sms(phone, sms_body, org)
-							except Exception as e_hub:
-								# If ClickSend integration is available, try it as a fallback.
-								if clicksend_utils is not None:
-									try:
-										sent_id = clicksend_utils.send_sms(phone, sms_body, org)
-									except Exception as e_click:
-										raise Exception(f"Hubtel error: {e_hub}; ClickSend error: {e_click}")
-								else:
-									# No ClickSend client installed; surface the original Hubtel error.
-									raise Exception(f"Hubtel error: {e_hub}; ClickSend not available")
-							ar.provider_message_id = str(sent_id)
-							ar.status = 'sent'
-							ar.sent_at = _tz.now()
-							ar.error_message = ''
-							ar.save()
-							processed += 1
-						except Exception as e:
-							import logging
-							logger = logging.getLogger(__name__)
-							logger.error(f"SMS sending failed for contact {ar.contact.id} ({ar.contact.phone_number}): {str(e)}")
-							ar.retry_count = (ar.retry_count or 0) + 1
-							ar.last_retry_at = _tz.now()
-							ar.error_message = str(e)
-							if ar.retry_count >= getattr(settings, 'ORG_MESSAGE_MAX_RETRIES', 3):
-								ar.status = 'failed'
-								logger.warning(f"SMS failed permanently for contact {ar.contact.id} after {ar.retry_count} retries")
+							sent_id = hubtel_utils.send_sms(phone, sms_body, org)
+						except Exception as e_hub:
+							# If ClickSend integration is available, try it as a fallback.
+							if clicksend_utils is not None:
+								try:
+									sent_id = clicksend_utils.send_sms(phone, sms_body, org)
+								except Exception as e_click:
+									raise Exception(f"Hubtel error: {e_hub}; ClickSend error: {e_click}")
 							else:
-								ar.status = 'pending'
-								logger.info(f"SMS queued for retry for contact {ar.contact.id}, attempt {ar.retry_count}")
-							ar.save()
+								# No ClickSend client installed; surface the original Hubtel error.
+								raise Exception(f"Hubtel error: {e_hub}; ClickSend not available")
+						ar.provider_message_id = str(sent_id)
+						ar.status = 'sent'
+						ar.sent_at = _tz.now()
+						ar.error_message = ''
+						ar.save()
+						processed += 1
+					except Exception as e:
+						import logging
+						logger = logging.getLogger(__name__)
+						logger.error(f"SMS sending failed for contact {ar.contact.id} ({ar.contact.phone_number}): {str(e)}")
+						ar.retry_count = (ar.retry_count or 0) + 1
+						ar.last_retry_at = _tz.now()
+						ar.error_message = str(e)
+						if ar.retry_count >= getattr(settings, 'ORG_MESSAGE_MAX_RETRIES', 3):
+							ar.status = 'failed'
+							logger.warning(f"SMS failed permanently for contact {ar.contact.id} after {ar.retry_count} retries")
+						else:
+							ar.status = 'pending'
+							logger.info(f"SMS queued for retry for contact {ar.contact.id}, attempt {ar.retry_count}")
+						ar.save()
 
-					# Deduct SMS cost from balance
-					sms_cost = 0
-					if processed > 0:
-						from .utils import deduct_sms_balance
-						sms_deducted = deduct_sms_balance(org, processed, settings)
-						sms_cost = org.get_current_sms_rate() * processed
+				# Deduct SMS cost from balance
+				sms_cost = 0
+				if processed > 0:
+					from .utils import deduct_sms_balance
+					sms_deducted = deduct_sms_balance(org, processed, settings)
+					sms_cost = org.get_current_sms_rate() * processed
 
-					if processed > 0:
-						success = f"Message sent to {processed} recipients. Cost: ₵{sms_cost:.2f} (₵{org.sms_rate:.2f} per SMS). Balance: ₵{org.balance:.2f}."
-					else:
-						error = 'Failed to send any messages. Please try again.'
+				if processed > 0:
+					success = f"Message sent to {processed} recipients. Cost: ₵{sms_cost:.2f} (₵{org.sms_rate:.2f} per SMS). Balance: ₵{org.balance:.2f}."
+				else:
+					error = 'Failed to send any messages. Please try again.'
 		else:
 			error = 'Please provide a message and at least one recipient.'
 
