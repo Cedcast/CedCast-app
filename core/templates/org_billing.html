@@ -6,12 +6,189 @@
 
 {% block extra_head %}
 <script src="https://js.paystack.co/v1/inline.js"></script>
+<style>
+body {
+    background-color: #f8f9fa;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.main-content {
+    margin-top: 2rem;
+}
+
+.page-header {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+    margin-bottom: 2rem;
+    padding: 2rem;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.metric-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.balance-display {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.balance-display .display-4 {
+    font-size: 3rem;
+    font-weight: 700;
+    color: {{ organization.primary_color|default:'#007bff' }};
+    margin-bottom: 0.5rem;
+}
+
+.pricing-tier {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.pricing-tier:hover {
+    background: white;
+    border-color: {{ organization.primary_color|default:'#007bff' }};
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.amount-input-section {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.btn-primary {
+    background-color: {{ organization.primary_color|default:'#007bff' }};
+    border-color: {{ organization.primary_color|default:'#007bff' }};
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    border-radius: 8px;
+}
+
+.btn-primary:hover {
+    background-color: {{ organization.primary_color|default:'#0056b3' }};
+    border-color: {{ organization.primary_color|default:'#0056b3' }};
+}
+
+.btn-primary:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.form-control {
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.form-control:focus {
+    border-color: {{ organization.primary_color|default:'#007bff' }};
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.security-badge {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.alert {
+    border-radius: 8px;
+    border: none;
+    padding: 1rem 1.25rem;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.btn-outline-primary {
+    border-color: {{ organization.primary_color|default:'#007bff' }};
+    color: {{ organization.primary_color|default:'#007bff' }};
+    border-radius: 8px;
+}
+
+.btn-outline-primary:hover {
+    background-color: {{ organization.primary_color|default:'#007bff' }};
+    border-color: {{ organization.primary_color|default:'#007bff' }};
+}
+
+.btn-outline-success {
+    border-color: #28a745;
+    color: #28a745;
+    border-radius: 8px;
+}
+
+.btn-outline-success:hover {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        padding: 1.5rem;
+    }
+
+    .metric-card {
+        padding: 1.5rem;
+    }
+
+    .balance-display .display-4 {
+        font-size: 2.5rem;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
 {% include "org_admin_nav.html" %}
 
-<div class="container-fluid py-4" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}15 0%, {{ organization.secondary_color|default:'#764ba2' }}15 100%); min-height: calc(100vh - 76px);">
+<div class="container-fluid main-content">
     <div class="container">
         {% csrf_token %}
 
