@@ -1,55 +1,386 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static %}
-{% block title %}{{ organization.name }} - Message Logs{% endblock %}
-{% block content %}
-    <div class="container py-4">
-        <a href="{% url 'org_dashboard' organization.slug %}" class="btn btn-link">← Back</a>
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">Message Logs</div>
-            <div class="card-body">
-                    <form method="get" class="row g-2 mb-3">
-                        <div class="col-auto">
-                            <select name="status" class="form-select">
-                                <option value="">All</option>
-                                <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
-                                <option value="sent" {% if status == 'sent' %}selected{% endif %}>Sent</option>
-                                <option value="failed" {% if status == 'failed' %}selected{% endif %}>Failed</option>
-                            </select>
-                        </div>
-                        <div class="col-auto">
-                            <input type="date" name="from" class="form-control" value="{{ from }}" placeholder="From">
-                        </div>
-                        <div class="col-auto">
-                            <input type="date" name="to" class="form-control" value="{{ to }}" placeholder="To">
-                        </div>
-                        <div class="col-auto">
-                            <button class="btn btn-secondary">Filter</button>
-                        </div>
-                    </form>
 
-                    <ul class="list-group">
-                    {% for l in logs %}
-                        <li class="list-group-item d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <strong>{{ l.contact.name }}</strong> — {{ l.contact.phone_number }}<br>
-                                Status: {{ l.status }}{% if l.sent_at %} at {{ l.sent_at|date:'Y-m-d H:i' }}{% endif %}<br>
-                                Message: {{ l.message.content }}
+{% block title %}{{ organization.name }} - Message Logs{% endblock %}
+
+{% block content %}
+{% include "org_admin_nav.html" %}
+
+<div class="container-fluid py-4" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}15 0%, {{ organization.secondary_color|default:'#764ba2' }}15 100%); min-height: calc(100vh - 76px);">
+    <div class="container">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h1 class="mb-2" style="color: {{ organization.primary_color|default:'#667eea' }}; font-weight: 700;">
+                            <i class="fas fa-history me-3"></i>Message Logs
+                        </h1>
+                        <p class="text-muted mb-0">Track and monitor all your sent messages</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="d-flex align-items-center">
+                            <div class="badge bg-primary me-3 px-3 py-2" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}) !important;">
+                                <i class="fas fa-envelope me-1"></i>{{ logs|length }} Messages
                             </div>
-                            <div class="ms-3">
-                                <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this message log?')">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="log_id" value="{{ l.id }}">
-                                    <button type="submit" name="delete_log" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i> Delete
-                                    </button>
-                                </form>
+                            <div class="stats-grid d-flex gap-2">
+                                {% with sent_count=logs|length %}
+                                {% if sent_count > 0 %}
+                                <div class="badge bg-success px-2 py-1">
+                                    <i class="fas fa-check me-1"></i>{{ logs|length }}
+                                </div>
+                                {% endif %}
+                                {% endwith %}
                             </div>
-                        </li>
-                    {% empty %}
-                        <li class="list-group-item">No logs yet.</li>
-                    {% endfor %}
-                </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="card mb-4" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 20px 20px 0 0; padding: 1.5rem;">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>Filters & Search
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="get" id="filterForm" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="statusFilter" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                            <i class="fas fa-info-circle me-2"></i>Status
+                        </label>
+                        <select id="statusFilter" name="status" class="form-select" style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 12px; padding: 0.75rem;">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="sent" {% if status == 'sent' %}selected{% endif %}>Sent</option>
+                            <option value="failed" {% if status == 'failed' %}selected{% endif %}>Failed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fromDate" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                            <i class="fas fa-calendar-alt me-2"></i>From Date
+                        </label>
+                        <input type="date" id="fromDate" name="from" class="form-control" value="{{ from }}" style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 12px; padding: 0.75rem;">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="toDate" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                            <i class="fas fa-calendar-alt me-2"></i>To Date
+                        </label>
+                        <input type="date" id="toDate" name="to" class="form-control" value="{{ to }}" style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 12px; padding: 0.75rem;">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                            <i class="fas fa-search me-2"></i>Actions
+                        </label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn flex-fill" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 12px; padding: 0.75rem;">
+                                <i class="fas fa-filter me-2"></i>Filter
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()" style="border-radius: 12px; padding: 0.75rem;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Message Logs Table -->
+        <div class="card" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 20px 20px 0 0; padding: 1.5rem;">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Message History
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" style="border-radius: 20px;">
+                        <thead style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05);">
+                            <tr>
+                                <th style="border: none; padding: 1rem 1.5rem; font-weight: 600; color: {{ organization.primary_color|default:'#667eea' }};">
+                                    <i class="fas fa-user me-2"></i>Contact
+                                </th>
+                                <th style="border: none; padding: 1rem 1.5rem; font-weight: 600; color: {{ organization.primary_color|default:'#667eea' }};">
+                                    <i class="fas fa-phone me-2"></i>Phone
+                                </th>
+                                <th style="border: none; padding: 1rem 1.5rem; font-weight: 600; color: {{ organization.primary_color|default:'#667eea' }};">
+                                    <i class="fas fa-comment me-2"></i>Message
+                                </th>
+                                <th style="border: none; padding: 1rem 1.5rem; font-weight: 600; color: {{ organization.primary_color|default:'#667eea' }};">
+                                    <i class="fas fa-info-circle me-2"></i>Status
+                                </th>
+                                <th style="border: none; padding: 1rem 1.5rem; font-weight: 600; color: {{ organization.primary_color|default:'#667eea' }};">
+                                    <i class="fas fa-clock me-2"></i>Sent At
+                                </th>
+                                <th style="border: none; padding: 1rem 1.5rem; font-weight: 600; color: {{ organization.primary_color|default:'#667eea' }};">
+                                    <i class="fas fa-cogs me-2"></i>Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for l in logs %}
+                            <tr style="border-bottom: 1px solid rgba(0,0,0,0.05); transition: all 0.2s ease;" onmouseover="this.style.backgroundColor='rgba({{ organization.primary_color|default:'#667eea' }}, 0.02)';" onmouseout="this.style.backgroundColor='transparent';">
+                                <td style="padding: 1rem 1.5rem; vertical-align: middle;">
+                                    <div class="d-flex align-items-center">
+                                        <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 0.75rem;">
+                                            {{ l.contact.name|first|upper }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">{{ l.contact.name }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding: 1rem 1.5rem; vertical-align: middle;">
+                                    <span class="font-monospace">{{ l.contact.phone_number }}</span>
+                                </td>
+                                <td style="padding: 1rem 1.5rem; vertical-align: middle;">
+                                    <div style="max-width: 300px;">
+                                        <span class="text-truncate d-inline-block" style="max-width: 100%;" title="{{ l.message.content }}">
+                                            {{ l.message.content|truncatechars:50 }}
+                                        </span>
+                                        {% if l.message.content|length > 50 %}
+                                        <button class="btn btn-sm btn-link p-0 ms-1" onclick="showFullMessage('{{ l.message.content|escapejs }}', '{{ l.contact.name }}')" style="font-size: 0.8rem;">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td style="padding: 1rem 1.5rem; vertical-align: middle;">
+                                    {% if l.status == 'sent' %}
+                                    <span class="badge bg-success px-3 py-2" style="border-radius: 20px;">
+                                        <i class="fas fa-check me-1"></i>Sent
+                                    </span>
+                                    {% elif l.status == 'pending' %}
+                                    <span class="badge bg-warning px-3 py-2" style="border-radius: 20px;">
+                                        <i class="fas fa-clock me-1"></i>Pending
+                                    </span>
+                                    {% elif l.status == 'failed' %}
+                                    <span class="badge bg-danger px-3 py-2" style="border-radius: 20px;">
+                                        <i class="fas fa-times me-1"></i>Failed
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary px-3 py-2" style="border-radius: 20px;">
+                                        <i class="fas fa-question me-1"></i>{{ l.status|title }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 1rem 1.5rem; vertical-align: middle;">
+                                    {% if l.sent_at %}
+                                    <div>
+                                        <div class="fw-semibold">{{ l.sent_at|date:'M j, Y' }}</div>
+                                        <small class="text-muted">{{ l.sent_at|date:'H:i' }}</small>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 1rem 1.5rem; vertical-align: middle;">
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm" onclick="viewMessageDetails({{ l.id }}, '{{ l.contact.name }}', '{{ l.contact.phone_number }}', '{{ l.message.content|escapejs }}', '{{ l.status }}', '{{ l.sent_at|date:'M j, Y H:i' if l.sent_at else '' }}')" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.1); color: {{ organization.primary_color|default:'#667eea' }}; border: 1px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 8px; padding: 0.5rem;">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <form method="post" class="d-inline" onsubmit="return confirmDelete('{{ l.contact.name }}')">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="log_id" value="{{ l.id }}">
+                                            <button type="submit" name="delete_log" class="btn btn-sm" style="background: rgba(220, 53, 69, 0.1); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.2); border-radius: 8px; padding: 0.5rem;">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div style="font-size: 4rem; color: rgba({{ organization.primary_color|default:'#667eea' }}, 0.3); margin-bottom: 1rem;">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h5 class="text-muted mb-3">No Message Logs Yet</h5>
+                    <p class="text-muted mb-4">Your sent messages will appear here once you start sending communications</p>
+                    <div class="d-flex justify-content-center">
+                        <div class="arrow-animation" style="width: 50px; height: 50px; border: 3px solid {{ organization.primary_color|default:'#667eea' }}; border-radius: 50%; position: relative;">
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; background: {{ organization.primary_color|default:'#667eea' }}; border-radius: 50%; animation: pulse 2s infinite;"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
+</div>
+
+<!-- Message Details Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px;">
+            <div class="modal-header" style="border: none; padding: 1.5rem;">
+                <h5 class="modal-title" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                    <i class="fas fa-envelope me-2"></i>Message Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="detail-item p-3" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border-radius: 12px;">
+                            <label class="text-muted small mb-1">Contact Name</label>
+                            <div class="fw-semibold" id="modalContactName"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item p-3" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border-radius: 12px;">
+                            <label class="text-muted small mb-1">Phone Number</label>
+                            <div class="font-monospace" id="modalPhoneNumber"></div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="detail-item p-3" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border-radius: 12px;">
+                            <label class="text-muted small mb-1">Message Content</label>
+                            <div class="mt-2 p-3" style="background: white; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1);" id="modalMessageContent"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item p-3" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border-radius: 12px;">
+                            <label class="text-muted small mb-1">Status</label>
+                            <div class="mt-2" id="modalStatus"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item p-3" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border-radius: 12px;">
+                            <label class="text-muted small mb-1">Sent At</label>
+                            <div class="fw-semibold mt-2" id="modalSentAt"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border: none; padding: 1.5rem;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Full Message Modal -->
+<div class="modal fade" id="fullMessageModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px;">
+            <div class="modal-header" style="border: none; padding: 1.5rem;">
+                <h5 class="modal-title" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                    <i class="fas fa-comment me-2"></i>Full Message
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <div class="text-center mb-3">
+                    <strong id="fullMessageContact"></strong>
+                </div>
+                <div class="p-3" style="background: rgba(0,0,0,0.05); border-radius: 12px; white-space: pre-wrap;" id="fullMessageContent"></div>
+            </div>
+            <div class="modal-footer" style="border: none; padding: 1.5rem;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
+    100% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
+}
+
+.arrow-animation::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid {{ organization.primary_color|default:'#667eea' }};
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    animation: slide 2s infinite;
+}
+
+@keyframes slide {
+    0% { left: 100%; opacity: 0; }
+    50% { left: 110%; opacity: 1; }
+    100% { left: 120%; opacity: 0; }
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba({{ organization.primary_color|default:'#667eea' }}, 0.02) !important;
+}
+</style>
+
+<script>
+function clearFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('fromDate').value = '';
+    document.getElementById('toDate').value = '';
+    document.getElementById('filterForm').submit();
+}
+
+function viewMessageDetails(id, contactName, phoneNumber, messageContent, status, sentAt) {
+    document.getElementById('modalContactName').textContent = contactName;
+    document.getElementById('modalPhoneNumber').textContent = phoneNumber;
+    document.getElementById('modalMessageContent').textContent = messageContent;
+    document.getElementById('modalSentAt').textContent = sentAt || 'Not sent yet';
+
+    const statusElement = document.getElementById('modalStatus');
+    let statusHtml = '';
+
+    if (status === 'sent') {
+        statusHtml = '<span class="badge bg-success px-3 py-2" style="border-radius: 20px;"><i class="fas fa-check me-1"></i>Sent</span>';
+    } else if (status === 'pending') {
+        statusHtml = '<span class="badge bg-warning px-3 py-2" style="border-radius: 20px;"><i class="fas fa-clock me-1"></i>Pending</span>';
+    } else if (status === 'failed') {
+        statusHtml = '<span class="badge bg-danger px-3 py-2" style="border-radius: 20px;"><i class="fas fa-times me-1"></i>Failed</span>';
+    } else {
+        statusHtml = '<span class="badge bg-secondary px-3 py-2" style="border-radius: 20px;"><i class="fas fa-question me-1"></i>' + status.charAt(0).toUpperCase() + status.slice(1) + '</span>';
+    }
+
+    statusElement.innerHTML = statusHtml;
+
+    new bootstrap.Modal(document.getElementById('messageModal')).show();
+}
+
+function showFullMessage(content, contactName) {
+    document.getElementById('fullMessageContact').textContent = 'Message to ' + contactName;
+    document.getElementById('fullMessageContent').textContent = content;
+    new bootstrap.Modal(document.getElementById('fullMessageModal')).show();
+}
+
+function confirmDelete(contactName) {
+    return confirm('Are you sure you want to delete the message log for ' + contactName + '? This action cannot be undone.');
+}
+
+// Auto-submit form when filters change
+document.getElementById('statusFilter').addEventListener('change', function() {
+    document.getElementById('filterForm').submit();
+});
+
+// Add loading state to filter button
+document.getElementById('filterForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Filtering...';
+    submitBtn.disabled = true;
+
+    // Re-enable after a delay (in case of client-side validation failure)
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 2000);
+});
+</script>
+
 {% endblock %}

@@ -1,177 +1,491 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static %}
+
 {% block title %}{{ organization.name }} - Settings{% endblock %}
+
 {% block content %}
-    <div class="container py-4">
-        <a href="{% url 'org_dashboard' organization.slug %}" class="btn btn-link">← Back</a>
-        <h2>Organization Settings</h2>
-        
-        <!-- Settings Navigation -->
-        <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="branding-tab" data-bs-toggle="tab" data-bs-target="#branding" type="button" role="tab">Branding</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">Users & Permissions</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="support-tab" data-bs-toggle="tab" data-bs-target="#support" type="button" role="tab">Support</button>
-            </li>
-        </ul>
+{% include "org_admin_nav.html" %}
 
-        <div class="tab-content" id="settingsTabsContent">
-            <!-- Branding Tab -->
-            <div class="tab-pane fade show active" id="branding" role="tabpanel">
-                {% if created_temp_pw %}
-                    <div class="alert alert-info" role="alert">
-                        <strong>Stats viewer '{{ created_username }}' created.</strong>
-                        <div class="mt-2 input-group">
-                            <input id="tempPwInput" class="form-control" readonly value="{{ created_temp_pw }}">
-                            <button id="copyTempPwBtn" class="btn btn-outline-secondary" type="button">Copy</button>
-                        </div>
-                        <small class="text-muted">Copy this temporary password and share it with the user, or they can reset their password later.</small>
+<div class="container-fluid py-4" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}15 0%, {{ organization.secondary_color|default:'#764ba2' }}15 100%); min-height: calc(100vh - 76px);">
+    <div class="container">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h1 class="mb-2" style="color: {{ organization.primary_color|default:'#667eea' }}; font-weight: 700;">
+                            <i class="fas fa-cog me-3"></i>Organization Settings
+                        </h1>
+                        <p class="text-muted mb-0">Configure your organization's branding, users, and preferences</p>
                     </div>
-                    <script>
-                        document.addEventListener('DOMContentLoaded', function(){
-                            const btn = document.getElementById('copyTempPwBtn');
-                            const inp = document.getElementById('tempPwInput');
-                            if (!btn || !inp) return;
-                            btn.addEventListener('click', async function(){
-                                try{
-                                    await navigator.clipboard.writeText(inp.value);
-                                    btn.textContent = 'Copied';
-                                    setTimeout(()=> btn.textContent = 'Copy', 2000);
-                                }catch(e){
-                                    // fallback
-                                    inp.select();
-                                    document.execCommand('copy');
-                                    btn.textContent = 'Copied';
-                                    setTimeout(()=> btn.textContent = 'Copy', 2000);
-                                }
-                            });
-                        });
-                    </script>
-                {% elif notice %}
-                    <div class="alert alert-success">{{ notice }}</div>
-                {% endif %}
-
-                <div class="card mb-3">
-                    <div class="card-header">Branding & Sender</div>
-                    <div class="card-body">
-                        <form method="post" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="save_branding" />
-                            <div class="mb-3">
-                                <label class="form-label">Primary Color</label>
-                                <input type="color" name="primary_color" class="form-control form-control-color" value="{{ organization.primary_color }}">
+                    <div class="text-end">
+                        <div class="d-flex align-items-center">
+                            <div class="badge bg-primary me-3 px-3 py-2" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}) !important;">
+                                <i class="fas fa-building me-1"></i>{{ organization.name }}
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Secondary Color</label>
-                                <input type="color" name="secondary_color" class="form-control form-control-color" value="{{ organization.secondary_color }}">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Sender ID</label>
-                                <input name="sender_id" class="form-control" value="{{ organization.sender_id }}">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Logo (optional)</label>
-                                <input type="file" name="logo" class="form-control">
-                            </div>
-                            <button class="btn btn-primary" type="submit">Save branding</button>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Users Tab -->
-            <div class="tab-pane fade" id="users" role="tabpanel">
-                <div class="card mb-3">
-                    <div class="card-header">Users & Permissions</div>
-                    <div class="card-body">
-                        <h6>Organization users</h6>
-                        <ul class="list-group mb-3">
-                            {% for u in users %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">{{ u.username }} <span class="badge bg-secondary">{{ u.role }}</span></li>
-                            {% empty %}
-                                <li class="list-group-item">No users</li>
-                            {% endfor %}
-                        </ul>
-
-                        <h6>Add a stats-viewer (can view dashboards only)</h6>
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="invite_stats_user" />
-                            <div class="mb-2">
-                                <input name="invite_username" class="form-control" placeholder="Username (unique)" required>
-                            </div>
-                            <div class="mb-2">
-                                <input name="invite_email" class="form-control" placeholder="Email (optional)">
-                            </div>
-                            <button class="btn btn-outline-primary" type="submit">Invite stats viewer</button>
-                        </form>
-
-                        <hr />
-                        <h6>Stats viewers</h6>
-                        <ul class="list-group">
-                            {% for sv in stats_viewers %}
-                                <li class="list-group-item">{{ sv.user.username }} — added {{ sv.created_at|date:'Y-m-d' }}</li>
-                            {% empty %}
-                                <li class="list-group-item">No stats viewers</li>
-                            {% endfor %}
-                        </ul>
-                            <hr />
-                            <h6>Reset user password</h6>
-                            <form method="post" class="row g-2 align-items-end">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="reset_password">
-                                <div class="col-auto">
-                                    <select name="username" class="form-select" required>
-                                        {% for u in users %}
-                                            <option value="{{ u.username }}">{{ u.username }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-auto">
-                                    <input type="password" name="new_password" class="form-control" placeholder="New password" required>
-                                </div>
-                                <div class="col-auto">
-                                    <button class="btn btn-outline-danger" type="submit">Reset password</button>
-                                </div>
-                            </form>
-                    </div>
+        {% if created_temp_pw %}
+        <div class="alert alert-info alert-dismissible fade show mb-4" style="background: rgba(23, 162, 184, 0.1); border: 1px solid rgba(23, 162, 184, 0.2); color: #0c5460; backdrop-filter: blur(10px);" role="alert">
+            <i class="fas fa-user-plus me-2"></i>
+            <strong>Stats viewer '{{ created_username }}' created.</strong>
+            <div class="mt-3">
+                <div class="input-group">
+                    <input id="tempPwInput" class="form-control" readonly value="{{ created_temp_pw }}" style="border: 2px solid rgba(23, 162, 184, 0.2); border-radius: 8px 0 0 8px;">
+                    <button id="copyTempPwBtn" class="btn" style="background: linear-gradient(135deg, #17a2b8, #138496); color: white; border: none; border-radius: 0 8px 8px 0;" type="button">
+                        <i class="fas fa-copy me-1"></i>Copy
+                    </button>
                 </div>
+                <small class="text-muted mt-2 d-block">Copy this temporary password and share it with the user, or they can reset their password later.</small>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% elif notice %}
+        <div class="alert alert-success alert-dismissible fade show mb-4" style="background: rgba(25, 135, 84, 0.1); border: 1px solid rgba(25, 135, 84, 0.2); color: #155724; backdrop-filter: blur(10px);" role="alert">
+            <i class="fas fa-check-circle me-2"></i>{{ notice }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <!-- Settings Tabs -->
+        <div class="card" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            <!-- Custom Tab Navigation -->
+            <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 20px 20px 0 0; padding: 0;">
+                <ul class="nav nav-pills nav-fill p-3" id="settingsTabs" role="tablist" style="border-radius: 20px 20px 0 0;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="branding-tab" data-bs-toggle="tab" data-bs-target="#branding" type="button" role="tab" style="border-radius: 15px 0 0 0; font-weight: 600;">
+                            <i class="fas fa-palette me-2"></i>Branding
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab" style="font-weight: 600;">
+                            <i class="fas fa-users-cog me-2"></i>Users & Permissions
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="support-tab" data-bs-toggle="tab" data-bs-target="#support" type="button" role="tab" style="border-radius: 0 15px 0 0; font-weight: 600;">
+                            <i class="fas fa-headset me-2"></i>Support
+                        </button>
+                    </li>
+                </ul>
             </div>
 
-            <!-- Support Tab -->
-            <div class="tab-pane fade" id="support" role="tabpanel">
-                <div class="card mb-3">
-                        <div class="card-header">Contact CedCast Support</div>
-                        <div class="card-body">
-                            <p class="text-muted">Report issues or request help. Your message goes to super admins.</p>
-                            <form method="post" class="mb-3">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="contact_support" />
-                                <div class="mb-2">
-                                    <input name="subject" class="form-control" placeholder="Subject" required>
+            <div class="card-body p-0">
+                <div class="tab-content p-4" id="settingsTabsContent">
+                    <!-- Branding Tab -->
+                    <div class="tab-pane fade show active" id="branding" role="tabpanel">
+                        <div class="row g-4">
+                            <div class="col-lg-8">
+                                <div class="card h-100" style="background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.05); border-radius: 15px;">
+                                    <div class="card-header" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border: none; border-radius: 15px 15px 0 0; padding: 1.5rem;">
+                                        <h5 class="mb-0" style="color: {{ organization.primary_color|default:'#667eea' }}; font-weight: 600;">
+                                            <i class="fas fa-paint-brush me-2"></i>Branding & Appearance
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <form method="post" enctype="multipart/form-data" id="brandingForm">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="save_branding" />
+
+                                            <div class="row g-4">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label for="primaryColor" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                                            <i class="fas fa-circle me-2"></i>Primary Color
+                                                        </label>
+                                                        <div class="d-flex align-items-center">
+                                                            <input type="color" id="primaryColor" name="primary_color" class="form-control form-control-color me-3" value="{{ organization.primary_color }}" style="width: 60px; height: 50px; border: none; border-radius: 8px; cursor: pointer;">
+                                                            <input type="text" class="form-control" id="primaryColorText" value="{{ organization.primary_color }}" readonly style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 8px;">
+                                                        </div>
+                                                        <small class="text-muted">Used for headers, buttons, and accents</small>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label for="secondaryColor" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                                            <i class="fas fa-circle me-2"></i>Secondary Color
+                                                        </label>
+                                                        <div class="d-flex align-items-center">
+                                                            <input type="color" id="secondaryColor" name="secondary_color" class="form-control form-control-color me-3" value="{{ organization.secondary_color }}" style="width: 60px; height: 50px; border: none; border-radius: 8px; cursor: pointer;">
+                                                            <input type="text" class="form-control" id="secondaryColorText" value="{{ organization.secondary_color }}" readonly style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 8px;">
+                                                        </div>
+                                                        <small class="text-muted">Used for gradients and highlights</small>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12">
+                                                    <div class="form-group">
+                                                        <label for="senderId" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                                            <i class="fas fa-id-badge me-2"></i>Sender ID
+                                                        </label>
+                                                        <input type="text" id="senderId" name="sender_id" class="form-control form-control-lg" value="{{ organization.sender_id }}" placeholder="Your sender name or number" style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 12px; padding: 0.75rem 1rem;">
+                                                        <small class="text-muted">This appears as the sender when you send messages</small>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12">
+                                                    <div class="form-group">
+                                                        <label for="logoUpload" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                                            <i class="fas fa-image me-2"></i>Organization Logo
+                                                        </label>
+                                                        <input type="file" id="logoUpload" name="logo" class="form-control form-control-lg" accept="image/*" style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 12px; padding: 0.75rem 1rem;">
+                                                        <small class="text-muted">Upload a logo to personalize your organization (PNG, JPG, max 5MB)</small>
+                                                        {% if organization.logo %}
+                                                        <div class="mt-2">
+                                                            <small class="text-success">
+                                                                <i class="fas fa-check-circle me-1"></i>Logo uploaded
+                                                            </small>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex justify-content-end mt-4">
+                                                <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 12px; padding: 0.75rem 2rem; font-weight: 600; transition: all 0.3s ease;">
+                                                    <i class="fas fa-save me-2"></i>Save Branding Settings
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
-                                <div class="mb-2">
-                                    <textarea name="message" class="form-control" rows="4" placeholder="Describe the issue or request" required></textarea>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="card h-100" style="background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.05); border-radius: 15px;">
+                                    <div class="card-header" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border: none; border-radius: 15px 15px 0 0; padding: 1.5rem;">
+                                        <h6 class="mb-0" style="color: {{ organization.primary_color|default:'#667eea' }}; font-weight: 600;">
+                                            <i class="fas fa-eye me-2"></i>Preview
+                                        </h6>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="text-center">
+                                            <div class="preview-card mb-3 p-3" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); border-radius: 12px; color: white;">
+                                                <h6 class="mb-1">Sample Button</h6>
+                                                <small>Primary Color</small>
+                                            </div>
+                                            <div class="preview-badge p-2" style="background: linear-gradient(135deg, {{ organization.secondary_color|default:'#764ba2' }}, {{ organization.primary_color|default:'#667eea' }}); border-radius: 20px; color: white; display: inline-block;">
+                                                <small>Secondary Color</small>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button class="btn btn-primary" type="submit">Send to Support</button>
-                            </form>
-                            <h6 class="mt-4">Recent tickets</h6>
-                            <ul class="list-group">
-                                {% for t in tickets %}
-                                    <li class="list-group-item">
-                                        <strong>{{ t.subject }}</strong> — {{ t.status }} — {{ t.created_at|date:'Y-m-d H:i' }}
-                                    </li>
-                                {% empty %}
-                                    <li class="list-group-item">No tickets yet.</li>
-                                {% endfor %}
-                            </ul>
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- Users Tab -->
+                    <div class="tab-pane fade" id="users" role="tabpanel">
+                        <div class="row g-4">
+                            <!-- Organization Users -->
+                            <div class="col-lg-6">
+                                <div class="card h-100" style="background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.05); border-radius: 15px;">
+                                    <div class="card-header" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border: none; border-radius: 15px 15px 0 0; padding: 1.5rem;">
+                                        <h5 class="mb-0" style="color: {{ organization.primary_color|default:'#667eea' }}; font-weight: 600;">
+                                            <i class="fas fa-users me-2"></i>Organization Users
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        {% if users %}
+                                        <div class="row g-3">
+                                            {% for u in users %}
+                                            <div class="col-12">
+                                                <div class="user-card d-flex align-items-center justify-content-between p-3" style="background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(0,0,0,0.05); border-radius: 10px;">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="user-avatar me-3" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                                                            {{ u.username|first|upper }}
+                                                        </div>
+                                                        <div>
+                                                            <div class="fw-semibold">{{ u.username }}</div>
+                                                            <small class="text-muted">{{ u.role|title }}</small>
+                                                        </div>
+                                                    </div>
+                                                    <span class="badge" style="background: rgba({{ organization.secondary_color|default:'#764ba2' }}, 0.1); color: {{ organization.secondary_color|default:'#764ba2' }}; padding: 0.25rem 0.75rem; border-radius: 15px;">
+                                                        {{ u.role|title }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <div class="text-center py-4">
+                                            <div style="font-size: 3rem; color: rgba({{ organization.primary_color|default:'#667eea' }}, 0.3); margin-bottom: 1rem;">
+                                                <i class="fas fa-users"></i>
+                                            </div>
+                                            <p class="text-muted">No users found</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- User Management -->
+                            <div class="col-lg-6">
+                                <div class="card h-100" style="background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.05); border-radius: 15px;">
+                                    <div class="card-header" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border: none; border-radius: 15px 15px 0 0; padding: 1.5rem;">
+                                        <h5 class="mb-0" style="color: {{ organization.primary_color|default:'#667eea' }}; font-weight: 600;">
+                                            <i class="fas fa-user-plus me-2"></i>User Management
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <!-- Add Stats Viewer -->
+                                        <div class="mb-4">
+                                            <h6 class="mb-3" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                                <i class="fas fa-chart-line me-2"></i>Add Stats Viewer
+                                            </h6>
+                                            <p class="text-muted small mb-3">Create a user who can only view dashboards and statistics</p>
+                                            <form method="post" id="statsViewerForm">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="invite_stats_user" />
+                                                <div class="row g-3">
+                                                    <div class="col-12">
+                                                        <input type="text" name="invite_username" class="form-control" placeholder="Username (must be unique)" required style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 8px; padding: 0.75rem;">
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <input type="email" name="invite_email" class="form-control" placeholder="Email (optional)" style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 8px; padding: 0.75rem;">
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <button type="submit" class="btn w-100" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 8px; padding: 0.75rem; font-weight: 600;">
+                                                            <i class="fas fa-plus me-2"></i>Invite Stats Viewer
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <!-- Stats Viewers List -->
+                                        {% if stats_viewers %}
+                                        <div class="mb-4">
+                                            <h6 class="mb-3" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                                <i class="fas fa-list me-2"></i>Current Stats Viewers
+                                            </h6>
+                                            <div class="row g-2">
+                                                {% for sv in stats_viewers %}
+                                                <div class="col-12">
+                                                    <div class="stats-viewer-item d-flex align-items-center justify-content-between p-2" style="background: rgba(23, 162, 184, 0.05); border: 1px solid rgba(23, 162, 184, 0.1); border-radius: 8px;">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="viewer-avatar me-2" style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #17a2b8, #138496); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600;">
+                                                                {{ sv.user.username|first|upper }}
+                                                            </div>
+                                                            <div>
+                                                                <small class="fw-semibold">{{ sv.user.username }}</small>
+                                                                <br>
+                                                                <small class="text-muted">Added {{ sv.created_at|date:'M j, Y' }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        <!-- Password Reset -->
+                                        <div>
+                                            <h6 class="mb-3" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                                <i class="fas fa-key me-2"></i>Reset User Password
+                                            </h6>
+                                            <form method="post" id="passwordResetForm">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="reset_password">
+                                                <div class="row g-3">
+                                                    <div class="col-12">
+                                                        <select name="username" class="form-select" required style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 8px; padding: 0.75rem;">
+                                                            <option value="">Select user...</option>
+                                                            {% for u in users %}
+                                                            <option value="{{ u.username }}">{{ u.username }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <input type="password" name="new_password" class="form-control" placeholder="New password" required style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 8px; padding: 0.75rem;">
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <button type="submit" class="btn w-100" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; border: none; border-radius: 8px; padding: 0.75rem; font-weight: 600;">
+                                                            <i class="fas fa-key me-2"></i>Reset Password
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Support Tab -->
+                    <div class="tab-pane fade" id="support" role="tabpanel">
+                        <div class="row g-4">
+                            <!-- Contact Support -->
+                            <div class="col-lg-6">
+                                <div class="card h-100" style="background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.05); border-radius: 15px;">
+                                    <div class="card-header" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border: none; border-radius: 15px 15px 0 0; padding: 1.5rem;">
+                                        <h5 class="mb-0" style="color: {{ organization.primary_color|default:'#667eea' }}; font-weight: 600;">
+                                            <i class="fas fa-headset me-2"></i>Contact CedCast Support
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <p class="text-muted mb-4">Report issues or request help. Your message goes directly to our support team.</p>
+                                        <form method="post" id="supportForm">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="contact_support" />
+                                            <div class="mb-3">
+                                                <label for="supportSubject" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                                    <i class="fas fa-tag me-2"></i>Subject
+                                                </label>
+                                                <input type="text" id="supportSubject" name="subject" class="form-control" placeholder="Brief description of your issue" required style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 8px; padding: 0.75rem;">
+                                            </div>
+                                            <div class="mb-4">
+                                                <label for="supportMessage" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                                    <i class="fas fa-comment me-2"></i>Message
+                                                </label>
+                                                <textarea id="supportMessage" name="message" class="form-control" rows="5" placeholder="Describe the issue or request in detail" required style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 8px; padding: 0.75rem; resize: vertical;"></textarea>
+                                            </div>
+                                            <button type="submit" class="btn w-100" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 8px; padding: 0.75rem; font-weight: 600;">
+                                                <i class="fas fa-paper-plane me-2"></i>Send to Support
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recent Tickets -->
+                            <div class="col-lg-6">
+                                <div class="card h-100" style="background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.05); border-radius: 15px;">
+                                    <div class="card-header" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.05); border: none; border-radius: 15px 15px 0 0; padding: 1.5rem;">
+                                        <h5 class="mb-0" style="color: {{ organization.primary_color|default:'#667eea' }}; font-weight: 600;">
+                                            <i class="fas fa-ticket-alt me-2"></i>Recent Support Tickets
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        {% if tickets %}
+                                        <div class="row g-3">
+                                            {% for t in tickets %}
+                                            <div class="col-12">
+                                                <div class="ticket-card p-3" style="background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(0,0,0,0.05); border-radius: 10px; transition: all 0.2s ease;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                                    <div class="d-flex align-items-start justify-content-between">
+                                                        <div class="flex-grow-1">
+                                                            <h6 class="mb-1" style="color: {{ organization.primary_color|default:'#667eea' }}; font-size: 0.9rem;">{{ t.subject }}</h6>
+                                                            <p class="mb-2 text-muted small">{{ t.created_at|date:'M j, Y \a\t H:i' }}</p>
+                                                        </div>
+                                                        <span class="badge {% if t.status == 'open' %}bg-warning{% elif t.status == 'closed' %}bg-success{% else %}bg-secondary{% endif %} px-2 py-1" style="font-size: 0.7rem; border-radius: 10px;">
+                                                            {{ t.status|title }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <div class="text-center py-4">
+                                            <div style="font-size: 3rem; color: rgba({{ organization.primary_color|default:'#667eea' }}, 0.3); margin-bottom: 1rem;">
+                                                <i class="fas fa-ticket-alt"></i>
+                                            </div>
+                                            <h6 class="text-muted mb-2">No Support Tickets Yet</h6>
+                                            <p class="text-muted small">Your support requests will appear here</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<script>
+// Copy password functionality
+document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('copyTempPwBtn');
+    const inp = document.getElementById('tempPwInput');
+    if (btn && inp) {
+        btn.addEventListener('click', async function(){
+            try{
+                await navigator.clipboard.writeText(inp.value);
+                btn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                setTimeout(() => btn.innerHTML = '<i class="fas fa-copy me-1"></i>Copy', 2000);
+            }catch(e){
+                // fallback
+                inp.select();
+                document.execCommand('copy');
+                btn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                setTimeout(() => btn.innerHTML = '<i class="fas fa-copy me-1"></i>Copy', 2000);
+            }
+        });
+    }
+});
+
+// Update color text inputs when color pickers change
+document.getElementById('primaryColor').addEventListener('input', function() {
+    document.getElementById('primaryColorText').value = this.value;
+});
+
+document.getElementById('secondaryColor').addEventListener('input', function() {
+    document.getElementById('secondaryColorText').value = this.value;
+});
+
+// Form validation and loading states
+document.getElementById('brandingForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+    submitBtn.disabled = true;
+
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 3000);
+});
+
+document.getElementById('statsViewerForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+    submitBtn.disabled = true;
+
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 3000);
+});
+
+document.getElementById('passwordResetForm').addEventListener('submit', function(e) {
+    if (!confirm('Are you sure you want to reset this user\'s password?')) {
+        e.preventDefault();
+        return;
+    }
+
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Resetting...';
+    submitBtn.disabled = true;
+
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 3000);
+});
+
+document.getElementById('supportForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+    submitBtn.disabled = true;
+
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 3000);
+});
+</script>
+
 {% endblock %}
