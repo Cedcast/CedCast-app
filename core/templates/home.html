@@ -7,63 +7,171 @@
 <link rel="icon" href="{% static 'images/cedcast_logo.png' %}" type="image/png">
 <style>
 .hero {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
     min-height: 70vh;
     display: flex;
     align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="%23ffffff" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="%23ffffff" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="%23ffffff" opacity="0.05"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    pointer-events: none;
 }
 .features {
-    background: #f8f9fa;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
-.testimonials {
-    background: white;
+.branding {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 50%, #d1e7ff 100%);
+    position: relative;
+}
+.branding::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="%23667eea" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
+    pointer-events: none;
 }
 .cta {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    position: relative;
+}
+.cta::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="waves" width="100" height="20" patternUnits="userSpaceOnUse"><path d="M0,10 Q25,0 50,10 T100,10 V20 H0 Z" fill="%23ffffff" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23waves)"/></svg>');
+    pointer-events: none;
 }
 .card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: none;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 .btn-primary {
-    background: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 .btn-primary:hover {
-    background: #5a67d8;
-}
-.testimonial-img {
-    border: 3px solid #667eea;
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 .stat-card {
     padding: 2rem;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(20px);
     margin-bottom: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.3);
 }
 .pricing-card {
-    border: 2px solid #e9ecef !important;
-    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.8) !important;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: 20px !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
 }
 .pricing-card:hover {
     border-color: #0d6efd !important;
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
 }
 .step-circle {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.step-circle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+.step-circle:hover::before {
+    transform: translateX(100%);
+}
+.step-circle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+}
+
+/* Professional typography */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+}
+
+.display-4 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Professional spacing */
+.py-5 {
+    padding-top: 5rem !important;
+    padding-bottom: 5rem !important;
+}
+
+/* Enhanced navbar */
+.navbar {
+    backdrop-filter: blur(20px);
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 </style>
 {% endblock %}
@@ -81,8 +189,8 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#branding">Branding</a></li>
                     <li class="nav-item"><a class="nav-link" href="#premium">Premium</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#testimonials">Testimonials</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
                     <li class="nav-item"><button class="btn btn-outline-light ms-2" data-bs-toggle="modal" data-bs-target="#enrollmentModal">Request Enrollment</button></li>
                 </ul>
@@ -270,62 +378,109 @@
         </div>
     </section>
 
-    <!-- Testimonials Section -->
-    <section id="testimonials" class="testimonials py-5">
+    <!-- Brand Integration Section -->
+    <section id="branding" class="branding py-5">
         <div class="container">
-            <h2 class="text-center mb-5">What Our Clients Say</h2>
+            <h2 class="text-center mb-5">Integrate Your Brand</h2>
+            <p class="text-center text-muted mb-5">Transform CedCast into your own branded SMS platform with professional customization options</p>
+
+            <div class="row g-4 mb-5">
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="bi bi-tag text-primary" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">Custom Sender IDs</h5>
+                            <p class="card-text">Use your brand name instead of phone numbers. Send messages from "YourCompany" or "SchoolName" for maximum brand recognition.</p>
+                            <div class="bg-light p-3 rounded mt-3">
+                                <small class="text-muted">Example: Messages appear from "CedCast" instead of a phone number</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="bi bi-palette text-success" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">White-Label Dashboard</h5>
+                            <p class="card-text">Customize the admin dashboard with your organization's colors, logo, and branding elements for a seamless experience.</p>
+                            <div class="bg-light p-3 rounded mt-3">
+                                <small class="text-muted">Fully branded interface matching your corporate identity</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm text-center">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="bi bi-gear text-info" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">API Integration</h5>
+                            <p class="card-text">Connect CedCast with your existing systems through our comprehensive REST API for automated messaging workflows.</p>
+                            <div class="bg-light p-3 rounded mt-3">
+                                <small class="text-muted">Seamless integration with CRM, ERP, and other business systems</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integration Examples -->
             <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Mrs. Joyce Asamoah" class="rounded-circle mb-3 testimonial-img" style="width: 80px; height: 80px; object-fit: cover;">
-                            <h5 class="card-title">Mrs. Ama Johnson</h5>
-                            <p class="text-muted small">Principal, Accra International School</p>
-                            <p class="card-text">"CedCast has revolutionized how we communicate with parents. We send fee reminders, exam results, and emergency alerts instantly. Our parent engagement has increased by 40%!"</p>
-                            <div class="text-warning">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
+                <div class="col-lg-8 mx-auto">
+                    <h3 class="text-center mb-4">Perfect for Every Organization Type</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start p-3 bg-light rounded">
+                                <i class="bi bi-building text-primary me-3 fs-4 mt-1"></i>
+                                <div>
+                                    <h6 class="mb-1">Corporate Communications</h6>
+                                    <small class="text-muted">Send branded announcements, newsletters, and internal communications from your company name.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start p-3 bg-light rounded">
+                                <i class="bi bi-mortarboard text-success me-3 fs-4 mt-1"></i>
+                                <div>
+                                    <h6 class="mb-1">Educational Institutions</h6>
+                                    <small class="text-muted">Parent notifications, exam results, and emergency alerts from your school's official sender ID.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start p-3 bg-light rounded">
+                                <i class="bi bi-shop text-warning me-3 fs-4 mt-1"></i>
+                                <div>
+                                    <h6 class="mb-1">Retail & E-commerce</h6>
+                                    <small class="text-muted">Promotional offers, order confirmations, and customer loyalty messages with your store branding.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start p-3 bg-light rounded">
+                                <i class="bi bi-heart-pulse text-danger me-3 fs-4 mt-1"></i>
+                                <div>
+                                    <h6 class="mb-1">Healthcare & NGOs</h6>
+                                    <small class="text-muted">Appointment reminders, health campaigns, and community outreach from your organization's name.</small>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <img src="https://randomuser.me/api/portraits/men/54.jpg" alt="Mr. Kofi Mensah" class="rounded-circle mb-3 testimonial-img" style="width: 80px; height: 80px; object-fit: cover;">
-                            <h5 class="card-title">Mr. Kofi Mensah</h5>
-                            <p class="text-muted small">Manager, Golden Grill Restaurant</p>
-                            <p class="card-text">"Perfect for our daily operations! We send promotional offers, reservation confirmations, and customer feedback requests. CedCast helps us maintain direct communication with our customers."</p>
-                            <div class="text-warning">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <img src="https://randomuser.me/api/portraits/women/91.jpg" alt="Dr. Elizabeth Addo" class="rounded-circle mb-3 testimonial-img" style="width: 80px; height: 80px; object-fit: cover;">
-                            <h5 class="card-title">Dr. Elizabeth Addo</h5>
-                            <p class="text-muted small">Director, Community Health Initiative</p>
-                            <p class="card-text">"As an NGO, timely communication is crucial. CedCast enables us to send health awareness campaigns, appointment reminders, and emergency alerts to our community members effectively."</p>
-                            <div class="text-warning">
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-fill"></i>
-                                <i class="bi bi-star-half"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            </div>
+
+            <!-- CTA for Branding -->
+            <div class="text-center mt-5">
+                <h4>Ready to Brand Your Communications?</h4>
+                <p class="text-muted mb-4">Get started with custom sender IDs and professional branding options</p>
+                <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#senderIdModal">
+                    <i class="bi bi-tag me-2"></i>Request Custom Sender ID
+                </button>
             </div>
         </div>
     </section>
@@ -701,8 +856,8 @@
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
                         <li><a href="#features" class="text-white text-decoration-none">Features</a></li>
+                        <li><a href="#branding" class="text-white text-decoration-none">Branding</a></li>
                         <li><a href="#premium" class="text-white text-decoration-none">Premium Services</a></li>
-                        <li><a href="#testimonials" class="text-white text-decoration-none">Testimonials</a></li>
                         <li><a href="#hero" class="text-white text-decoration-none">Home</a></li>
                         <li><a href="{% url 'login' %}" class="text-white text-decoration-none">Login</a></li>
                     </ul>
