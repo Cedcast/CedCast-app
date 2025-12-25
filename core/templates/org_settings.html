@@ -30,13 +30,13 @@
         </div>
 
         {% if created_temp_pw %}
-        <div class="alert alert-info alert-dismissible fade show mb-4" style="background: rgba(23, 162, 184, 0.1); border: 1px solid rgba(23, 162, 184, 0.2); color: #0c5460; backdrop-filter: blur(10px);" role="alert">
+        <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
             <i class="fas fa-user-plus me-2"></i>
             <strong>Stats viewer '{{ created_username }}' created.</strong>
             <div class="mt-3">
                 <div class="input-group">
-                    <input id="tempPwInput" class="form-control" readonly value="{{ created_temp_pw }}" style="border: 2px solid rgba(23, 162, 184, 0.2); border-radius: 8px 0 0 8px;">
-                    <button id="copyTempPwBtn" class="btn" style="background: linear-gradient(135deg, #17a2b8, #138496); color: white; border: none; border-radius: 0 8px 8px 0;" type="button">
+                    <input id="tempPwInput" class="form-control" readonly value="{{ created_temp_pw }}">
+                    <button id="copyTempPwBtn" class="btn btn-info" type="button">
                         <i class="fas fa-copy me-1"></i>Copy
                     </button>
                 </div>
@@ -45,16 +45,16 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         {% elif notice %}
-        <div class="alert alert-success alert-dismissible fade show mb-4" style="background: rgba(25, 135, 84, 0.1); border: 1px solid rgba(25, 135, 84, 0.2); color: #155724; backdrop-filter: blur(10px);" role="alert">
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
             <i class="fas fa-check-circle me-2"></i>{{ notice }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         {% endif %}
 
         <!-- Settings Tabs -->
-        <div class="card" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+        <div class="card" style="border: 1px solid #e9ecef; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
             <!-- Custom Tab Navigation -->
-            <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 20px 20px 0 0; padding: 0;">
+            <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 12px 12px 0 0; padding: 0;">
                 <ul class="nav nav-pills nav-fill p-3" id="settingsTabs" role="tablist" style="border-radius: 20px 20px 0 0;">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="branding-tab" data-bs-toggle="tab" data-bs-target="#branding" type="button" role="tab" style="border-radius: 15px 0 0 0; font-weight: 600;">

@@ -211,7 +211,7 @@ body {
     <div class="container">
 
         {% if notice %}
-        <div class="alert alert-success alert-dismissible fade show mb-4" style="background: rgba(25, 135, 84, 0.1); border: 1px solid rgba(25, 135, 84, 0.2); color: #155724; backdrop-filter: blur(10px);" role="alert">
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
             <i class="fas fa-check-circle me-2"></i>{{ notice }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -220,8 +220,8 @@ body {
         <div class="row g-4">
             <!-- Create/Edit Group Section -->
             <div class="col-lg-5">
-                <div class="card h-100" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
-                    <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 20px 20px 0 0; padding: 1.5rem;">
+                <div class="card h-100" style="border: 1px solid #e9ecef; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+                    <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 12px 12px 0 0; padding: 1.5rem;">
                         <h5 class="mb-0">
                             <i class="fas fa-plus-circle me-2"></i>
                             {% if edit_group %}Edit Group{% else %}Create New Group{% endif %}
@@ -285,8 +285,8 @@ body {
 
             <!-- Groups List Section -->
             <div class="col-lg-7">
-                <div class="card h-100" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
-                    <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 20px 20px 0 0; padding: 1.5rem;">
+                <div class="card h-100" style="border: 1px solid #e9ecef; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+                    <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 12px 12px 0 0; padding: 1.5rem;">
                         <h5 class="mb-0">
                             <i class="fas fa-list me-2"></i>Your Groups
                         </h5>
@@ -350,7 +350,7 @@ body {
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px;">
+        <div class="modal-content" style="border: 1px solid #e9ecef; border-radius: 12px;">
             <div class="modal-header" style="border: none; padding: 1.5rem;">
                 <h5 class="modal-title" style="color: #dc3545;">
                     <i class="fas fa-exclamation-triangle me-2"></i>Delete Group

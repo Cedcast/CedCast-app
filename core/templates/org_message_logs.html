@@ -39,8 +39,8 @@
         </div>
 
         <!-- Filters Section -->
-        <div class="card mb-4" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
-            <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 20px 20px 0 0; padding: 1.5rem;">
+        <div class="card mb-4" style="border: 1px solid #e9ecef; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+            <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 12px 12px 0 0; padding: 1.5rem;">
                 <h5 class="mb-0">
                     <i class="fas fa-filter me-2"></i>Filters & Search
                 </h5>
@@ -88,8 +88,8 @@
         </div>
 
         <!-- Message Logs Table -->
-        <div class="card" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
-            <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 20px 20px 0 0; padding: 1.5rem;">
+        <div class="card" style="border: 1px solid #e9ecef; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+            <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 12px 12px 0 0; padding: 1.5rem;">
                 <h5 class="mb-0">
                     <i class="fas fa-list me-2"></i>Message History
                 </h5>
@@ -218,7 +218,7 @@
 <!-- Message Details Modal -->
 <div class="modal fade" id="messageModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px;">
+        <div class="modal-content" style="border: 1px solid #e9ecef; border-radius: 12px;">
             <div class="modal-header" style="border: none; padding: 1.5rem;">
                 <h5 class="modal-title" style="color: {{ organization.primary_color|default:'#667eea' }};">
                     <i class="fas fa-envelope me-2"></i>Message Details
@@ -269,7 +269,7 @@
 <!-- Full Message Modal -->
 <div class="modal fade" id="fullMessageModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px;">
+        <div class="modal-content" style="border: 1px solid #e9ecef; border-radius: 12px;">
             <div class="modal-header" style="border: none; padding: 1.5rem;">
                 <h5 class="modal-title" style="color: {{ organization.primary_color|default:'#667eea' }};">
                     <i class="fas fa-comment me-2"></i>Full Message
