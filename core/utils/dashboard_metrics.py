@@ -5,7 +5,7 @@ from django.core.cache import cache
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
-from .models import Organization, Contact, OrgSMSTemplate, OrgAlertRecipient, OrgMessage
+from ..models import Organization, Contact, OrgSMSTemplate, OrgAlertRecipient, OrgMessage
 
 
 class OrganizationDashboardMetrics:
