@@ -5,7 +5,7 @@
         <a class="navbar-brand d-flex align-items-center" href="{% url 'org_dashboard' organization.slug %}">
             <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height: 32px; margin-right: 10px;" onerror="this.style.display='none'">
             <div>
-                <div class="fw-bold" style="color: {{ organization.primary_color|default:'#007bff' }}; font-size: 1.1rem;">{{ organization.name }}</div>
+                <div class="fw-bold text-primary" style="font-size: 1.1rem;">{{ organization.name }}</div>
                 <small class="text-muted" style="font-size: 0.75rem;">SMS Platform</small>
             </div>
         </a>

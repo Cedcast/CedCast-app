@@ -184,8 +184,6 @@ class Organization(models.Model):
 	address = models.TextField(blank=True, null=True)
 	phone_primary = models.CharField(max_length=20, blank=True, null=True)
 	phone_secondary = models.CharField(max_length=20, blank=True, null=True)
-	primary_color = models.CharField(max_length=7, default="#0d6efd")
-	secondary_color = models.CharField(max_length=7, default="#6c757d")
 	# ClickSend per-tenant credentials & sender id
 	clicksend_username = models.CharField(max_length=100, blank=True, null=True)
 	clicksend_api_key = models.CharField(max_length=100, blank=True, null=True)

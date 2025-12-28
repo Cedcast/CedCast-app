@@ -1998,9 +1998,7 @@ def org_settings_view(request, org_slug=None):
 	if request.method == 'POST':
 		action = request.POST.get('action')
 		if action == 'save_branding':
-			# handle colors and sender id
-			org.primary_color = request.POST.get('primary_color') or org.primary_color
-			org.secondary_color = request.POST.get('secondary_color') or org.secondary_color
+			# handle sender id only (colors removed)
 			org.sender_id = request.POST.get('sender_id') or org.sender_id
 			# optionally handle logo upload
 			if request.FILES.get('logo'):

@@ -6,21 +6,22 @@
 {% block content %}
 {% include "org_admin_nav.html" %}
 
-<div class="container-fluid py-4" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}15 0%, {{ organization.secondary_color|default:'#764ba2' }}15 100%); min-height: calc(100vh - 76px);">
+<div class="container-fluid py-4" style="background: #f8f9fa; min-height: calc(100vh - 76px);">
     <div class="container">
+
         <!-- Header Section -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <h1 class="mb-2" style="color: {{ organization.primary_color|default:'#667eea' }}; font-weight: 700;">
+                        <h1 class="mb-2 text-primary" style="font-weight: 700;">
                             <i class="fas fa-file-alt me-3"></i>Message Templates
                         </h1>
                         <p class="text-muted mb-0">Create and manage reusable message templates for efficient communication</p>
                     </div>
                     <div class="text-end">
                         <div class="d-flex align-items-center">
-                            <div class="badge bg-primary me-3 px-3 py-2" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}) !important;">
+                            <div class="badge bg-primary me-3 px-3 py-2">
                                 <i class="fas fa-scroll me-1"></i>{{ custom_templates|length }} Custom
                             </div>
                             {% if pre_built_templates %}
@@ -44,8 +45,8 @@
         <div class="row g-4">
             <!-- Create Custom Template Section -->
             <div class="col-lg-5">
-                <div class="card h-100" style="border: 1px solid #e9ecef; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
-                    <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 12px 12px 0 0; padding: 1.5rem;">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
                             <i class="fas fa-plus-circle me-2"></i>Create Custom Template
                         </h5>
@@ -54,24 +55,20 @@
                         <form method="post" id="templateForm">
                             {% csrf_token %}
                             <div class="mb-4">
-                                <label for="templateName" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                <label for="templateName" class="form-label fw-semibold text-primary">
                                     <i class="fas fa-tag me-2"></i>Template Name
                                 </label>
                                 <input type="text" id="templateName" name="name" class="form-control form-control-lg"
-                                       placeholder="e.g., Welcome Message, Reminder"
-                                       style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 12px; padding: 0.75rem 1rem;"
-                                       required>
+                                       placeholder="e.g., Welcome Message, Reminder" required>
                                 <div class="form-text">Choose a descriptive name for your template</div>
                             </div>
 
                             <div class="mb-4">
-                                <label for="templateContent" class="form-label fw-semibold" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                                <label for="templateContent" class="form-label fw-semibold text-primary">
                                     <i class="fas fa-comment-dots me-2"></i>Message Content
                                 </label>
                                 <textarea id="templateContent" name="content" class="form-control" rows="6"
-                                          placeholder="Enter your message template here..."
-                                          style="border: 2px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 12px; padding: 0.75rem 1rem; resize: vertical;"
-                                          required></textarea>
+                                          placeholder="Enter your message template here..." required></textarea>
                                 <div class="form-text">
                                     <i class="fas fa-info-circle me-1"></i>
                                     Use variables like {name}, {phone} for personalization
@@ -79,7 +76,7 @@
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 12px; padding: 0.75rem 1.5rem; font-weight: 600; transition: all 0.3s ease;">
+                                <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="fas fa-save me-2"></i>Create Template
                                 </button>
                             </div>
@@ -91,8 +88,8 @@
             <!-- Templates List Section -->
             <div class="col-lg-7">
                 <!-- Custom Templates -->
-                <div class="card mb-4" style="border: 1px solid #e9ecef; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
-                    <div class="card-header" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 12px 12px 0 0; padding: 1.5rem;">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
                             <i class="fas fa-list me-2"></i>Your Custom Templates
                         </h5>
@@ -102,32 +99,34 @@
                         <div class="row g-3">
                             {% for t in custom_templates %}
                             <div class="col-12">
-                                <div class="template-card" style="background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0,0,0,0.05); border-radius: 15px; padding: 1.25rem; transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 25px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.05)';">
-                                    <div class="d-flex align-items-start justify-content-between">
-                                        <div class="flex-grow-1">
-                                            <h6 class="mb-2" style="color: {{ organization.primary_color|default:'#667eea' }}; font-weight: 600;">
-                                                <i class="fas fa-file-text me-2"></i>{{ t.name }}
-                                            </h6>
-                                            <p class="mb-2 text-muted small" style="line-height: 1.4;">{{ t.content|truncatechars:120 }}</p>
-                                            <div class="d-flex align-items-center">
-                                                <small class="text-muted me-3">
-                                                    <i class="fas fa-calendar me-1"></i>{{ t.created_at|date:'M j, Y' }}
-                                                </small>
-                                                <span class="badge" style="background: rgba({{ organization.secondary_color|default:'#764ba2' }}, 0.1); color: {{ organization.secondary_color|default:'#764ba2' }}; padding: 0.25rem 0.5rem; border-radius: 10px; font-size: 0.75rem;">
-                                                    <i class="fas fa-user-edit me-1"></i>Custom
-                                                </span>
+                                <div class="card border">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-start justify-content-between">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-2 text-primary fw-semibold">
+                                                    <i class="fas fa-file-text me-2"></i>{{ t.name }}
+                                                </h6>
+                                                <p class="mb-2 text-muted small">{{ t.content|truncatechars:120 }}</p>
+                                                <div class="d-flex align-items-center">
+                                                    <small class="text-muted me-3">
+                                                        <i class="fas fa-calendar me-1"></i>{{ t.created_at|date:'M j, Y' }}
+                                                    </small>
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fas fa-user-edit me-1"></i>Custom
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="d-flex gap-2 ms-3">
-                                            <button class="btn btn-sm" onclick="useTemplate('{{ t.content|escapejs }}')" style="background: rgba({{ organization.primary_color|default:'#667eea' }}, 0.1); color: {{ organization.primary_color|default:'#667eea' }}; border: 1px solid rgba({{ organization.primary_color|default:'#667eea' }}, 0.2); border-radius: 8px; padding: 0.5rem;">
-                                                <i class="fas fa-copy"></i>
-                                            </button>
-                                            <a href="{% url 'org_template_edit' organization.slug t.id %}" class="btn btn-sm" style="background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2); border-radius: 8px; padding: 0.5rem;">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="{% url 'org_template_delete' organization.slug t.id %}" class="btn btn-sm" style="background: rgba(220, 53, 69, 0.1); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.2); border-radius: 8px; padding: 0.5rem;">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
+                                            <div class="d-flex gap-2 ms-3">
+                                                <button class="btn btn-outline-primary btn-sm" onclick="useTemplate('{{ t.content|escapejs }}')">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                                <a href="{% url 'org_template_edit' organization.slug t.id %}" class="btn btn-outline-warning btn-sm">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'org_template_delete' organization.slug t.id %}" class="btn btn-outline-danger btn-sm">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -136,16 +135,11 @@
                         </div>
                         {% else %}
                         <div class="text-center py-5">
-                            <div style="font-size: 4rem; color: rgba({{ organization.primary_color|default:'#667eea' }}, 0.3); margin-bottom: 1rem;">
+                            <div class="display-1 text-muted mb-3">
                                 <i class="fas fa-file-alt"></i>
                             </div>
                             <h5 class="text-muted mb-3">No Custom Templates Yet</h5>
                             <p class="text-muted mb-4">Create your first custom template to save time on repetitive messages</p>
-                            <div class="d-flex justify-content-center">
-                                <div class="arrow-animation" style="width: 50px; height: 50px; border: 3px solid {{ organization.primary_color|default:'#667eea' }}; border-radius: 50%; position: relative;">
-                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; background: {{ organization.primary_color|default:'#667eea' }}; border-radius: 50%; animation: pulse 2s infinite;"></div>
-                                </div>
-                            </div>
                         </div>
                         {% endif %}
                     </div>
@@ -153,8 +147,8 @@
 
                 <!-- Pre-built Templates -->
                 {% if pre_built_templates %}
-                <div class="card" style="border: 1px solid #e9ecef; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
-                    <div class="card-header" style="background: linear-gradient(135deg, #17a2b8, #138496); color: white; border: none; border-radius: 12px 12px 0 0; padding: 1.5rem;">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0">
                             <i class="fas fa-star me-2"></i>Pre-built Templates
                         </h5>
@@ -164,13 +158,13 @@
                         <div class="row g-3">
                             {% for template in pre_built_templates %}
                             <div class="col-md-6 col-lg-4">
-                                <div class="prebuilt-card" style="background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(23, 162, 184, 0.2); border-radius: 15px; padding: 1rem; transition: all 0.3s ease; height: 100%;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 15px 30px rgba(23, 162, 184, 0.2)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 15px rgba(23, 162, 184, 0.1)';">
-                                    <div class="d-flex flex-column h-100">
-                                        <h6 class="mb-2" style="color: #17a2b8; font-weight: 600; font-size: 0.9rem;">
+                                <div class="card h-100 border">
+                                    <div class="card-body d-flex flex-column">
+                                        <h6 class="mb-2 text-info fw-semibold">
                                             <i class="fas fa-lightbulb me-1"></i>{{ template.name }}
                                         </h6>
-                                        <p class="mb-3 text-muted small flex-grow-1" style="line-height: 1.4;">{{ template.content|truncatechars:80 }}</p>
-                                        <button class="btn btn-sm mt-auto" onclick="useTemplate('{{ template.content|escapejs }}')" style="background: linear-gradient(135deg, #17a2b8, #138496); color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.8rem;">
+                                        <p class="mb-3 text-muted small flex-grow-1">{{ template.content|truncatechars:80 }}</p>
+                                        <button class="btn btn-info btn-sm mt-auto" onclick="useTemplate('{{ template.content|escapejs }}')">
                                             <i class="fas fa-plus me-1"></i>Use Template
                                         </button>
                                     </div>
@@ -186,62 +180,9 @@
     </div>
 </div>
 
-<!-- Template Preview Modal -->
-<div class="modal fade" id="templateModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border: 1px solid #e9ecef; border-radius: 12px;">
-            <div class="modal-header" style="border: none; padding: 1.5rem;">
-                <h5 class="modal-title" style="color: {{ organization.primary_color|default:'#667eea' }};">
-                    <i class="fas fa-eye me-2"></i>Template Preview
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" style="padding: 1.5rem;">
-                <div id="templatePreview" class="p-3" style="background: rgba(0,0,0,0.05); border-radius: 10px; min-height: 100px;"></div>
-            </div>
-            <div class="modal-footer" style="border: none; padding: 1.5rem;">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Close</button>
-                <button type="button" class="btn" onclick="copyToForm()" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }}, {{ organization.secondary_color|default:'#764ba2' }}); color: white; border: none; border-radius: 10px;">
-                    <i class="fas fa-copy me-2"></i>Use This Template
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+{% endblock %}
 
-<style>
-@keyframes pulse {
-    0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
-    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
-    100% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
-}
-
-.arrow-animation::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 100%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-left: 10px solid {{ organization.primary_color|default:'#667eea' }};
-    border-top: 5px solid transparent;
-    border-bottom: 5px solid transparent;
-    animation: slide 2s infinite;
-}
-
-@keyframes slide {
-    0% { left: 100%; opacity: 0; }
-    50% { left: 110%; opacity: 1; }
-    100% { left: 120%; opacity: 0; }
-}
-
-.template-card:hover, .prebuilt-card:hover {
-    transform: translateY(-3px) !important;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
-}
-</style>
-
+{% block extra_scripts %}
 <script>
 function useTemplate(content) {
     // Copy template content to the create form
@@ -250,32 +191,6 @@ function useTemplate(content) {
 
     // Scroll to the form smoothly
     document.getElementById('templateForm').scrollIntoView({ behavior: 'smooth' });
-
-    // Show success message
-    showToast('Template copied to form!', 'success');
-}
-
-function showToast(message, type) {
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${type} border-0`;
-    toast.setAttribute('role', 'alert');
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    `;
-
-    // Add to page
-    document.body.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-
-    // Remove after shown
-    toast.addEventListener('hidden.bs.toast', () => {
-        document.body.removeChild(toast);
-    });
 }
 
 // Add form validation
@@ -286,54 +201,37 @@ document.getElementById('templateForm').addEventListener('submit', function(e) {
     if (!nameInput.value.trim()) {
         e.preventDefault();
         nameInput.focus();
-        showToast('Please enter a template name', 'warning');
         return;
     }
 
     if (!contentTextarea.value.trim()) {
         e.preventDefault();
         contentTextarea.focus();
-        showToast('Please enter template content', 'warning');
         return;
     }
-
-    // Show loading state
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
-    submitBtn.disabled = true;
-
-    // Re-enable after a delay (in case of client-side validation failure)
-    setTimeout(() => {
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    }, 3000);
 });
 
 // Character counter for textarea
 document.getElementById('templateContent').addEventListener('input', function() {
     const maxLength = 160; // SMS limit
     const currentLength = this.value.length;
-    const counter = this.parentNode.querySelector('.char-counter') || createCharCounter(this);
+
+    // Update or create character counter
+    let counter = this.parentNode.querySelector('.char-counter');
+    if (!counter) {
+        counter = document.createElement('small');
+        counter.className = 'char-counter form-text';
+        counter.style.textAlign = 'right';
+        this.parentNode.appendChild(counter);
+    }
 
     counter.textContent = `${currentLength}/${maxLength}`;
 
     if (currentLength > maxLength) {
         counter.style.color = '#dc3545';
-        this.style.borderColor = '#dc3545';
     } else {
         counter.style.color = '#6c757d';
-        this.style.borderColor = 'rgba({{ organization.primary_color|default:'#667eea' }}, 0.2)';
     }
 });
-
-function createCharCounter(textarea) {
-    const counter = document.createElement('small');
-    counter.className = 'char-counter form-text';
-    counter.style.textAlign = 'right';
-    textarea.parentNode.appendChild(counter);
-    return counter;
-}
 </script>
-
 {% endblock %}
