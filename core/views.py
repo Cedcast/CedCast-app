@@ -2114,7 +2114,7 @@ def org_upload_contacts(request, org_slug=None):
 	if org_slug and organization.slug != org_slug:
 		return redirect('org_dashboard', org_slug=organization.slug)
 	if not organization.is_active:
-		return render(request, 'org_contacts.html', {'organization': organization, 'error': 'Your organization account is suspended. Please contact support.'})
+		return render(request, 'org_upload_contacts.html', {'organization': organization, 'error': 'Your organization account is suspended. Please contact support.'})
 
 	message = None
 	from .models import Contact

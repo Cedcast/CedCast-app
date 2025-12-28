@@ -49,20 +49,6 @@
                 </li>
                 {% endif %}
             </ul>
-            <ul class="navbar-nav">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle me-1"></i>{{ user.get_full_name|default:user.username }}
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="/profile/">Profile</a></li>
-                        <li><a class="dropdown-item" href="{% url 'org_billing' organization.slug %}">Billing</a></li>
-                        <li><a class="dropdown-item" href="#">Switch organisation</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/logout/">Logout</a></li>
-                    </ul>
-                </li>
-            </ul>
         </div>
     </div>
 </nav>
