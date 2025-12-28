@@ -172,6 +172,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Use WhiteNoise to serve static files in production (works well on Render)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Additional directories to look for static files
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
 # Caching configuration
 # Use Redis for caching if available, otherwise use database caching
 REDIS_URL = os.environ.get('REDIS_URL')
