@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ organization.name }} - Message Logs{% endblock %}
+{% block content %}
+    <div class="container py-4">
+        <a href="{% url 'org_dashboard' organization.slug %}" class="btn btn-link">← Back</a>
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">Message Logs</div>
+            <div class="card-body">
+                    <form method="get" class="row g-2 mb-3">
+                        <div class="col-auto">
+                            <select name="status" class="form-select">
+                                <option value="">All</option>
+                                <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="sent" {% if status == 'sent' %}selected{% endif %}>Sent</option>
+                                <option value="failed" {% if status == 'failed' %}selected{% endif %}>Failed</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <input type="date" name="from" class="form-control" value="{{ from }}" placeholder="From">
+                        </div>
+                        <div class="col-auto">
+                            <input type="date" name="to" class="form-control" value="{{ to }}" placeholder="To">
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-secondary">Filter</button>
+                        </div>
+                    </form>
+
+                    <ul class="list-group">
+                    {% for l in logs %}
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong>{{ l.contact.name }}</strong> — {{ l.contact.phone_number }}<br>
+                                Status: {{ l.status }}{% if l.sent_at %} at {{ l.sent_at|date:'Y-m-d H:i' }}{% endif %}<br>
+                                Message: {{ l.message.content }}
+                            </div>
+                            <div class="ms-3">
+                                <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this message log?')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="log_id" value="{{ l.id }}">
+                                    <button type="submit" name="delete_log" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item">No logs yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

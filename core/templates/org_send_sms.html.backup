@@ -1,0 +1,532 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ organization.name }} - Send Messages{% endblock %}
+
+{% block content %}
+{% include 'org_admin_nav.html' %}
+
+<div class="container-fluid py-4" style="background: #f8f9fa; min-height: calc(100vh - 76px);">
+    <div class="container">
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.btn-primary {
+    background-color: {{ organization.primary_color|default:'#007bff' }};
+    border-color: {{ organization.primary_color|default:'#007bff' }};
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    border-radius: 8px;
+}
+
+.btn-primary:hover {
+    background-color: {{ organization.primary_color|default:'#0056b3' }};
+    border-color: {{ organization.primary_color|default:'#0056b3' }};
+}
+
+.btn-outline-secondary {
+    border-color: #dee2e6;
+    color: #6c757d;
+    border-radius: 8px;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+.form-control {
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.form-control:focus {
+    border-color: {{ organization.primary_color|default:'#007bff' }};
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.alert {
+    border-radius: 8px;
+    border: none;
+    padding: 1rem 1.25rem;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+.character-count {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-align: right;
+    margin-top: 0.25rem;
+}
+
+.template-preview {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 1rem;
+    font-family: monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.recipient-summary {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.recipient-tag {
+    display: inline-block;
+    background: {{ organization.primary_color|default:'#007bff' }};
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    margin: 0.25rem;
+}
+
+.schedule-section {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.preview-section {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        padding: 1.5rem;
+    }
+
+    .form-section {
+        padding: 1rem;
+    }
+
+    .section-icon {
+        width: 40px;
+        height: 40px;
+    }
+}
+</style>
+{% endblock %}
+
+.btn-send {
+    background: linear-gradient(135deg, {{ organization.primary_color|default:'#667eea' }} 0%, {{ organization.secondary_color|default:'#764ba2' }} 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-send:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-schedule {
+    border-radius: 12px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-schedule:hover {
+    transform: translateY(-2px);
+}
+
+.template-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.group-checkbox {
+    transition: all 0.3s ease;
+}
+
+.group-checkbox:hover {
+    transform: translateY(-1px);
+}
+
+.contacts-select {
+    border-radius: 12px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.contacts-select:focus {
+    border-color: {{ organization.primary_color|default:'#667eea' }};
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.alert {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.pagination {
+    margin-top: 1rem;
+}
+
+.page-link {
+    border-radius: 8px !important;
+    margin: 0 2px;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    background: {{ organization.primary_color|default:'#667eea' }};
+    color: white;
+    transform: translateY(-1px);
+}
+
+.page-item.active .page-link {
+    background: {{ organization.primary_color|default:'#667eea' }};
+    border-color: {{ organization.primary_color|default:'#667eea' }};
+}
+</style>
+{% block content %}
+    {% include 'org_admin_nav.html' %}
+
+    <div class="container-fluid main-content">
+        {% if hubtel_dry_run or clicksend_dry_run %}
+        <div class="alert alert-warning fade show" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <div>
+                    <strong>Test Mode Active:</strong>
+                    {% if hubtel_dry_run %} Hubtel is in dry-run mode — messages will not be sent.{% endif %}
+                    {% if clicksend_dry_run %} {% if hubtel_dry_run %}<br>{% endif %} ClickSend is in dry-run mode — messages will not be sent.{% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h1 class="mb-2 text-primary" style="font-weight: 700;">
+                            <i class="fas fa-paper-plane me-3"></i>Send Messages
+                        </h1>
+                        <p class="text-muted mb-0">Compose and send SMS messages to your contacts and groups</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="badge bg-primary px-3 py-2">
+                            <i class="fas fa-building me-1"></i>{{ organization.name }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+                            <i class="bi bi-wallet me-1"></i>
+                            Balance: <strong>₵{{ organization.balance|floatformat:2 }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="send-form-card p-4">
+                    {% if error %}
+                    <div class="alert alert-danger fade show">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+                    </div>
+                    {% endif %}
+                    {% if success %}
+                    <div class="alert alert-success fade show">
+                        <i class="bi bi-check-circle-fill me-2"></i>{{ success }}
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Template Selection -->
+                        <div class="form-section">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="bi bi-file-text me-2 text-primary"></i>
+                                <h5 class="mb-0 fw-bold">Message Template</h5>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Choose a Template (Optional)</label>
+                                <select name="template_id" id="template_id" class="form-select form-select-lg">
+                                    <option value="">-- Start with a blank message --</option>
+                                    {% for t in templates %}
+                                        <option value="{{ t.id }}" data-content="{{ t.content|escape }}">{{ t.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Select a saved template or compose a custom message below</div>
+                            </div>
+                        </div>
+
+                        <!-- Message Content -->
+                        <div class="form-section">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="bi bi-chat-text me-2 text-success"></i>
+                                <h5 class="mb-0 fw-bold">Message Content</h5>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Your Message <span class="text-danger">*</span></label>
+                                <textarea name="sms_body" id="sms_body" class="form-control form-control-lg" rows="4" required
+                                          placeholder="Type your message here...">{{ sms_body }}</textarea>
+                                <div class="form-text d-flex justify-content-between">
+                                    <small>Maximum 160 characters per SMS</small>
+                                    <small id="char-count" class="fw-semibold">0/160</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scheduling -->
+                        <div class="form-section">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="bi bi-clock me-2 text-info"></i>
+                                <h5 class="mb-0 fw-bold">Schedule Message</h5>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Send Time (Optional)</label>
+                                <input type="datetime-local" name="scheduled_time" class="form-control form-control-lg"
+                                       min="{% now 'Y-m-d\TH:i' %}">
+                                <div class="form-text">Leave empty to send immediately</div>
+                            </div>
+                        </div>
+
+                        <!-- Recipients -->
+                        <div class="form-section">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="bi bi-people-fill me-2 text-warning"></i>
+                                <h5 class="mb-0 fw-bold">Select Recipients</h5>
+                            </div>
+
+                            <!-- Groups -->
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Send to Groups</label>
+                                <div class="row g-2">
+                                    {% for g in groups %}
+                                        <div class="col-md-6">
+                                            <div class="group-checkbox p-3 border rounded">
+                                                <div class="form-check d-flex align-items-center">
+                                                    <input class="form-check-input me-3" type="checkbox" name="groups" id="g{{ g.id }}" value="{{ g.id }}">
+                                                    <div>
+                                                        <label class="form-check-label fw-semibold mb-1" for="g{{ g.id }}">{{ g.name }}</label>
+                                                        <small class="text-muted d-block">{{ g.contacts.count }} contacts</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="col-12">
+                                            <div class="text-center py-4 text-muted">
+                                                <i class="bi bi-collection display-4 mb-2 opacity-50"></i>
+                                                <p>No groups created yet. <a href="{% url 'org_groups' organization.slug %}" class="text-decoration-none">Create your first group</a></p>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Individual Contacts -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Or Select Individual Contacts</label>
+                                <select name="contacts" class="contacts-select form-select" multiple size="8">
+                                    {% for c in contacts %}
+                                        <option value="{{ c.id }}">{{ c.name }} — {{ c.phone_number }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Hold Ctrl/Cmd to select multiple contacts</div>
+                            </div>
+
+                            {% if contacts.has_other_pages %}
+                            <nav aria-label="Contacts pagination">
+                                <ul class="pagination pagination-sm justify-content-center">
+                                    {% if contacts.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?contacts_page={{ contacts.previous_page_number }}{% if request.GET.sms_body %}&sms_body={{ request.GET.sms_body }}{% endif %}{% if request.GET.scheduled_time %}&scheduled_time={{ request.GET.scheduled_time }}{% endif %}">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% for num in contacts.paginator.page_range %}
+                                        {% if contacts.number == num %}
+                                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                        {% elif num > contacts.number|add:'-3' and num < contacts.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?contacts_page={{ num }}{% if request.GET.sms_body %}&sms_body={{ request.GET.sms_body }}{% endif %}{% if request.GET.scheduled_time %}&scheduled_time={{ request.GET.scheduled_time }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if contacts.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?contacts_page={{ contacts.next_page_number }}{% if request.GET.sms_body %}&sms_body={{ request.GET.sms_body }}{% endif %}{% if request.GET.scheduled_time %}&scheduled_time={{ request.GET.scheduled_time }}{% endif %}">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                            {% endif %}
+                        </div>
+
+                        {% if recaptcha_site_key %}
+                        <div class="form-section">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="bi bi-shield-check me-2 text-danger"></i>
+                                <h5 class="mb-0 fw-bold">Security Verification</h5>
+                            </div>
+                            <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+                            <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-3 pt-3">
+                            <button type="submit" name="action" value="send_now" class="btn btn-send btn-lg flex-fill">
+                                <i class="bi bi-send-fill me-2"></i>Send Now
+                            </button>
+                            <button type="submit" name="action" value="schedule" class="btn btn-schedule btn-outline-primary btn-lg flex-fill">
+                                <i class="bi bi-clock me-2"></i>Schedule for Later
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="send-form-card p-4 mb-4">
+                    <h6 class="fw-bold mb-3" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                        <i class="bi bi-info-circle me-2"></i>Quick Tips
+                    </h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-2 d-flex">
+                            <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                            Messages are sent at ₵0.25 per SMS
+                        </li>
+                        <li class="mb-2 d-flex">
+                            <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                            Maximum 160 characters per message
+                        </li>
+                        <li class="mb-2 d-flex">
+                            <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                            Scheduled messages are processed automatically
+                        </li>
+                        <li class="mb-0 d-flex">
+                            <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                            Delivery reports available in Message Logs
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="send-form-card p-4">
+                    <h6 class="fw-bold mb-3" style="color: {{ organization.primary_color|default:'#667eea' }};">
+                        <i class="bi bi-star me-2"></i>Recent Templates
+                    </h6>
+                    {% if templates %}
+                        <div class="list-group list-group-flush">
+                            {% for template in templates|slice:":3" %}
+                            <div class="list-group-item px-0 py-2 border-0 template-option" onclick="useTemplate('{{ template.content|escapejs }}')">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-file-text me-2 text-muted mt-1"></i>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold small">{{ template.name }}</div>
+                                        <small class="text-muted">{{ template.content|truncatechars:50 }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted small mb-0">No templates created yet. Create your first template above.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Character counter
+        document.getElementById('sms_body').addEventListener('input', function() {
+            const count = this.value.length;
+            const max = 160;
+            document.getElementById('char-count').textContent = count + '/' + max;
+
+            if (count > max) {
+                document.getElementById('char-count').className = 'fw-semibold text-danger';
+            } else {
+                document.getElementById('char-count').className = 'fw-semibold text-muted';
+            }
+        });
+
+        // Template selection
+        document.getElementById('template_id').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value && selectedOption.dataset.content) {
+                document.getElementById('sms_body').value = selectedOption.dataset.content;
+                document.getElementById('sms_body').dispatchEvent(new Event('input'));
+            }
+        });
+
+        // Use template function
+        function useTemplate(content) {
+            document.getElementById('sms_body').value = content;
+            document.getElementById('sms_body').dispatchEvent(new Event('input'));
+            document.getElementById('sms_body').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initialize character count on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('sms_body').dispatchEvent(new Event('input'));
+        });
+    </script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function(){
+        const sel = document.getElementById('template_id');
+        const body = document.getElementById('sms_body');
+        if(sel && body){
+            sel.addEventListener('change', function(){
+                const opt = sel.options[sel.selectedIndex];
+                const content = opt && opt.getAttribute('data-content');
+                if(content){
+                    // Unescape HTML entities lightly
+                    body.value = content.replace(/\r?\n/g, '\n');
+                }
+            });
+        }
+    })();
+</script>
+{% endblock %}

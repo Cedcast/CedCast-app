@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load core_filters %}
+{% block title %}{{ organization.name }} - Billing{% endblock %}
+{% block extra_head %}
+<script src="https://js.paystack.co/v1/inline.js"></script>
+{% endblock %}
+{% block content %}
+    <div class="container-fluid py-4" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#007bff' }}15, {{ organization.secondary_color|default:'#6c757d' }}05); min-height: 100vh;">
+        {% csrf_token %}
+
+        <!-- Modern Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; background: {{ organization.primary_color|default:'#007bff' }};">
+                                        <i class="bi bi-cash-stack text-white fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h2 class="mb-0 fw-bold" style="color: {{ organization.primary_color|default:'#007bff' }};">Billing & Balance</h2>
+                                        <p class="text-muted mb-0">Manage your SMS credits and payments</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <a href="{% url 'org_dashboard' organization.slug %}" class="btn btn-outline-primary btn-lg">
+                                    <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if message %}
+            <div class="alert alert-info border-0 shadow-sm" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+                <i class="bi bi-info-circle me-2"></i>{{ message }}
+            </div>
+        {% endif %}
+
+        <!-- Key Metrics Row -->
+        <div class="row mb-4 g-4">
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow-sm" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; background: linear-gradient(135deg, {{ organization.primary_color|default:'#007bff' }}, {{ organization.secondary_color|default:'#6c757d' }});">
+                                <i class="bi bi-chat-dots text-white fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">SMS Usage & Pricing</h5>
+                                <p class="text-muted small mb-0">Current billing information</p>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="p-3 rounded" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#007bff' }}10, {{ organization.secondary_color|default:'#6c757d' }}05);">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold">Current Rate:</span>
+                                        <span class="h4 mb-0 fw-bold" style="color: {{ organization.primary_color|default:'#007bff' }};">₵{{ current_sms_rate|floatformat:4 }}</span>
+                                    </div>
+                                    <small class="text-muted">per SMS (decreases with volume)</small>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.8);">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold">Total SMS Sent:</span>
+                                        <span class="h5 mb-0 fw-bold">{{ total_sms_sent|format_number }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <h6 class="fw-bold mb-3" style="color: {{ organization.primary_color|default:'#007bff' }};">Pricing Tiers</h6>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="p-2 rounded small" style="background: rgba(255, 255, 255, 0.6);">
+                                        <strong>0-99 SMS:</strong> ₵0.25 each
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 rounded small" style="background: rgba(255, 255, 255, 0.6);">
+                                        <strong>100-499 SMS:</strong> ₵0.22 each
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 rounded small" style="background: rgba(255, 255, 255, 0.6);">
+                                        <strong>500-999 SMS:</strong> ₵0.20 each
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 rounded small" style="background: rgba(255, 255, 255, 0.6);">
+                                        <strong>1,000-4,999 SMS:</strong> ₵0.18 each
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 rounded small" style="background: rgba(255, 255, 255, 0.6);">
+                                        <strong>5,000-9,999 SMS:</strong> ₵0.16 each
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 rounded small" style="background: rgba(255, 255, 255, 0.6);">
+                                        <strong>10,000+ SMS:</strong> ₵0.14 each
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow-sm" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; background: linear-gradient(135deg, #28a745, #20c997);">
+                                <i class="bi bi-wallet2 text-white fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Current Balance</h5>
+                                <p class="text-muted small mb-0">Available credits</p>
+                            </div>
+                        </div>
+
+                        <div class="text-center py-4">
+                            <div class="display-4 fw-bold mb-2" style="color: {{ organization.primary_color|default:'#007bff' }};">₵{{ organization.balance|floatformat:2 }}</div>
+                            <p class="text-muted mb-0">Available for SMS sending</p>
+                        </div>
+
+                        {% if organization.balance < current_sms_rate %}
+                        <div class="alert alert-warning border-0 mt-3" style="background: linear-gradient(135deg, #ffc10720, #fd7e1420);">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Low Balance!</strong> You need at least ₵{{ current_sms_rate|floatformat:4 }} to send one SMS.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Balance Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; background: linear-gradient(135deg, {{ organization.primary_color|default:'#007bff' }}, {{ organization.secondary_color|default:'#6c757d' }});">
+                                <i class="bi bi-plus-circle text-white fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Add Balance</h5>
+                                <p class="text-muted mb-0">Top up your SMS credits</p>
+                            </div>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="p-4 rounded" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#007bff' }}05, {{ organization.secondary_color|default:'#6c757d' }}03);">
+                                    <label for="amount" class="form-label fw-semibold">Amount (GHS)</label>
+                                    <input type="number" step="0.01" min="{{ min_payment_amount }}" max="{{ max_payment_amount }}" class="form-control form-control-lg border-0" style="background: rgba(255, 255, 255, 0.8);" id="amount" placeholder="Enter amount">
+                                    <div class="form-text">Minimum: ₵{{ min_payment_amount }}, Maximum: ₵{{ max_payment_amount|floatformat:0|format_number }}</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 d-flex align-items-end">
+                                <button type="button" class="btn btn-lg w-100 fw-bold" style="background: linear-gradient(135deg, {{ organization.primary_color|default:'#007bff' }}, {{ organization.secondary_color|default:'#6c757d' }}); border: none; color: white;" onclick="showPaymentModal()">
+                                    <i class="bi bi-credit-card me-2"></i>Add to Balance
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <div class="d-inline-flex align-items-center px-3 py-2 rounded-pill" style="background: rgba(255, 255, 255, 0.8);">
+                                <i class="bi bi-shield-check text-success me-2"></i>
+                                <small class="text-muted fw-semibold">Secure payments powered by Paystack</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SMS Credits Section -->
+
+
+    <!-- Payment Method Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentModalLabel">Choose Payment Method</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <h6>Amount to Pay: <span id="modalAmount" class="text-primary fw-bold">₵0.00</span></h6>
+                    </div>
+                    <div class="d-grid gap-3">
+                        <button type="button" class="btn btn-outline-primary btn-lg" onclick="payWithPaystack('card')">
+                            <i class="bi bi-credit-card"></i> Pay with Card
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-lg" onclick="payWithPaystack('mobile')">
+                            <i class="bi bi-phone"></i> Pay with Mobile Money
+                        </button>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">
+                            <i class="bi bi-shield-check"></i>
+                            Secure payment powered by Paystack
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function showPaymentModal() {
+    const amountInput = document.getElementById('amount');
+    const amount = parseFloat(amountInput.value);
+
+    if (!amount || amount < {{ min_payment_amount }}) {
+        alert('Please enter a valid amount (minimum ₵{{ min_payment_amount }}).');
+        amountInput.focus();
+        return;
+    }
+
+    if (amount > {{ max_payment_amount }}) {
+        alert('Amount cannot exceed ₵{{ max_payment_amount|floatformat:0 }}.');
+        amountInput.focus();
+        return;
+    }
+
+    // Update modal amount display
+    document.getElementById('modalAmount').textContent = '₵' + amount.toFixed(2);
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    modal.show();
+}
+
+function payWithPaystack(method) {
+    const amountInput = document.getElementById('amount');
+    const amount = parseFloat(amountInput.value) * 100; // Paystack expects amount in pesewas (multiply by 100)
+
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+    modal.hide();
+
+    // Initialize Paystack payment
+    const handler = PaystackPop.setup({
+        key: '{{ paystack_public_key }}',
+        email: '{{ user.email }}',
+        amount: amount,
+        currency: 'GHS',
+        ref: 'ORG_{{ organization.id }}_' + Math.floor((Math.random() * 1000000000) + 1),
+        metadata: {
+            organization_id: '{{ organization.id }}',
+            organization_slug: '{{ organization.slug }}',
+            payment_type: 'balance_topup',
+            payment_method: method
+        },
+        callback: function(response) {
+            // Payment successful
+            alert('Payment successful! Reference: ' + response.reference);
+
+            // Submit payment verification to server
+            fetch('{% url "org_billing_callback" organization.slug %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: new URLSearchParams({
+                    'reference': response.reference,
+                    'amount': (amount / 100).toFixed(2)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Balance updated successfully!');
+                    location.reload();
+                } else {
+                    alert('Payment verification failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error verifying payment. Please contact support with reference: ' + response.reference);
+            });
+        },
+        onClose: function() {
+            alert('Payment cancelled.');
+        }
+    });
+
+    handler.openIframe();
+}
+
+// Enable/disable button based on amount input
+document.getElementById('amount').addEventListener('input', function() {
+    const amount = parseFloat(this.value);
+    const btn = document.querySelector('button[onclick="showPaymentModal()"]');
+    const isValid = amount && amount >= {{ min_payment_amount }} && amount <= {{ max_payment_amount }};
+    btn.disabled = !isValid;
+});
+
+// Initialize button state
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('amount');
+    const btn = document.querySelector('button[onclick="showPaymentModal()"]');
+    const amount = parseFloat(amountInput.value);
+    const isValid = amount && amount >= {{ min_payment_amount }} && amount <= {{ max_payment_amount }};
+    btn.disabled = !isValid;
+});
+</script>
+{% endblock %}

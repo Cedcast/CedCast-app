@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ organization.name }} - Settings{% endblock %}
+{% block content %}
+    <div class="container py-4">
+        <a href="{% url 'org_dashboard' organization.slug %}" class="btn btn-link">← Back</a>
+        <h2>Organization Settings</h2>
+        
+        <!-- Settings Navigation -->
+        <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="branding-tab" data-bs-toggle="tab" data-bs-target="#branding" type="button" role="tab">Branding</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">Users & Permissions</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="support-tab" data-bs-toggle="tab" data-bs-target="#support" type="button" role="tab">Support</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="settingsTabsContent">
+            <!-- Branding Tab -->
+            <div class="tab-pane fade show active" id="branding" role="tabpanel">
+                {% if created_temp_pw %}
+                    <div class="alert alert-info" role="alert">
+                        <strong>Stats viewer '{{ created_username }}' created.</strong>
+                        <div class="mt-2 input-group">
+                            <input id="tempPwInput" class="form-control" readonly value="{{ created_temp_pw }}">
+                            <button id="copyTempPwBtn" class="btn btn-outline-secondary" type="button">Copy</button>
+                        </div>
+                        <small class="text-muted">Copy this temporary password and share it with the user, or they can reset their password later.</small>
+                    </div>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function(){
+                            const btn = document.getElementById('copyTempPwBtn');
+                            const inp = document.getElementById('tempPwInput');
+                            if (!btn || !inp) return;
+                            btn.addEventListener('click', async function(){
+                                try{
+                                    await navigator.clipboard.writeText(inp.value);
+                                    btn.textContent = 'Copied';
+                                    setTimeout(()=> btn.textContent = 'Copy', 2000);
+                                }catch(e){
+                                    // fallback
+                                    inp.select();
+                                    document.execCommand('copy');
+                                    btn.textContent = 'Copied';
+                                    setTimeout(()=> btn.textContent = 'Copy', 2000);
+                                }
+                            });
+                        });
+                    </script>
+                {% elif notice %}
+                    <div class="alert alert-success">{{ notice }}</div>
+                {% endif %}
+
+                <div class="card mb-3">
+                    <div class="card-header">Branding & Sender</div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_branding" />
+                            <div class="mb-3">
+                                <label class="form-label">Primary Color</label>
+                                <input type="color" name="primary_color" class="form-control form-control-color" value="{{ organization.primary_color }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Secondary Color</label>
+                                <input type="color" name="secondary_color" class="form-control form-control-color" value="{{ organization.secondary_color }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Sender ID</label>
+                                <input name="sender_id" class="form-control" value="{{ organization.sender_id }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Logo (optional)</label>
+                                <input type="file" name="logo" class="form-control">
+                            </div>
+                            <button class="btn btn-primary" type="submit">Save branding</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div class="tab-pane fade" id="users" role="tabpanel">
+                <div class="card mb-3">
+                    <div class="card-header">Users & Permissions</div>
+                    <div class="card-body">
+                        <h6>Organization users</h6>
+                        <ul class="list-group mb-3">
+                            {% for u in users %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">{{ u.username }} <span class="badge bg-secondary">{{ u.role }}</span></li>
+                            {% empty %}
+                                <li class="list-group-item">No users</li>
+                            {% endfor %}
+                        </ul>
+
+                        <h6>Add a stats-viewer (can view dashboards only)</h6>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="invite_stats_user" />
+                            <div class="mb-2">
+                                <input name="invite_username" class="form-control" placeholder="Username (unique)" required>
+                            </div>
+                            <div class="mb-2">
+                                <input name="invite_email" class="form-control" placeholder="Email (optional)">
+                            </div>
+                            <button class="btn btn-outline-primary" type="submit">Invite stats viewer</button>
+                        </form>
+
+                        <hr />
+                        <h6>Stats viewers</h6>
+                        <ul class="list-group">
+                            {% for sv in stats_viewers %}
+                                <li class="list-group-item">{{ sv.user.username }} — added {{ sv.created_at|date:'Y-m-d' }}</li>
+                            {% empty %}
+                                <li class="list-group-item">No stats viewers</li>
+                            {% endfor %}
+                        </ul>
+                            <hr />
+                            <h6>Reset user password</h6>
+                            <form method="post" class="row g-2 align-items-end">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="reset_password">
+                                <div class="col-auto">
+                                    <select name="username" class="form-select" required>
+                                        {% for u in users %}
+                                            <option value="{{ u.username }}">{{ u.username }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-auto">
+                                    <input type="password" name="new_password" class="form-control" placeholder="New password" required>
+                                </div>
+                                <div class="col-auto">
+                                    <button class="btn btn-outline-danger" type="submit">Reset password</button>
+                                </div>
+                            </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Tab -->
+            <div class="tab-pane fade" id="support" role="tabpanel">
+                <div class="card mb-3">
+                        <div class="card-header">Contact CedCast Support</div>
+                        <div class="card-body">
+                            <p class="text-muted">Report issues or request help. Your message goes to super admins.</p>
+                            <form method="post" class="mb-3">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="contact_support" />
+                                <div class="mb-2">
+                                    <input name="subject" class="form-control" placeholder="Subject" required>
+                                </div>
+                                <div class="mb-2">
+                                    <textarea name="message" class="form-control" rows="4" placeholder="Describe the issue or request" required></textarea>
+                                </div>
+                                <button class="btn btn-primary" type="submit">Send to Support</button>
+                            </form>
+                            <h6 class="mt-4">Recent tickets</h6>
+                            <ul class="list-group">
+                                {% for t in tickets %}
+                                    <li class="list-group-item">
+                                        <strong>{{ t.subject }}</strong> — {{ t.status }} — {{ t.created_at|date:'Y-m-d H:i' }}
+                                    </li>
+                                {% empty %}
+                                    <li class="list-group-item">No tickets yet.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

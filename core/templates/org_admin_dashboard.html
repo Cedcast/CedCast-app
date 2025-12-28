@@ -11,74 +11,7 @@
         </div>
     </div>
 
-    <!-- Horizontal Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
-        <div class="container-fluid">
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'org_dashboard' %}active{% endif %}" href="{% url 'org_dashboard' organization.slug %}">
-                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'org_send_sms' %}active{% endif %}" href="{% url 'org_send_sms' organization.slug %}">
-                            <i class="bi bi-send-fill me-1"></i>Send Messages
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'org_upload_contacts' %}active{% endif %}" href="{% url 'org_upload_contacts' organization.slug %}">
-                            <i class="bi bi-person-lines-fill me-1"></i>Contacts
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'org_groups' %}active{% endif %}" href="{% url 'org_groups' organization.slug %}">
-                            <i class="bi bi-people-fill me-1"></i>Groups
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'org_templates' %}active{% endif %}" href="{% url 'org_templates' organization.slug %}">
-                            <i class="bi bi-folder-fill me-1"></i>Templates
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'org_message_logs' %}active{% endif %}" href="{% url 'org_message_logs' organization.slug %}">
-                            <i class="bi bi-journal-text me-1"></i>Message Logs
-                        </a>
-                    </li>
-                    {% if user.is_superuser or user.is_staff or user.role == 'org_admin' or user.role == 'owner' %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'org_settings' %}active{% endif %}" href="{% url 'org_settings' organization.slug %}">
-                            <i class="bi bi-gear-fill me-1"></i>Settings
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'org_billing' %}active{% endif %}" href="{% url 'org_billing' organization.slug %}">
-                            <i class="bi bi-cash-stack me-1"></i>Billing
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle me-1"></i>{{ user.get_full_name|default:user.username }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="/profile/">Profile</a></li>
-                            <li><a class="dropdown-item" href="{% url 'org_billing' organization.slug %}">Billing</a></li>
-                            <li><a class="dropdown-item" href="#">Switch organisation</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/logout/">Logout</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    {% include 'org_admin_horizontal_nav.html' %}
 
     <div class="container-fluid py-4">
         {% if hubtel_dry_run or clicksend_dry_run %}
