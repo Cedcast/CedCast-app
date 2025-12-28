@@ -138,7 +138,47 @@ class OrgMessage(models.Model):
 		indexes = [
 			models.Index(fields=['organization', 'scheduled_time']),
 			models.Index(fields=['organization', 'sent', 'created_at']),
+			models.Index(fields=['organization', 'created_at']),
 		]
+
+	def get_recipients_count(self):
+		"""Get total number of recipients for this message"""
+		return self.orgalertrecipient_set.count()
+
+	def get_sent_recipients_count(self):
+		"""Get number of successfully sent recipients"""
+		return self.orgalertrecipient_set.filter(status='sent').count()
+
+	def get_failed_recipients_count(self):
+		"""Get number of failed recipients"""
+		return self.orgalertrecipient_set.filter(status='failed').count()
+
+	def get_pending_recipients_count(self):
+		"""Get number of pending recipients"""
+		return self.orgalertrecipient_set.filter(status='pending').count()
+
+	def get_delivery_rate(self):
+		"""Calculate delivery rate for this message"""
+		total = self.get_recipients_count()
+		sent = self.get_sent_recipients_count()
+		return (sent / total * 100) if total > 0 else 0
+
+	def mark_as_sent(self):
+		"""Mark message as sent"""
+		self.sent = True
+		self.save(update_fields=['sent'])
+
+	def create_recipients(self, contacts):
+		"""Create OrgAlertRecipient instances for the given contacts"""
+		from .models import OrgAlertRecipient
+		recipients = []
+		for contact in contacts:
+			recipients.append(OrgAlertRecipient(
+				message=self,
+				contact=contact,
+				status='pending'
+			))
+		return OrgAlertRecipient.objects.bulk_create(recipients)
 
 	def __str__(self):
 		return f"Message to {self.organization.name} at {self.scheduled_time}"
@@ -164,7 +204,34 @@ class OrgAlertRecipient(models.Model):
 			models.Index(fields=['message', 'status']),
 			models.Index(fields=['contact', 'status']),
 			models.Index(fields=['is_deleted']),
+			models.Index(fields=['message', 'is_deleted']),
+			models.Index(fields=['contact', 'sent_at']),
+			models.Index(fields=['status', 'retry_count']),
 		]
+
+	def mark_as_sent(self, provider_message_id=None):
+		"""Mark recipient as sent with optional provider tracking"""
+		from django.utils import timezone
+		self.status = 'sent'
+		self.sent_at = timezone.now()
+		if provider_message_id:
+			self.provider_message_id = provider_message_id
+		self.save(update_fields=['status', 'sent_at', 'provider_message_id'])
+
+	def mark_as_failed(self, error_message=None, provider_message_id=None):
+		"""Mark recipient as failed with error details"""
+		from django.utils import timezone
+		self.status = 'failed'
+		self.error_message = error_message or ''
+		if provider_message_id:
+			self.provider_message_id = provider_message_id
+		self.retry_count += 1
+		self.last_retry_at = timezone.now()
+		self.save(update_fields=['status', 'error_message', 'provider_message_id', 'retry_count', 'last_retry_at'])
+
+	def can_retry(self, max_retries=3):
+		"""Check if this recipient can be retried"""
+		return self.status in ['pending', 'failed'] and self.retry_count < max_retries
 
 	def __str__(self):
 		return f"{self.contact.name} - {self.status}"
@@ -219,6 +286,7 @@ class Organization(models.Model):
 		indexes = [
 			models.Index(fields=['is_active', 'onboarded']),
 			models.Index(fields=['slug']),
+			models.Index(fields=['approval_status', 'created_at']),
 		]
 
 	def get_current_sms_rate(self):
@@ -242,6 +310,95 @@ class Organization(models.Model):
 		self.sms_rate = self.get_current_sms_rate()
 		self.save(update_fields=['sms_rate'])
 
+	def can_send_sms(self, count=1):
+		"""Check if organization can afford to send specified number of SMS"""
+		required_balance = self.get_current_sms_rate() * count
+		return self.balance >= required_balance
+
+	def deduct_sms_cost(self, count):
+		"""Deduct SMS cost from balance and update usage stats"""
+		cost = self.get_current_sms_rate() * count
+		if self.balance >= cost:
+			self.balance -= cost
+			self.total_sms_sent += count
+			self.save(update_fields=['balance', 'total_sms_sent'])
+			return True, cost
+		return False, Decimal('0.00')
+
+	def get_contacts_count(self):
+		"""Get total number of contacts"""
+		return self.contacts.count()
+
+	def get_templates_count(self):
+		"""Get total number of SMS templates"""
+		return self.orgsmstemplate_set.count()
+
+	def get_messages_count(self):
+		"""Get total number of messages sent"""
+		return self.orgmessage_set.count()
+
+	def get_delivery_stats(self):
+		"""Get delivery statistics for the organization"""
+		from django.db.models import Count, Q
+		stats = self.orgalertrecipient_set.aggregate(
+			total=Count('id'),
+			sent=Count('id', filter=Q(status='sent')),
+			failed=Count('id', filter=Q(status='failed')),
+			pending=Count('id', filter=Q(status='pending'))
+		)
+		total = stats['total']
+		sent = stats['sent']
+		delivery_rate = (sent / total * 100) if total > 0 else 0
+
+		return {
+			'total_recipients': total,
+			'sent_recipients': sent,
+			'failed_recipients': stats['failed'],
+			'pending_recipients': stats['pending'],
+			'delivery_rate': delivery_rate
+		}
+
+	def get_sms_stats_today(self):
+		"""Get SMS statistics for today"""
+		from django.utils import timezone
+		from django.db.models import Count
+		today = timezone.now().date()
+
+		return self.orgalertrecipient_set.filter(
+			sent_at__date=today,
+			status='sent'
+		).count()
+
+	def get_sms_stats_week(self):
+		"""Get SMS statistics for the past week"""
+		from django.utils import timezone
+		from django.db.models import Count
+		week_ago = timezone.now() - timezone.timedelta(days=7)
+
+		return self.orgalertrecipient_set.filter(
+			sent_at__gte=week_ago,
+			status='sent'
+		).count()
+
+	def get_sms_stats_month(self):
+		"""Get SMS statistics for the past month"""
+		from django.utils import timezone
+		from django.db.models import Count
+		month_ago = timezone.now() - timezone.timedelta(days=30)
+
+		return self.orgalertrecipient_set.filter(
+			sent_at__gte=month_ago,
+			status='sent'
+		).count()
+
+	def is_low_balance(self):
+		"""Check if organization has low balance (can't send 10 SMS)"""
+		return self.balance < (self.get_current_sms_rate() * 10)
+
+	def is_critical_balance(self):
+		"""Check if organization has critical balance (< 5 GHS)"""
+		return self.balance < Decimal('5.00')
+
 	def __str__(self):
 		return f"{self.name} ({self.org_type})"
 
@@ -256,6 +413,7 @@ class Contact(models.Model):
 		indexes = [
 			models.Index(fields=['organization', 'created_at']),
 			models.Index(fields=['organization', 'phone_number']),
+			models.Index(fields=['organization', 'name']),
 		]
 
 	def clean(self):
@@ -266,6 +424,56 @@ class Contact(models.Model):
 	def save(self, *args, **kwargs):
 		self.full_clean()
 		super().save(*args, **kwargs)
+
+	@classmethod
+	def bulk_create_from_csv(cls, csv_file, organization):
+		"""Bulk create contacts from CSV file"""
+		import csv, io
+		from .utils import normalize_phone_number
+
+		decoded = csv_file.read().decode('utf-8', errors='ignore')
+		reader = csv.DictReader(io.StringIO(decoded))
+
+		contacts_to_create = []
+		for row in reader:
+			phone = (row.get('phone') or row.get('phone_number') or '').strip()
+			name = (row.get('name') or row.get('contact_name') or '').strip()
+
+			if phone:
+				normalized_phone = normalize_phone_number(phone) or phone
+				if normalized_phone:
+					contacts_to_create.append(cls(
+						organization=organization,
+						name=name or normalized_phone,
+						phone_number=normalized_phone
+					))
+
+		return cls.objects.bulk_create(contacts_to_create, ignore_conflicts=True)
+
+	@classmethod
+	def bulk_create_from_text(cls, text, organization):
+		"""Bulk create contacts from pasted text"""
+		import re
+		from .utils import normalize_phone_number
+
+		contacts_to_create = []
+		# Extract phone numbers from text
+		phones = re.findall(r'\+?\d{7,15}', text)
+
+		for phone in phones:
+			normalized_phone = normalize_phone_number(phone) or phone
+			if normalized_phone:
+				contacts_to_create.append(cls(
+					organization=organization,
+					name=normalized_phone,
+					phone_number=normalized_phone
+				))
+
+		return cls.objects.bulk_create(contacts_to_create, ignore_conflicts=True)
+
+	def get_display_name(self):
+		"""Get display name for the contact"""
+		return self.name if self.name else self.phone_number
 
 	def __str__(self):
 		return f"{self.name} ({self.phone_number})"

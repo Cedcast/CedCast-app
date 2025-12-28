@@ -1283,154 +1283,32 @@ def org_dashboard(request, org_slug=None):
 				for c in contacts:
 					OrgAlertRecipient.objects.create(message=msg, contact=c, status='pending')
 
-	from .models import OrgMessage
-	from django.core.cache import cache
-	cache_key = f"org_dashboard_metrics_{organization.id}"
-
-	# Try to get cached metrics, but handle cache failures gracefully
-	try:
-		cached_metrics = cache.get(cache_key)
-	except Exception:
-		# If caching fails for any reason, just proceed without cache
-		cached_metrics = None
-
-	if cached_metrics:
-		messages = cached_metrics['messages']
-		contacts_count = cached_metrics['contacts_count']
-		templates_count = cached_metrics['templates_count']
-		msgs_sent_today = cached_metrics['msgs_sent_today']
-		msgs_sent_week = cached_metrics['msgs_sent_week']
-		msgs_sent_month = cached_metrics['msgs_sent_month']
-		total_recipients = cached_metrics['total_recipients']
-		sent_recipients = cached_metrics['sent_recipients']
-		delivery_rate = cached_metrics['delivery_rate']
-		msgs_sent_trend = cached_metrics['msgs_sent_trend']
-		contacts_trend = cached_metrics['contacts_trend']
-		templates_trend = cached_metrics['templates_trend']
-		delivery_trend = cached_metrics['delivery_trend']
-	else:
-		messages = OrgMessage.objects.filter(organization=organization).select_related('created_by').order_by('-scheduled_time')[:getattr(settings, 'DEFAULT_DASHBOARD_MESSAGES_LIMIT', 10)]  # Limit to recent messages
-		# compute org-level metrics for dashboard
-		from django.utils import timezone
-		import datetime
-		from .models import OrgAlertRecipient, OrgSMSTemplate, Contact
-
-		now = timezone.now()
-		start_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-		start_week = now - datetime.timedelta(days=7)
-		start_month = now - datetime.timedelta(days=30)
-
-		# Use aggregate queries for better performance
-		from django.db.models import Count, Q
-		contacts_count = Contact.objects.filter(organization=organization).count()
-		templates_count = OrgSMSTemplate.objects.filter(organization=organization).count()
-
-		# Optimize metrics queries with single aggregates
-		sent_today_agg = OrgAlertRecipient.objects.filter(
-			message__organization=organization,
-			status='sent',
-			sent_at__gte=start_today
-		).aggregate(count=Count('id'))
-		msgs_sent_today = sent_today_agg['count']
-
-		sent_week_agg = OrgAlertRecipient.objects.filter(
-			message__organization=organization,
-			status='sent',
-			sent_at__gte=start_week
-		).aggregate(count=Count('id'))
-		msgs_sent_week = sent_week_agg['count']
-
-		sent_month_agg = OrgAlertRecipient.objects.filter(
-			message__organization=organization,
-			status='sent',
-			sent_at__gte=start_month
-		).aggregate(count=Count('id'))
-		msgs_sent_month = sent_month_agg['count']
-
-		# Calculate delivery rate efficiently
-		total_recipients_agg = OrgAlertRecipient.objects.filter(message__organization=organization).aggregate(
-			total=Count('id'),
-			sent=Count('id', filter=Q(status='sent'))
-		)
-		total_recipients = total_recipients_agg['total']
-		sent_recipients = total_recipients_agg['sent']
-		delivery_rate = (sent_recipients / total_recipients * 100) if total_recipients else 0
-
-		# Build simple 7-day trend arrays (oldest -> newest) for sparklines in the dashboard.
-		# These are lightweight per-day counts derived from created_at / sent_at fields.
-		from django.db.models.functions import TruncDate
-		from django.db.models import Count
-		trend_days = getattr(settings, 'TREND_DAYS', 7)
-		now = now
-		start_date = (now - datetime.timedelta(days=trend_days - 1)).date()
-		# Aggregate sent counts by sent_at date
-		msgs_qs = OrgAlertRecipient.objects.filter(message__organization=organization, status='sent', sent_at__date__gte=start_date).annotate(day=TruncDate('sent_at')).values('day').annotate(count=Count('id'))
-		# Aggregate contacts and templates by created_at
-		contacts_qs = Contact.objects.filter(organization=organization, created_at__date__gte=start_date).annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id'))
-		templates_qs = OrgSMSTemplate.objects.filter(organization=organization, created_at__date__gte=start_date).annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id'))
-		# Totals by message.created_at (denominator for delivery %)
-		total_qs = OrgAlertRecipient.objects.filter(message__organization=organization, message__created_at__date__gte=start_date).annotate(day=TruncDate('message__created_at')).values('day').annotate(total=Count('id'))
-		# Build lookup dicts
-		msgs_by_date = { r['day']: r['count'] for r in msgs_qs }
-		contacts_by_date = { r['day']: r['count'] for r in contacts_qs }
-		templates_by_date = { r['day']: r['count'] for r in templates_qs }
-		total_by_date = { r['day']: r['total'] for r in total_qs }
-		# Build arrays oldest->newest
-		msgs_sent_trend = []
-		contacts_trend = []
-		templates_trend = []
-		delivery_trend = []
-		for i in range(trend_days - 1, -1, -1):
-			d = (now - datetime.timedelta(days=i)).date()
-			msgs_sent_trend.append(msgs_by_date.get(d, 0))
-			contacts_trend.append(contacts_by_date.get(d, 0))
-			templates_trend.append(templates_by_date.get(d, 0))
-			tot = total_by_date.get(d, 0)
-			sent = msgs_by_date.get(d, 0)
-			delivery_trend.append(int((sent / tot * 100)) if tot else 0)
-
-		# Cache the expensive metrics for 5 minutes (but don't fail if caching is unavailable)
-		try:
-			cache.set(cache_key, {
-				'messages': messages,
-				'contacts_count': contacts_count,
-				'templates_count': templates_count,
-				'msgs_sent_today': msgs_sent_today,
-				'msgs_sent_week': msgs_sent_week,
-				'msgs_sent_month': msgs_sent_month,
-				'total_recipients': total_recipients,
-				'sent_recipients': sent_recipients,
-				'delivery_rate': delivery_rate,
-				'msgs_sent_trend': msgs_sent_trend,
-				'contacts_trend': contacts_trend,
-				'templates_trend': templates_trend,
-				'delivery_trend': delivery_trend,
-			}, getattr(settings, 'CACHE_TIMEOUT_DASHBOARD', 300))
-		except Exception:
-			# If caching fails, just continue without caching - don't break the application
-			pass
+	# Use the new metrics service
+	from .utils.dashboard_metrics import OrganizationDashboardMetrics
+	metrics_service = OrganizationDashboardMetrics(organization)
+	metrics = metrics_service.get_all_metrics()
 
 	return render(request, "org_admin_dashboard.html", {
 		"organization": organization,
-		"messages": messages,
+		"messages": metrics['messages'],
 		"error": error,
 		"message_sent": message_sent,
-		"contacts_count": contacts_count,
-		"templates_count": templates_count,
-		"msgs_sent_today": msgs_sent_today,
-		"msgs_sent_week": msgs_sent_week,
-		"msgs_sent_month": msgs_sent_month,
-		"delivery_rate": delivery_rate,
+		"contacts_count": metrics['contacts_count'],
+		"templates_count": metrics['templates_count'],
+		"msgs_sent_today": metrics['msgs_sent_today'],
+		"msgs_sent_week": metrics['msgs_sent_week'],
+		"msgs_sent_month": metrics['msgs_sent_month'],
+		"delivery_rate": metrics['delivery_rate'],
 		# trend arrays for sparklines (lists of ints, oldest->newest)
-		"contacts_trend": contacts_trend,
-		"templates_trend": templates_trend,
-		"msgs_sent_trend": msgs_sent_trend,
-		"delivery_trend": delivery_trend,
+		"contacts_trend": metrics['contacts_trend'],
+		"templates_trend": metrics['templates_trend'],
+		"msgs_sent_trend": metrics['msgs_sent_trend'],
+		"delivery_trend": metrics['delivery_trend'],
 		"hubtel_dry_run": getattr(settings, 'HUBTEL_DRY_RUN', False),
 		"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
 		"is_suspended": not organization.is_active,
-		"low_balance": organization.balance < organization.get_current_sms_rate() * 10,  # Low balance if can't send 10 SMS
-		"critical_balance": organization.balance < Decimal('5.00'),  # Critical balance warning at 5 GHS
+		"low_balance": organization.is_low_balance(),
+		"critical_balance": organization.is_critical_balance(),
 	})
 
 
@@ -2160,90 +2038,30 @@ def org_upload_contacts(request, org_slug=None):
 
 			elif action == 'paste_contacts':
 				pasted = request.POST.get('pasted', '')
-				created = 0
-				for line in pasted.splitlines():
-					parts = [p.strip() for p in line.split(',') if p.strip()]
-					if not parts:
-						continue
-					# heuristic: last part that looks like a phone number
-					phone = None
-					name = None
-					email = ''
-					for p in parts[::-1]:
-						if any(ch.isdigit() for ch in p):
-							phone = p
-							break
-					if phone:
-						name_part = parts[0] if len(parts) > 1 else ''
-						name = name_part
-						if len(parts) > 2:
-							email = parts[2]
-						normalized = normalize_phone_number(phone) or phone
-						try:
-							Contact.objects.create(organization=organization, name=name or normalized, phone_number=normalized)
-							created += 1
-						except Exception:
-							pass
-				message = f'Imported {created} contacts from pasted text.'
+				try:
+					created_contacts = Contact.bulk_create_from_text(pasted, organization)
+					message = f'Imported {len(created_contacts)} contacts from pasted text.'
+				except Exception as e:
+					message = f'Import failed: {e}'
 
 			elif action == 'upload_file':
 				f = request.FILES.get('contacts_file')
 				if f:
 					filename = f.name.lower()
-					text = ''
-					if filename.endswith('.csv'):
-						import csv, io
-						decoded = f.read().decode('utf-8', errors='ignore')
-						reader = csv.DictReader(io.StringIO(decoded))
-						created = 0
-						for row in reader:
-							phone = (row.get('phone') or row.get('phone_number') or '').strip()
-							name = (row.get('name') or row.get('contact_name') or '').strip()
-							if phone:
-								normalized = normalize_phone_number(phone) or phone
-								try:
-									Contact.objects.create(organization=organization, name=name or normalized, phone_number=normalized)
-									created += 1
-								except Exception:
-									pass
-						message = f"Imported {created} contacts from CSV."
-					elif filename.endswith('.pdf'):
-						try:
-							import PyPDF2
-							reader = PyPDF2.PdfReader(f)
-							for page in reader.pages:
-								text += page.extract_text() or ''
-						except Exception:
-							message = 'PDF parsing requires PyPDF2; please install it to enable PDF imports.'
-						if text:
-							import re
-							phones = re.findall(r'\+?\d{7,15}', text)
-							created = 0
-							for p in phones:
-								try:
-									normalized = normalize_phone_number(p) or p
-									Contact.objects.create(organization=organization, name=normalized, phone_number=normalized)
-									created += 1
-								except Exception:
-									pass
-							if created:
-								message = f"Imported {created} contacts from PDF text."
-					else:
-						try:
-							txt = f.read().decode('utf-8', errors='ignore')
-						except Exception:
-							txt = ''
-						import re
-						phones = re.findall(r'\+?\d{7,15}', txt)
-						created = 0
-						for p in phones:
-							try:
-								normalized = normalize_phone_number(p) or p
-								Contact.objects.create(organization=organization, name=normalized, phone_number=normalized)
-								created += 1
-							except Exception:
-								pass
-						message = f"Imported {created} contacts from uploaded file."
+					try:
+						if filename.endswith('.csv'):
+							created_contacts = Contact.bulk_create_from_csv(f, organization)
+							message = f"Imported {len(created_contacts)} contacts from CSV."
+						else:
+							# Handle other file types (PDF, text files)
+							f.seek(0)  # Reset file pointer
+							text = f.read().decode('utf-8', errors='ignore')
+							created_contacts = Contact.bulk_create_from_text(text, organization)
+							message = f"Imported {len(created_contacts)} contacts from uploaded file."
+					except Exception as e:
+						message = f'File import failed: {e}'
+				else:
+					message = 'No file uploaded.'
 
 			else:
 				message = 'Unknown action.'
