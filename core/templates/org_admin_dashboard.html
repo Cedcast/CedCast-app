@@ -2,53 +2,94 @@
 {% block title %}{{ organization.name }} - Admin Dashboard{% endblock %}
 {% block body_class %}oid-dashboard{% endblock %}
 {% block content %}
-    <nav class="navbar navbar-expand-lg" style="background: {{ organization.primary_color }};">
+    <!-- Header Section -->
+    <div class="bg-primary text-white py-3">
         <div class="container-fluid">
-            <a class="navbar-brand text-white d-flex align-items-center gap-2" href="#"><i class="bi bi-building-fill" aria-hidden="true"></i> <span class="brand-name">{{ organization.name }}</span>
-                {% if organization.is_premium %}<span class="badge bg-warning text-dark ms-2">PREMIUM</span>{% endif %}
-            </a>
-            <div class="d-flex align-items-center gap-2">
-                <div class="text-white small sender-preview d-none d-md-block">Sending as: <strong>{{ organization.sender_id|default:organization.name }}</strong></div>
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <h1 class="h4 mb-0 me-3">CedCast</h1>
+                        <span class="badge bg-light text-dark me-3">Packnet</span>
+                        <span class="text-light">SMS Platform</span>
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <span class="text-white">{{ user.username }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="position-relative">
-                    <button class="btn btn-outline-light btn-sm p-1" id="notifBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-bell-fill" aria-hidden="true"></i>
-                        {% if notification_count|default:0|add:0 > 0 %}
-                        <span class="notif-badge">{{ notification_count }}</span>
-                        {% endif %}
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="notifBtn" style="min-width:220px;">
-                        <li class="dropdown-header">Notifications</li>
-                        {% if notifications %}
-                            {% for n in notifications|slice:":5" %}
-                                <li><a class="dropdown-item" href="{{ n.link|default:'#' }}">{{ n.message }}</a></li>
-                            {% endfor %}
+    <!-- Horizontal Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'org_dashboard' %}active{% endif %}" href="{% url 'org_dashboard' organization.slug %}">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'org_send_sms' %}active{% endif %}" href="{% url 'org_send_sms' organization.slug %}">
+                            <i class="bi bi-send-fill me-1"></i>Send Messages
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'org_upload_contacts' %}active{% endif %}" href="{% url 'org_upload_contacts' organization.slug %}">
+                            <i class="bi bi-person-lines-fill me-1"></i>Contacts
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'org_groups' %}active{% endif %}" href="{% url 'org_groups' organization.slug %}">
+                            <i class="bi bi-people-fill me-1"></i>Groups
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'org_templates' %}active{% endif %}" href="{% url 'org_templates' organization.slug %}">
+                            <i class="bi bi-folder-fill me-1"></i>Templates
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'org_message_logs' %}active{% endif %}" href="{% url 'org_message_logs' organization.slug %}">
+                            <i class="bi bi-journal-text me-1"></i>Message Logs
+                        </a>
+                    </li>
+                    {% if user.is_superuser or user.is_staff or user.role == 'org_admin' or user.role == 'owner' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'org_settings' %}active{% endif %}" href="{% url 'org_settings' organization.slug %}">
+                            <i class="bi bi-gear-fill me-1"></i>Settings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'org_billing' %}active{% endif %}" href="{% url 'org_billing' organization.slug %}">
+                            <i class="bi bi-cash-stack me-1"></i>Billing
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle me-1"></i>{{ user.get_full_name|default:user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="/profile/">Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'org_billing' organization.slug %}">Billing</a></li>
+                            <li><a class="dropdown-item" href="#">Switch organisation</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-center small" href="#">View all</a></li>
-                        {% else %}
-                            <li class="dropdown-item small text-muted">No notifications</li>
-                        {% endif %}
-                    </ul>
-                </div>
-
-                <div class="dropdown">
-                    <a class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <div class="avatar bg-light text-dark me-2">{{ user.username|default:user.email|slice:":1"|upper }}</div>
-                        <span class="d-none d-sm-inline">{{ user.get_full_name|default:user.username }}</span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="/profile/">Profile</a></li>
-                        <li><a class="dropdown-item" href="{% url 'org_billing' organization.slug %}">Billing</a></li>
-                        <li><a class="dropdown-item" href="#">Switch organisation</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/logout/">Logout</a></li>
-                    </ul>
-                </div>
+                            <li><a class="dropdown-item" href="/logout/">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container py-4">
+    <div class="container-fluid py-4">
         {% if hubtel_dry_run or clicksend_dry_run %}
         <div class="mb-3">
             <div class="alert alert-warning">
@@ -81,32 +122,10 @@
             </div>
         </div>
         {% endif %}
-        <div class="row">
-                    <div class="col-md-3 mb-3" id="sidebarCol">
-                        <div class="card shadow-sm sidebar-card">
-                            <div class="card-body p-2 sidebar" id="sidebar">
-                                <div class="d-flex align-items-center mb-2 gap-2">
-                                    <input id="sidebarSearch" class="form-control form-control-sm" placeholder="Search..." aria-label="Search sidebar">
-                                    <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary" title="Collapse sidebar"><i class="bi bi-chevron-left"></i></button>
-                                </div>
-                                <h5 class="card-title visually-hidden">{{ organization.name }}</h5>
-                                <div class="list-group list-group-flush" id="sidebarList">
-                                    <a href="{% url 'org_dashboard' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-speedometer2 me-2"></i><span class="label">Dashboard</span></a>
-                                    <a href="{% url 'org_send_sms' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-send-fill me-2"></i><span class="label">Send Messages</span></a>
-                                    <a href="{% url 'org_upload_contacts' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-person-lines-fill me-2"></i><span class="label">Contacts</span></a>
-                                    <a href="{% url 'org_groups' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-people-fill me-2"></i><span class="label">Groups</span></a>
-                                    <a href="{% url 'org_templates' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-folder-fill me-2"></i><span class="label">Templates</span></a>
-                                    <a href="{% url 'org_message_logs' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-journal-text me-2"></i><span class="label">Message Logs</span></a>
-                                    {% if user.is_superuser or user.is_staff or user.role == 'org_admin' or user.role == 'owner' %}
-                                        <a href="{% url 'org_settings' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-gear-fill me-2"></i><span class="label">Settings</span></a>
-                                        <a href="{% url 'org_billing' organization.slug %}" class="list-group-item list-group-item-action"><i class="bi bi-cash-stack me-2"></i><span class="label">Billing</span></a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-            <div class="col-md-9">
+        <!-- Main Content Area -->
+        <div class="row">
+            <div class="col-12">
                 <div class="row mb-3">
                     <div class="col-sm-6 col-md-2 mb-2">
                         <div class="card text-center shadow-sm position-relative" style="overflow:visible;">
@@ -230,37 +249,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
-// Sidebar search and collapse behavior
-document.addEventListener('DOMContentLoaded', function () {
-    var search = document.getElementById('sidebarSearch');
-    var list = document.getElementById('sidebarList');
-    var toggle = document.getElementById('sidebarToggle');
-    var sidebarCol = document.getElementById('sidebarCol');
-
-    if (search) {
-        search.addEventListener('input', function (e) {
-            var q = e.target.value.toLowerCase().trim();
-            Array.from(list.querySelectorAll('.list-group-item')).forEach(function (item) {
-                var txt = item.textContent.toLowerCase();
-                item.style.display = txt.indexOf(q) !== -1 ? '' : 'none';
-            });
-        });
-    }
-
-    if (toggle && sidebarCol) {
-        toggle.addEventListener('click', function () {
-            sidebarCol.classList.toggle('sidebar-collapsed');
-            var icon = toggle.querySelector('i');
-            if (sidebarCol.classList.contains('sidebar-collapsed')) {
-                icon.classList.remove('bi-chevron-left'); icon.classList.add('bi-chevron-right');
-            } else {
-                icon.classList.remove('bi-chevron-right'); icon.classList.add('bi-chevron-left');
-            }
-        });
-    }
-});
-</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // Render small sparklines for dashboard cards (Chart.js)
