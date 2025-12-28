@@ -174,18 +174,6 @@
     margin: 0;
 }
 
-.super-admin-badge {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    color: #007bff;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    display: inline-block;
-    margin-bottom: 1rem;
-}
-
 @media (max-width: 576px) {
     .login-card {
         margin: 0.5rem;
@@ -213,17 +201,11 @@
             <div class="login-logo">
                 <i class="fas fa-crown"></i>
             </div>
-            <h4 class="mb-1 fw-bold">Super Admin Access</h4>
-            <p class="mb-0 opacity-75">System administration portal</p>
+            <h4 class="mb-1 fw-bold">Super Admin Login</h4>
+            <p class="mb-0 opacity-75">Access the administration panel</p>
         </div>
 
         <div class="login-body">
-            <div class="text-center mb-3">
-                <span class="super-admin-badge">
-                    <i class="fas fa-shield-alt me-1"></i>Super Administrator
-                </span>
-            </div>
-
             {% if error %}
             <div class="alert alert-danger border-0">
                 <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
@@ -236,7 +218,7 @@
                 <div class="form-floating">
                     <input type="text" name="username" class="form-control" id="username" placeholder="Username" required>
                     <label for="username">
-                        <i class="fas fa-user-shield me-2"></i>Super Admin Username
+                        <i class="fas fa-user me-2"></i>Username
                     </label>
                 </div>
 
@@ -248,7 +230,7 @@
                         </button>
                     </div>
                     <label for="password" style="left: 0.75rem;">
-                        <i class="fas fa-lock me-2"></i>Super Admin Password
+                        <i class="fas fa-lock me-2"></i>Password
                     </label>
                 </div>
 
@@ -260,7 +242,7 @@
                 {% endif %}
 
                 <button type="submit" class="btn btn-login">
-                    <i class="fas fa-sign-in-alt me-2"></i>Access Super Admin Panel
+                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
                 </button>
             </form>
 
@@ -271,9 +253,9 @@
                     </a>
                 </small>
                 <small>
-                    Need organization access?
+                    Organization login?
                     <a href="{% url 'login_org' %}">
-                        <i class="fas fa-building me-1"></i>Sign in as Organization Admin
+                        <i class="fas fa-building me-1"></i>Sign in here
                     </a>
                 </small>
             </div>
