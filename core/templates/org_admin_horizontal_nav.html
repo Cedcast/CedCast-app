@@ -49,6 +49,15 @@
                 </li>
                 {% endif %}
             </ul>
+
+            <!-- Logout button on the right -->
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link text-danger" href="{% url 'logout' %}" onclick="return confirm('Are you sure you want to logout?')">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
 </nav>
