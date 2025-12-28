@@ -340,7 +340,7 @@ class Organization(models.Model):
 	def get_delivery_stats(self):
 		"""Get delivery statistics for the organization"""
 		from django.db.models import Count, Q
-		stats = self.orgalertrecipient_set.aggregate(
+		stats = OrgAlertRecipient.objects.filter(message__organization=self).aggregate(
 			total=Count('id'),
 			sent=Count('id', filter=Q(status='sent')),
 			failed=Count('id', filter=Q(status='failed')),
