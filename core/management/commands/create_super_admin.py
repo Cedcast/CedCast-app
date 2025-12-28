@@ -30,7 +30,8 @@ class Command(BaseCommand):
         user.is_staff = True
         user.is_superuser = True
         try:
-            user.role = User.SUPER_ADMIN
+            if hasattr(User, 'SUPER_ADMIN'):
+                setattr(user, 'role', User.SUPER_ADMIN)
         except Exception:
             # If custom role attribute not present, ignore
             pass
