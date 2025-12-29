@@ -395,7 +395,7 @@ html {
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="#hero">
-                <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:32px; margin-right:8px;" onerror="this.style.display='none'">
+                <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:48px; margin-right:8px;" onerror="this.style.display='none'">
                 <span class="fw-bold">🇬🇭 CedCast</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -473,12 +473,27 @@ html {
                                         <div class="text-dark fw-bold" style="font-size: 2rem;">📱</div>
                                     </div>
                                     <h3 class="text-white mb-0" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">CedCast</h3>
-                                    <p class="text-white-50 mb-0 small">Ghana's SMS Platform</p>
+                                    <p class="text-white-50 mb-0 small">Ghana's smartest SMS platform.</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Floating Stats -->
+                        <div class="position-absolute top-0 start-0 translate-middle">
+                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
+                                <small class="text-dark fw-bold">🚀 10,000+ SMS sent daily</small>
+                            </div>
+                        </div>
+                        <div class="position-absolute top-0 end-0 translate-middle">
+                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
+                                <small class="text-dark fw-bold">⭐ 500+ organizations</small>
+                            </div>
+                        </div>
+                        <div class="position-absolute bottom-0 start-50 translate-middle-x">
+                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
+                                <small class="text-dark fw-bold">🇬🇭 Proudly Ghanaian</small>
+                            </div>
+                        </div>
                         <div class="position-absolute top-0 start-0 translate-middle">
                             <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
                                 <small class="text-dark fw-bold">🚀 10,000+ SMS sent daily</small>
@@ -899,6 +914,27 @@ html {
                         <p class="text-muted small mb-0">Promotions & customer loyalty programs</p>
                     </div>
                 </div>
+                <div class="col-md-3 col-6 text-center">
+                    <div class="org-type-card p-4 bg-white rounded shadow-sm">
+                        <i class="bi bi-building text-info" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 mb-2">Hotels</h5>
+                        <p class="text-muted small mb-0">Guest communications & reservations</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 text-center">
+                    <div class="org-type-card p-4 bg-white rounded shadow-sm">
+                        <i class="bi bi-cup-hot text-success" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 mb-2">Restaurants</h5>
+                        <p class="text-muted small mb-0">Customer notifications & orders</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 text-center">
+                    <div class="org-type-card p-4 bg-white rounded shadow-sm">
+                        <i class="bi bi-house-door text-primary" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 mb-2">Churches</h5>
+                        <p class="text-muted small mb-0">Community announcements & events</p>
+                    </div>
+                </div>
             </div>
             <div class="text-center mt-4">
                 <p class="text-muted">
@@ -911,8 +947,8 @@ html {
     <!-- CTA Section -->
     <section class="cta py-5 text-white">
         <div class="container text-center">
-            <h2 class="mb-4">Ready to Join Ghana's SMS Revolution? 🇬🇭</h2>
-            <p class="lead mb-4">Join thousands of Ghanaian organizations already using CedCast for reliable, affordable SMS communication. Start sending messages in minutes!</p>
+            <h2 class="mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.7);">Ready to Join Ghana's SMS Revolution? 🇬🇭</h2>
+            <p class="lead mb-4" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">Join thousands of Ghanaian organizations already using CedCast for reliable, affordable SMS communication. Start sending messages in minutes!</p>
             <div class="d-flex justify-content-center gap-3 mb-4">
                 <button class="btn btn-light btn-lg px-4" data-bs-toggle="modal" data-bs-target="#enrollmentModal">
                     <i class="bi bi-person-plus me-2"></i>Join CedCast Today
