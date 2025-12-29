@@ -238,10 +238,16 @@ def _process_login(request, template_name, allowed_roles=None):
 	# don't have an allowed role for this page.
 	if request.user.is_authenticated:
 		if allowed_roles is None or getattr(request.user, 'role', None) in (allowed_roles if isinstance(allowed_roles, (list, tuple, set)) else [allowed_roles]):
-			# Check if organization is active for ORG_ADMIN users
-			if request.user.role == User.ORG_ADMIN and getattr(request.user, 'organization', None) and not request.user.organization.is_active:
-				logout(request)
-				return redirect("login_org")
+			# Check if organization exists and is active for ORG_ADMIN users
+			if request.user.role == User.ORG_ADMIN:
+				if not getattr(request.user, 'organization', None):
+					# Organization was deleted
+					logout(request)
+					return redirect("login_org")
+				elif not request.user.organization.is_active:
+					# Organization is banned
+					logout(request)
+					return redirect("login_org")
 			# already logged in and allowed here — send to their dashboard
 			if request.user.role == User.SUPER_ADMIN:
 				return redirect("dashboard")
@@ -295,6 +301,10 @@ def _process_login(request, template_name, allowed_roles=None):
 					logout(request)
 					return render(request, template_name, {"error": "Your organization account has been suspended. Please contact support.", 'recaptcha_site_key': recaptcha_site})
 				return redirect("org_dashboard", org_slug=user.organization.slug)  # type: ignore
+			elif user.role == User.ORG_ADMIN and not getattr(user, 'organization', None):  # type: ignore
+				# Organization was deleted
+				logout(request)
+				return render(request, template_name, {"error": "Your organization account has been deleted. Please contact support.", 'recaptcha_site_key': recaptcha_site})
 			return redirect("dashboard")
 		else:
 			return render(request, template_name, {"error": "Invalid credentials", 'recaptcha_site_key': recaptcha_site})
