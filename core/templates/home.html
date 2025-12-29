@@ -248,19 +248,6 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 4px;
 }
 
-/* Cultural icons */
-.cultural-icon {
-    position: relative;
-}
-
-.cultural-icon::after {
-    content: '🇬🇭';
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    font-size: 1.2em;
-}
-
 /* Welcome message styling */
 .welcome-text {
     font-family: 'Georgia', serif;
@@ -396,7 +383,7 @@ html {
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="#hero">
                 <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:48px; margin-right:8px;" onerror="this.style.display='none'">
-                <span class="fw-bold">🇬🇭 CedCast</span>
+                <span class="fw-bold">CedCast</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -419,7 +406,7 @@ html {
             <div class="row align-items-center">
                 <div class="col-lg-6 fade-in-up">
                     <div class="welcome-text mb-3">
-                        <h2 class="h4 mb-2">🇬🇭 Welcome to Ghana's SMS Revolution</h2>
+                        <h2 class="h4 mb-2">Welcome to Ghana's SMS Revolution</h2>
                     </div>
                     <h1 class="display-4 fw-bold mb-4">
                         Enterprise SMS Platform for <span class="text-warning">Ghanaian Organizations</span>
@@ -468,45 +455,8 @@ html {
                         <div class="ghana-flag mx-auto mb-4" style="width: 300px; height: 200px; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);">
                             <div class="d-flex align-items-center justify-content-center h-100">
                                 <div class="text-center">
-                                    <div class="bg-white rounded-circle p-4 mx-auto mb-3" style="width: 120px; height: 120px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
-                                        <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="width: 80px; height: auto;" onerror="this.style.display='none'">
-                                        <div class="text-dark fw-bold" style="font-size: 2rem;">📱</div>
-                                    </div>
-                                    <h3 class="text-white mb-0" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">CedCast</h3>
-                                    <p class="text-white-50 mb-0 small">Ghana's smartest SMS platform.</p>
+                                    <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="width: 150px; height: auto; max-width: 100%;" onerror="this.style.display='none'">
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Floating Stats -->
-                        <div class="position-absolute top-0 start-0 translate-middle">
-                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
-                                <small class="text-dark fw-bold">🚀 10,000+ SMS sent daily</small>
-                            </div>
-                        </div>
-                        <div class="position-absolute top-0 end-0 translate-middle">
-                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
-                                <small class="text-dark fw-bold">⭐ 500+ organizations</small>
-                            </div>
-                        </div>
-                        <div class="position-absolute bottom-0 start-50 translate-middle-x">
-                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
-                                <small class="text-dark fw-bold">🇬🇭 Proudly Ghanaian</small>
-                            </div>
-                        </div>
-                        <div class="position-absolute top-0 start-0 translate-middle">
-                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
-                                <small class="text-dark fw-bold">🚀 10,000+ SMS sent daily</small>
-                            </div>
-                        </div>
-                        <div class="position-absolute top-0 end-0 translate-middle">
-                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
-                                <small class="text-dark fw-bold">⭐ 500+ organizations</small>
-                            </div>
-                        </div>
-                        <div class="position-absolute bottom-0 start-50 translate-middle-x">
-                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
-                                <small class="text-dark fw-bold">🇬🇭 Proudly Ghanaian</small>
                             </div>
                         </div>
                     </div>
@@ -852,7 +802,7 @@ html {
             <!-- How It Works -->
             <div class="row mt-5">
                 <div class="col-12">
-                    <h3 class="text-center mb-5">Your Journey to SMS Success 🇬🇭</h3>
+                    <h3 class="text-center mb-5">Your Journey to SMS Success</h3>
                     <div class="row g-4">
                         <div class="col-md-4 text-center">
                             <div class="step-circle mx-auto mb-3">
@@ -947,7 +897,7 @@ html {
     <!-- CTA Section -->
     <section class="cta py-5 text-white">
         <div class="container text-center">
-            <h2 class="mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.7);">Ready to Join Ghana's SMS Revolution? 🇬🇭</h2>
+            <h2 class="mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.7);">Ready to Join Ghana's SMS Revolution?</h2>
             <p class="lead mb-4" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">Join thousands of Ghanaian organizations already using CedCast for reliable, affordable SMS communication. Start sending messages in minutes!</p>
             <div class="d-flex justify-content-center gap-3 mb-4">
                 <button class="btn btn-light btn-lg px-4" data-bs-toggle="modal" data-bs-target="#enrollmentModal">
