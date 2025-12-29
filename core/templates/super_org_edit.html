@@ -129,7 +129,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <a href="{% url 'super_ban_org' org.slug %}" class="btn btn-warning">Ban Organization</a>
+                    <button type="button" class="btn btn-warning" onclick="document.getElementById('banOrgForm').submit()">Ban Organization</button>
                 </div>
             </div>
         </div>
@@ -149,7 +149,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <a href="{% url 'super_unban_org' org.slug %}" class="btn btn-success">Unban Organization</a>
+                    <button type="button" class="btn btn-success" onclick="document.getElementById('unbanOrgForm').submit()">Unban Organization</button>
                 </div>
             </div>
         </div>
@@ -203,6 +203,17 @@
             </div>
         </div>
     </div>
+
+    <!-- Hidden forms for POST actions -->
+    <form id="banOrgForm" method="post" action="{% url 'super_ban_org' org.slug %}">
+        {% csrf_token %}
+    </form>
+    <form id="unbanOrgForm" method="post" action="{% url 'super_unban_org' org.slug %}">
+        {% csrf_token %}
+    </form>
+    <form id="deleteOrgForm" method="post" action="{% url 'super_delete_org' org.slug %}">
+        {% csrf_token %}
+    </form>
 </div>
 
 <script>
@@ -213,7 +224,7 @@ document.getElementById('deleteConfirmation').addEventListener('input', function
         confirmBtn.disabled = false;
         confirmBtn.innerHTML = '<i class="bi bi-trash me-1"></i>Confirm Delete';
         confirmBtn.onclick = function() {
-            window.location.href = '{% url "super_delete_org" org.slug %}';
+            document.getElementById('deleteOrgForm').submit();
         };
     } else {
         confirmBtn.disabled = true;
