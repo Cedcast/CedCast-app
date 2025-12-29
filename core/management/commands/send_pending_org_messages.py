@@ -48,6 +48,14 @@ class Command(BaseCommand):
             phone = ar.contact.phone_number
             content = ar.message.content
             tenant = getattr(ar.message, 'organization', None)
+            
+            # Skip if organization is not active (banned)
+            if tenant and not tenant.is_active:
+                self.stdout.write(f"Skipping {phone}: organization '{tenant.name}' is banned")
+                ar.status = 'failed'
+                ar.error_message = 'Organization is banned'
+                ar.save()
+                continue
             # normalize message scheduled_time if naive and skip if not yet due
             try:
                 sched = ar.message.scheduled_time

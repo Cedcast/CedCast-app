@@ -11,6 +11,17 @@ class Command(BaseCommand):
         now = timezone.now()
         messages = OrgMessage.objects.filter(sent=False)
         for message in messages:
+            # Skip if organization is not active (banned)
+            if not message.organization.is_active:
+                self.stdout.write(f"Skipping message {message.id}: organization '{message.organization.name}' is banned")
+                # Mark all pending recipients as failed
+                for ar in message.recipients_status.filter(status='pending'):
+                    ar.status = 'failed'
+                    ar.error_message = 'Organization is banned'
+                    ar.save()
+                message.sent = True  # Mark as processed to avoid reprocessing
+                message.save()
+                continue
             sched = message.scheduled_time
             try:
                 if sched is None:

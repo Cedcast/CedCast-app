@@ -238,6 +238,10 @@ def _process_login(request, template_name, allowed_roles=None):
 	# don't have an allowed role for this page.
 	if request.user.is_authenticated:
 		if allowed_roles is None or getattr(request.user, 'role', None) in (allowed_roles if isinstance(allowed_roles, (list, tuple, set)) else [allowed_roles]):
+			# Check if organization is active for ORG_ADMIN users
+			if request.user.role == User.ORG_ADMIN and getattr(request.user, 'organization', None) and not request.user.organization.is_active:
+				logout(request)
+				return redirect("login_org")
 			# already logged in and allowed here — send to their dashboard
 			if request.user.role == User.SUPER_ADMIN:
 				return redirect("dashboard")
@@ -286,6 +290,10 @@ def _process_login(request, template_name, allowed_roles=None):
 			elif user.role == User.SCHOOL_ADMIN and getattr(user, 'school', None):  # type: ignore
 				return redirect("school_dashboard", school_slug=user.school.slug)  # type: ignore
 			elif user.role == User.ORG_ADMIN and getattr(user, 'organization', None):  # type: ignore
+				# Check if organization is active before allowing login
+				if not user.organization.is_active:  # type: ignore
+					logout(request)
+					return render(request, template_name, {"error": "Your organization account has been suspended. Please contact support.", 'recaptcha_site_key': recaptcha_site})
 				return redirect("org_dashboard", org_slug=user.organization.slug)  # type: ignore
 			return redirect("dashboard")
 		else:
@@ -2387,6 +2395,8 @@ def org_retry_failed(request, org_slug=None):
 	organization = user.organization
 	if org_slug and organization.slug != org_slug:
 		return redirect('org_dashboard', org_slug=organization.slug)
+	if not organization.is_active:
+		return render(request, 'org_retry_result.html', {'organization': organization, 'retried': 0, 'errors': ['Your organization account is suspended. Please contact support.']})
 
 	from .models import OrgAlertRecipient, OrgMessage, Contact
 	from core.hubtel_utils import send_sms
