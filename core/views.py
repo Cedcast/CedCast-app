@@ -1241,6 +1241,7 @@ def super_edit_org_view(request, org_slug=None):
 def super_ban_org_view(request, org_slug=None):
 	"""Ban (deactivate) an organization"""
 	if request.user.role != User.SUPER_ADMIN:
+		messages.error(request, 'Access denied. Super admin privileges required.')
 		return redirect('dashboard')
 
 	from .models import Organization
@@ -1250,7 +1251,7 @@ def super_ban_org_view(request, org_slug=None):
 		messages.error(request, 'Organization not found.')
 		return redirect('onboarding')
 
-	if request.method == 'POST' or request.method == 'GET':  # Allow GET for direct links
+	if request.method == 'POST':
 		org.is_active = False
 		org.save()
 
@@ -1272,14 +1273,17 @@ def super_ban_org_view(request, org_slug=None):
 
 		messages.success(request, f'Organization "{org.name}" has been banned.')
 		return redirect('super_edit_org', org_slug=org.slug)
-
-	return redirect('super_edit_org', org_slug=org.slug)
+	else:
+		# For GET requests, redirect to edit page with error
+		messages.error(request, 'Invalid request method.')
+		return redirect('super_edit_org', org_slug=org.slug)
 
 
 @login_required
 def super_unban_org_view(request, org_slug=None):
 	"""Unban (reactivate) an organization"""
 	if request.user.role != User.SUPER_ADMIN:
+		messages.error(request, 'Access denied. Super admin privileges required.')
 		return redirect('dashboard')
 
 	from .models import Organization
@@ -1289,7 +1293,7 @@ def super_unban_org_view(request, org_slug=None):
 		messages.error(request, 'Organization not found.')
 		return redirect('onboarding')
 
-	if request.method == 'POST' or request.method == 'GET':  # Allow GET for direct links
+	if request.method == 'POST':
 		org.is_active = True
 		org.save()
 
@@ -1311,14 +1315,18 @@ def super_unban_org_view(request, org_slug=None):
 
 		messages.success(request, f'Organization "{org.name}" has been unbanned.')
 		return redirect('super_edit_org', org_slug=org.slug)
+	else:
+		# For GET requests, redirect to edit page with error
+		messages.error(request, 'Invalid request method.')
+		return redirect('super_edit_org', org_slug=org.slug)
 
-	return redirect('super_edit_org', org_slug=org.slug)
 
-
+@login_required
 @login_required
 def super_delete_org_view(request, org_slug=None):
 	"""Permanently delete an organization and all associated data"""
 	if request.user.role != User.SUPER_ADMIN:
+		messages.error(request, 'Access denied. Super admin privileges required.')
 		return redirect('dashboard')
 
 	from .models import Organization
@@ -1328,7 +1336,7 @@ def super_delete_org_view(request, org_slug=None):
 		messages.error(request, 'Organization not found.')
 		return redirect('onboarding')
 
-	if request.method == 'POST' or request.method == 'GET':  # Allow GET for direct links
+	if request.method == 'POST':
 		org_name = org.name
 
 		# Audit log before deletion
@@ -1352,8 +1360,10 @@ def super_delete_org_view(request, org_slug=None):
 
 		messages.success(request, f'Organization "{org_name}" has been permanently deleted.')
 		return redirect('onboarding')
-
-	return redirect('super_edit_org', org_slug=org_slug)
+	else:
+		# For GET requests, redirect to edit page with error
+		messages.error(request, 'Invalid request method.')
+		return redirect('super_edit_org', org_slug=org.slug)
 
 
 @login_required
