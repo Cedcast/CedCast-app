@@ -1536,23 +1536,7 @@ def org_send_sms(request, org_slug=None):
 
 	groups = ContactGroup.objects.filter(organization=org)
 
-	# reCAPTCHA support: site/secret from settings
-	recaptcha_site = getattr(settings, 'RECAPTCHA_SITE_KEY', None)
-	recaptcha_secret = getattr(settings, 'RECAPTCHA_SECRET_KEY', None)
-
 	if request.method == 'POST':
-		# If reCAPTCHA is enabled, validate before processing the send
-		if recaptcha_secret:
-			token = request.POST.get('g-recaptcha-response')
-			if not token:
-				return render(request, 'org_send_sms.html', {'organization': org, 'contacts': contacts, 'groups': groups, 'error': 'Please complete the reCAPTCHA.', 'recaptcha_site_key': recaptcha_site, 'hubtel_dry_run': getattr(settings, 'HUBTEL_DRY_RUN', False), 'clicksend_dry_run': getattr(settings, 'CLICKSEND_DRY_RUN', False)})
-			try:
-				import requests
-				resp = requests.post('https://www.google.com/recaptcha/api/siteverify', data={'secret': recaptcha_secret, 'response': token, 'remoteip': request.META.get('REMOTE_ADDR')}, timeout=5)
-				if not resp.json().get('success'):
-					return render(request, 'org_send_sms.html', {'organization': org, 'contacts': contacts, 'groups': groups, 'error': 'reCAPTCHA validation failed.', 'recaptcha_site_key': recaptcha_site, 'hubtel_dry_run': getattr(settings, 'HUBTEL_DRY_RUN', False), 'clicksend_dry_run': getattr(settings, 'CLICKSEND_DRY_RUN', False)})
-			except Exception:
-				return render(request, 'org_send_sms.html', {'organization': org, 'contacts': contacts, 'groups': groups, 'error': 'Could not validate reCAPTCHA.', 'recaptcha_site_key': recaptcha_site, 'hubtel_dry_run': getattr(settings, 'HUBTEL_DRY_RUN', False), 'clicksend_dry_run': getattr(settings, 'CLICKSEND_DRY_RUN', False)})
 		# allow selecting a template and/or typing custom message
 		template_id = request.POST.get('template_id')
 		sms_body = request.POST.get('sms_body')
@@ -1600,7 +1584,6 @@ def org_send_sms(request, org_slug=None):
 						'sms_body': sms_body, 
 						'error': error, 
 						'success': success, 
-						'recaptcha_site_key': getattr(settings, 'RECAPTCHA_SITE_KEY', None), 
 						'hubtel_dry_run': getattr(settings, 'HUBTEL_DRY_RUN', False), 
 						'clicksend_dry_run': getattr(settings, 'CLICKSEND_DRY_RUN', False)
 					})
@@ -1689,7 +1672,7 @@ def org_send_sms(request, org_slug=None):
 		else:
 			error = 'Please provide a message and at least one recipient.'
 
-	return render(request, 'org_send_sms.html', {'organization': org, 'contacts': contacts, 'groups': groups, 'templates': templates, 'sms_body': request.POST.get('sms_body', ''), 'error': error, 'success': success, 'recaptcha_site_key': getattr(settings, 'RECAPTCHA_SITE_KEY', None), 'hubtel_dry_run': getattr(settings, 'HUBTEL_DRY_RUN', False), 'clicksend_dry_run': getattr(settings, 'CLICKSEND_DRY_RUN', False)})
+	return render(request, 'org_send_sms.html', {'organization': org, 'contacts': contacts, 'groups': groups, 'templates': templates, 'sms_body': request.POST.get('sms_body', ''), 'error': error, 'success': success, 'hubtel_dry_run': getattr(settings, 'HUBTEL_DRY_RUN', False), 'clicksend_dry_run': getattr(settings, 'CLICKSEND_DRY_RUN', False)})
 
 
 @login_required
