@@ -529,44 +529,6 @@ html {
         </div>
     </section>
 
-    <!-- Platform Statistics Section -->
-    <section class="stats py-5 bg-primary text-white">
-        <div class="container">
-            <h2 class="text-center mb-5">Platform Statistics</h2>
-            <div class="row text-center">
-                <div class="col-md-4 mb-4">
-                    <div class="stat-card">
-                        <i class="bi bi-building display-4 mb-3"></i>
-                        <h2 class="display-4 fw-bold">{{ total_orgs|default:0 }}</h2>
-                        <p class="mb-0">Active Organizations</p>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <div class="stat-card">
-                        <i class="bi bi-chat-dots display-4 mb-3"></i>
-                        <h2 class="display-4 fw-bold">{{ total_sms_sent|default:0|format_number }}</h2>
-                        <p class="mb-0">Total SMS Sent</p>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <div class="stat-card">
-                        <i class="bi bi-activity display-4 mb-3"></i>
-                        <h2 class="display-4 fw-bold">{{ recent_sms|default:0|format_number }}</h2>
-                        <p class="mb-0">SMS Sent (30 days)</p>
-                    </div>
-                </div>
-            </div>
-            <div class="text-center mt-4">
-                <p class="mb-0">
-                    <small class="text-light">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Real-time statistics updated daily
-                    </small>
-                </p>
-            </div>
-        </div>
-    </section>
-
     <!-- Brand Integration Section -->
     <section id="branding" class="branding py-5">
         <div class="container">
