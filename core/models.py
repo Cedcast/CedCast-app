@@ -163,6 +163,87 @@ class OrgMessage(models.Model):
 		sent = self.get_sent_recipients_count()
 		return (sent / total * 100) if total > 0 else 0
 
+	def get_average_send_time(self):
+		"""Calculate average time to send messages"""
+		sent_recipients = self.orgalertrecipient_set.filter(status='sent', sent_at__isnull=False)
+		if not sent_recipients.exists():
+			return None
+		total_time = sum((recipient.sent_at - self.created_at).total_seconds() for recipient in sent_recipients)
+		return total_time / sent_recipients.count()
+
+	def get_provider_breakdown(self):
+		"""Get success rates by provider"""
+		total = self.get_recipients_count()
+		if total == 0:
+			return {'hubtel': 0, 'clicksend': 0, 'unknown': 0}
+		
+		hubtel_sent = self.orgalertrecipient_set.filter(status='sent', provider_message_id__isnull=False).exclude(provider_message_id='').count()
+		clicksend_sent = self.orgalertrecipient_set.filter(status='sent', provider_message_id__isnull=True).count()
+		unknown_sent = self.get_sent_recipients_count() - hubtel_sent - clicksend_sent
+		
+		return {
+			'hubtel': (hubtel_sent / total * 100) if total > 0 else 0,
+			'clicksend': (clicksend_sent / total * 100) if total > 0 else 0,
+			'unknown': (unknown_sent / total * 100) if total > 0 else 0
+		}
+
+	def get_cost_breakdown(self):
+		"""Calculate total cost and cost per successful delivery"""
+		sent_count = self.get_sent_recipients_count()
+		if sent_count == 0:
+			return {'total_cost': 0, 'cost_per_delivery': 0}
+		
+		rate = self.organization.get_current_sms_rate()
+		total_cost = sent_count * rate
+		cost_per_delivery = rate
+		
+		return {
+			'total_cost': total_cost,
+			'cost_per_delivery': cost_per_delivery
+		}
+
+	def get_time_based_stats(self):
+		"""Get statistics grouped by time periods"""
+		from django.db.models import Count
+		from django.utils import timezone
+		import datetime
+		
+		now = timezone.now()
+		recipients = self.orgalertrecipient_set.filter(sent_at__isnull=False)
+		
+		# Last 24 hours
+		last_24h = now - datetime.timedelta(hours=24)
+		stats_24h = recipients.filter(sent_at__gte=last_24h).aggregate(
+			sent=Count('id', filter=models.Q(status='sent')),
+			failed=Count('id', filter=models.Q(status='failed'))
+		)
+		
+		# Last 7 days
+		last_7d = now - datetime.timedelta(days=7)
+		stats_7d = recipients.filter(sent_at__gte=last_7d).aggregate(
+			sent=Count('id', filter=models.Q(status='sent')),
+			failed=Count('id', filter=models.Q(status='failed'))
+		)
+		
+		return {
+			'last_24h': stats_24h,
+			'last_7d': stats_7d
+		}
+
+	def get_detailed_report(self):
+		"""Get comprehensive delivery report"""
+		return {
+			'total_recipients': self.get_recipients_count(),
+			'sent_count': self.get_sent_recipients_count(),
+			'failed_count': self.get_failed_recipients_count(),
+			'pending_count': self.get_pending_recipients_count(),
+			'delivery_rate': self.get_delivery_rate(),
+			'average_send_time': self.get_average_send_time(),
+			'provider_breakdown': self.get_provider_breakdown(),
+			'cost_breakdown': self.get_cost_breakdown(),
+			'time_stats': self.get_time_based_stats()
+		}
+
 	def mark_as_sent(self):
 		"""Mark message as sent"""
 		self.sent = True

@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ organization.name }} - Delivery Reports{% endblock %}
+
+{% block content %}
+{% include "org_admin_combined_nav.html" %}
+
+<div class="container-fluid py-4 org-admin-page">
+    <div class="container">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h1 class="mb-2 text-primary fw-bold">
+                            <i class="fas fa-chart-line me-3"></i>Delivery Reports & Analytics
+                        </h1>
+                        <p class="text-muted mb-0">Comprehensive SMS delivery statistics and performance metrics</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="stats-overview">
+                            <div class="row g-2">
+                                <div class="col-auto">
+                                    <div class="badge bg-primary px-3 py-2">
+                                        <i class="fas fa-envelope me-1"></i>{{ stats.total_messages }} Messages
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="badge bg-success px-3 py-2">
+                                        <i class="fas fa-check me-1"></i>{{ stats.total_sent }} Sent
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="badge bg-danger px-3 py-2">
+                                        <i class="fas fa-times me-1"></i>{{ stats.total_failed }} Failed
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overall Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card h-100 border-primary">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-primary mb-2">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <h3 class="h4 mb-1">{{ stats.overall_delivery_rate|floatformat:1 }}%</h3>
+                        <p class="text-muted mb-0">Overall Delivery Rate</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-success">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-success mb-2">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="h4 mb-1">{{ stats.total_recipients }}</h3>
+                        <p class="text-muted mb-0">Total Recipients</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-warning">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-warning mb-2">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3 class="h4 mb-1">{{ stats.recent_sent }}</h3>
+                        <p class="text-muted mb-0">Sent (Last 30 Days)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100 border-info">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-info mb-2">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <h3 class="h4 mb-1">₵{{ stats.total_cost|floatformat:2 }}</h3>
+                        <p class="text-muted mb-0">Total Cost</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>Date Range Filter
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="get" id="filterForm" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="from" class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="from" name="from" value="{{ date_from }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="to" class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="to" name="to" value="{{ date_to }}">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-search me-1"></i>Filter
+                        </button>
+                        <a href="{% url 'org_delivery_reports' organization.slug %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Message Details Table -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Message Performance Details
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0">Message</th>
+                                <th class="border-0">Sent</th>
+                                <th class="border-0">Recipients</th>
+                                <th class="border-0">Delivery Rate</th>
+                                <th class="border-0">Cost</th>
+                                <th class="border-0">Avg Send Time</th>
+                                <th class="border-0">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for message in messages %}
+                            {% with report=message.get_detailed_report %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ message.content|truncatechars:50 }}</div>
+                                    <small class="text-muted">{{ message.created_at|date:"M d, Y H:i" }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ report.sent_count }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ report.total_recipients }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                            <div class="progress-bar bg-success" role="progressbar"
+                                                 style="width: {{ report.delivery_rate }}%"
+                                                 aria-valuenow="{{ report.delivery_rate }}"
+                                                 aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <span class="small">{{ report.delivery_rate|floatformat:1 }}%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    ₵{{ report.cost_breakdown.total_cost|floatformat:2 }}
+                                </td>
+                                <td>
+                                    {% if report.average_send_time %}
+                                        {{ report.average_send_time|floatformat:1 }}s
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#details-{{ message.id }}"
+                                            aria-expanded="false">
+                                        <i class="fas fa-eye"></i> Details
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="collapse" id="details-{{ message.id }}">
+                                <td colspan="7" class="bg-light">
+                                    <div class="row g-3 p-3">
+                                        <div class="col-md-6">
+                                            <h6>Provider Breakdown</h6>
+                                            <div class="mb-2">
+                                                <small class="text-muted">Hubtel: {{ report.provider_breakdown.hubtel|floatformat:1 }}%</small>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-primary" style="width: {{ report.provider_breakdown.hubtel }}%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <small class="text-muted">ClickSend: {{ report.provider_breakdown.clicksend|floatformat:1 }}%</small>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-secondary" style="width: {{ report.provider_breakdown.clicksend }}%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Time-based Statistics</h6>
+                                            <p class="mb-1 small">
+                                                <strong>Last 24h:</strong>
+                                                {{ report.time_stats.last_24h.sent }} sent,
+                                                {{ report.time_stats.last_24h.failed }} failed
+                                            </p>
+                                            <p class="mb-1 small">
+                                                <strong>Last 7 days:</strong>
+                                                {{ report.time_stats.last_7d.sent }} sent,
+                                                {{ report.time_stats.last_7d.failed }} failed
+                                            </p>
+                                            <p class="mb-0 small">
+                                                <strong>Cost per delivery:</strong> ₵{{ report.cost_breakdown.cost_per_delivery|floatformat:2 }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endwith %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">
+                                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                                    <p>No messages found for the selected date range.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if messages.has_other_pages %}
+        <div class="d-flex justify-content-center mt-4">
+            <nav aria-label="Message pagination">
+                <ul class="pagination">
+                    {% if messages.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ messages.previous_page_number }}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in messages.paginator.page_range %}
+                        {% if messages.number == num %}
+                        <li class="page-item active">
+                            <a class="page-link" href="#">{{ num }}</a>
+                        </li>
+                        {% elif num > messages.number|add:'-3' and num < messages.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if messages.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ messages.next_page_number }}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.stats-overview .badge {
+    font-size: 0.875rem;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card {
+    border-radius: 10px;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+@media (max-width: 768px) {
+    .stats-overview .row {
+        justify-content: center;
+    }
+
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+</style>
+
+{% endblock %}

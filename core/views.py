@@ -1808,6 +1808,89 @@ def org_message_logs(request, org_slug=None):
 
 
 @login_required
+def org_delivery_reports(request, org_slug=None):
+	"""Delivery reports and statistics for organization messages"""
+	user = request.user
+	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
+		return redirect('dashboard')
+	org = user.organization
+	if org_slug and org.slug != org_slug:
+		return redirect('org_delivery_reports', org_slug=org.slug)
+
+	from .models import OrgMessage
+	from django.core.paginator import Paginator
+	from django.utils import timezone
+	import datetime
+
+	# Get date range filter
+	date_from = request.GET.get('from')
+	date_to = request.GET.get('to')
+	
+	# Base queryset
+	messages = OrgMessage.objects.filter(organization=org).order_by('-created_at')
+	
+	# Apply date filters
+	if date_from:
+		try:
+			dfrom = timezone.make_aware(datetime.datetime.fromisoformat(date_from))
+			messages = messages.filter(created_at__gte=dfrom)
+		except Exception:
+			date_from = None
+	if date_to:
+		try:
+			dto = timezone.make_aware(datetime.datetime.fromisoformat(date_to))
+			messages = messages.filter(created_at__lte=dto)
+		except Exception:
+			date_to = None
+
+	# Pagination
+	page = request.GET.get('page', 1)
+	paginator = Paginator(messages, 20)  # 20 messages per page
+	try:
+		messages_page = paginator.page(page)
+	except:
+		messages_page = paginator.page(1)
+
+	# Calculate overall statistics
+	all_messages = OrgMessage.objects.filter(organization=org)
+	total_messages = all_messages.count()
+	total_recipients = sum(msg.get_recipients_count() for msg in all_messages)
+	total_sent = sum(msg.get_sent_recipients_count() for msg in all_messages)
+	total_failed = sum(msg.get_failed_recipients_count() for msg in all_messages)
+	overall_delivery_rate = (total_sent / total_recipients * 100) if total_recipients > 0 else 0
+
+	# Recent activity (last 30 days)
+	thirty_days_ago = timezone.now() - datetime.timedelta(days=30)
+	recent_messages = all_messages.filter(created_at__gte=thirty_days_ago)
+	recent_sent = sum(msg.get_sent_recipients_count() for msg in recent_messages)
+	recent_failed = sum(msg.get_failed_recipients_count() for msg in recent_messages)
+
+	# Cost analysis
+	total_cost = sum(msg.get_cost_breakdown()['total_cost'] for msg in all_messages)
+	avg_cost_per_message = total_cost / total_messages if total_messages > 0 else 0
+
+	context = {
+		'organization': org,
+		'messages': messages_page,
+		'date_from': date_from,
+		'date_to': date_to,
+		'stats': {
+			'total_messages': total_messages,
+			'total_recipients': total_recipients,
+			'total_sent': total_sent,
+			'total_failed': total_failed,
+			'overall_delivery_rate': overall_delivery_rate,
+			'recent_sent': recent_sent,
+			'recent_failed': recent_failed,
+			'total_cost': total_cost,
+			'avg_cost_per_message': avg_cost_per_message,
+		}
+	}
+
+	return render(request, 'org_delivery_reports.html', context)
+
+
+@login_required
 def org_users_view(request, org_slug=None):
 	user = request.user
 	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):

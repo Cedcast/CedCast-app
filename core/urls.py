@@ -29,6 +29,7 @@ urlpatterns = [
     path('<slug:org_slug>/org/messages/scheduled/', views.org_scheduled_messages, name='org_scheduled_messages'),
     path('<slug:org_slug>/org/messages/sent/', views.org_sent_messages, name='org_sent_messages'),
     path('<slug:org_slug>/org/message-logs/', views.org_message_logs, name='org_message_logs'),
+    path('<slug:org_slug>/org/delivery-reports/', views.org_delivery_reports, name='org_delivery_reports'),
     path('<slug:org_slug>/org/users/', views.org_users_view, name='org_users'),
     path('<slug:org_slug>/org/settings/', views.org_settings_view, name='org_settings'),
     path('<slug:org_slug>/org/billing/', views.org_billing, name='org_billing'),
