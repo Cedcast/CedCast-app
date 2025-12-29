@@ -2323,6 +2323,47 @@ def org_billing(request, org_slug=None):
 	})
 
 
+def org_billing_initialize_payment(request, org_slug=None):
+	"""AJAX endpoint to initialize Paystack payment."""
+	user = request.user
+	if user.role != User.ORG_ADMIN or not getattr(user, 'organization', None):
+		return JsonResponse({'success': False, 'message': 'Unauthorized'}, status=403)
+	
+	organization = user.organization
+	if org_slug and organization.slug != org_slug:
+		return JsonResponse({'success': False, 'message': 'Organization mismatch'}, status=403)
+
+	if request.method != 'POST':
+		return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+
+	try:
+		amount = Decimal(request.POST.get('amount', '0'))
+		if amount <= 0:
+			return JsonResponse({'success': False, 'message': 'Invalid amount'}, status=400)
+
+		from . import paystack_utils
+		import uuid
+		
+		reference = f"ORG_{organization.id}_{uuid.uuid4().hex[:16]}"
+		callback_url = request.build_absolute_uri(f"/{org_slug}/org/billing/callback/")
+		
+		response = paystack_utils.initialize_payment(
+			email=user.email,
+			amount=amount,
+			reference=reference,
+			callback_url=callback_url
+		)
+		
+		return JsonResponse({
+			'success': True,
+			'authorization_url': response['data']['authorization_url'],
+			'reference': reference
+		})
+		
+	except Exception as e:
+		return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
 def org_billing_callback(request, org_slug=None):
 	# Get organization from slug
 	try:

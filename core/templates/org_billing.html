@@ -5,8 +5,7 @@
 {% block title %}{{ organization.name }} - Billing{% endblock %}
 
 {% block content %}
-{% include "org_admin_nav.html" %}
-{% include "org_admin_horizontal_nav.html" %}
+{% include "org_admin_combined_nav.html" %}
 
 <div class="container-fluid py-4 org-admin-page">
     <div class="container">
@@ -254,11 +253,14 @@ function showPaymentModal() {
 }
 
 function payWithPaystack(method) {
+    console.log('Starting Paystack payment process...');
     const amountInput = document.getElementById('amount');
-    const amount = parseFloat(amountInput.value) * 100; // Paystack expects amount in pesewas (multiply by 100)
+    const amount = parseFloat(amountInput.value);
+
+    console.log('Amount:', amount, 'Method:', method);
 
     // Validate amount
-    if (isNaN(amount) || amount < 100) { // Minimum 1 GHS
+    if (isNaN(amount) || amount < 1) { // Minimum 1 GHS
         alert('Please enter a valid amount (minimum ₵1.00)');
         return;
     }
@@ -267,7 +269,7 @@ function payWithPaystack(method) {
     const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
     modal.hide();
 
-    // Show loading overlay instead of replacing entire body
+    // Show loading overlay
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'payment-loading-overlay';
     loadingOverlay.style.cssText = `
@@ -286,88 +288,142 @@ function payWithPaystack(method) {
     loadingOverlay.innerHTML = `
         <div class="text-center">
             <div class="spinner-border spinner-border-lg mb-3" role="status">
-                <span class="visually-hidden">Processing payment...</span>
+                <span class="visually-hidden">Initializing payment...</span>
             </div>
-            <h5>Processing your payment...</h5>
-            <p class="text-white-50">Please do not close this window</p>
+            <h5>Initializing payment...</h5>
+            <p class="text-white-50">Please wait</p>
         </div>
     `;
     document.body.appendChild(loadingOverlay);
 
-    // Initialize Paystack payment
-    const handler = PaystackPop.setup({
-        key: '{{ paystack_public_key }}',
-        email: '{{ user.email }}',
-        amount: amount,
-        currency: 'GHS',
-        ref: 'ORG_{{ organization.id }}_' + Math.floor((Math.random() * 1000000000) + 1),
-        metadata: {
-            organization_id: '{{ organization.id }}',
-            organization_slug: '{{ organization.slug }}',
-            payment_type: 'balance_topup',
-            payment_method: method
+    // First, initialize payment on server
+    fetch('{% url "org_billing_initialize_payment" organization.slug %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         },
-        callback: function(response) {
-            // Remove loading overlay
-            const overlay = document.getElementById('payment-loading-overlay');
-            if (overlay) overlay.remove();
-
-            // Submit payment verification to server
-            fetch('{% url "org_billing_callback" organization.slug %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: new URLSearchParams({
-                    'reference': response.reference,
-                    'amount': (amount / 100).toFixed(2)
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success message
-                    const successAlert = document.createElement('div');
-                    successAlert.className = 'alert alert-success alert-dismissible fade show position-fixed';
-                    successAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-                    successAlert.innerHTML = `
-                        <i class="fas fa-check-circle me-2"></i>Payment successful! Balance updated.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
-                    document.body.appendChild(successAlert);
-
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2000);
-                } else {
-                    alert('Payment verification failed: ' + data.message);
-                    location.reload();
-                }
-            })
-            .catch(error => {
-                console.error('Payment verification error:', error);
-                alert('Error verifying payment. Please contact support with reference: ' + response.reference);
-                location.reload();
-            });
-        },
-        onClose: function() {
-            // Remove loading overlay
-            const overlay = document.getElementById('payment-loading-overlay');
-            if (overlay) overlay.remove();
-            alert('Payment cancelled.');
+        body: new URLSearchParams({
+            'amount': amount.toFixed(2)
+        })
+    })
+    .then(response => response.json())
+    .then(initData => {
+        if (!initData.success) {
+            throw new Error(initData.message || 'Failed to initialize payment');
         }
-    });
 
-    // Check if Paystack key is available
-    if (!{{ paystack_public_key|default:"null" }}) {
+        console.log('Payment initialized:', initData);
+        
+        // Update loading message
+        loadingOverlay.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border spinner-border-lg mb-3" role="status">
+                    <span class="visually-hidden">Processing payment...</span>
+                </div>
+                <h5>Processing your payment...</h5>
+                <p class="text-white-50">Please do not close this window</p>
+            </div>
+        `;
+
+        // Initialize Paystack payment with server-generated reference
+        console.log('Setting up Paystack handler...');
+        const handler = PaystackPop.setup({
+            key: '{{ paystack_public_key }}',
+            email: '{{ user.email }}',
+            amount: amount * 100, // Convert to pesewas
+            currency: 'GHS',
+            ref: initData.reference,
+            metadata: {
+                organization_id: '{{ organization.id }}',
+                organization_slug: '{{ organization.slug }}',
+                payment_type: 'balance_topup',
+                payment_method: method
+            },
+            callback: function(response) {
+                console.log('Paystack callback received:', response);
+                // Remove loading overlay
+                const overlay = document.getElementById('payment-loading-overlay');
+                if (overlay) overlay.remove();
+
+                // Submit payment verification to server
+                fetch('{% url "org_billing_callback" organization.slug %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: new URLSearchParams({
+                        'reference': response.reference
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        const successAlert = document.createElement('div');
+                        successAlert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                        successAlert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                        successAlert.innerHTML = `
+                            <i class="fas fa-check-circle me-2"></i>Payment successful! Balance updated.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.body.appendChild(successAlert);
+
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        alert('Payment verification failed: ' + data.message);
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Payment verification error:', error);
+                    alert('Error verifying payment. Please contact support with reference: ' + response.reference);
+                    location.reload();
+                });
+            },
+            onClose: function() {
+                console.log('Paystack popup closed by user');
+                // Remove loading overlay
+                const overlay = document.getElementById('payment-loading-overlay');
+                if (overlay) overlay.remove();
+                alert('Payment cancelled.');
+            }
+        });
+
+        // Check if Paystack key is available
+        {% if not paystack_public_key %}
+            const overlay = document.getElementById('payment-loading-overlay');
+            if (overlay) overlay.remove();
+            alert('Payment system is not configured. Please contact support.');
+            return;
+        {% endif %}
+
+        // Check if PaystackPop is available
+        if (typeof PaystackPop === 'undefined') {
+            const overlay = document.getElementById('payment-loading-overlay');
+            if (overlay) overlay.remove();
+            alert('Payment system failed to load. Please refresh the page and try again.');
+            return;
+        }
+
+        try {
+            handler.openIframe();
+        } catch (error) {
+            console.error('Paystack error:', error);
+            const overlay = document.getElementById('payment-loading-overlay');
+            if (overlay) overlay.remove();
+            alert('Failed to initialize payment. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Payment initialization error:', error);
         const overlay = document.getElementById('payment-loading-overlay');
         if (overlay) overlay.remove();
-        alert('Payment system is not configured. Please contact support.');
-        return;
-    }
-
-    handler.openIframe();
+        alert('Failed to initialize payment: ' + error.message);
+    });
 }
 
 // Enable/disable button based on amount input
@@ -387,4 +443,97 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.disabled = !isValid;
 });
 </script>
+
+<style>
+/* Mobile-specific styles for billing page */
+@media (max-width: 768px) {
+    /* Adjust container padding for mobile */
+    .container-fluid {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    /* Make cards more mobile-friendly */
+    .card {
+        margin-bottom: 1rem;
+        border-radius: 12px;
+    }
+
+    .card-body {
+        padding: 1.5rem 1rem;
+    }
+
+    /* Better button sizing */
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    /* Form improvements */
+    .form-control-lg {
+        font-size: 1rem;
+        padding: 0.75rem;
+    }
+
+    /* Modal improvements for mobile */
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100vw - 1rem);
+    }
+
+    .modal-content {
+        border-radius: 12px;
+    }
+
+    /* Payment method buttons */
+    .btn-success, .btn-primary {
+        margin-bottom: 0.5rem;
+        padding: 0.75rem;
+        font-size: 1rem;
+    }
+
+    /* Amount display */
+    #modalAmount {
+        font-size: 1.5rem;
+    }
+
+    /* Balance display */
+    .display-4 {
+        font-size: 2rem;
+    }
+
+    /* Metric cards */
+    .metric-card .metric-value {
+        font-size: 1.75rem;
+    }
+
+    /* Table responsiveness */
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+
+    .table td, .table th {
+        padding: 0.5rem;
+    }
+}
+
+/* Loading overlay for payments */
+#payment-loading-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 123, 255, 0.95) !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+    color: white !important;
+}
+
+#payment-loading-overlay .text-center {
+    max-width: 90vw;
+}
+</style>
 {% endblock %}

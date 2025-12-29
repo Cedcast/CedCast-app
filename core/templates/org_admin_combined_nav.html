@@ -1,0 +1,166 @@
+{% load static %}
+<!-- Combined Organization Admin Navigation - Mobile Friendly -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+    <div class="container-fluid">
+        <!-- Brand/Logo Section -->
+        <a class="navbar-brand d-flex align-items-center" href="{% url 'org_dashboard' organization.slug %}">
+            <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height: 32px; margin-right: 10px;" onerror="this.style.display='none'">
+            <div class="d-none d-sm-block">
+                <div class="fw-bold text-primary" style="font-size: 1.1rem;">{{ organization.name }}</div>
+                <small class="text-muted" style="font-size: 0.75rem;">SMS Platform</small>
+            </div>
+            <!-- Mobile: Just show logo and org name -->
+            <div class="d-block d-sm-none fw-bold text-primary" style="font-size: 1rem;">{{ organization.name }}</div>
+        </a>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#orgAdminNavbar" aria-controls="orgAdminNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Collapsible Navigation Content -->
+        <div class="collapse navbar-collapse" id="orgAdminNavbar">
+            <!-- Main Navigation Menu -->
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'org_dashboard' %}active{% endif %}" href="{% url 'org_dashboard' organization.slug %}">
+                        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'org_send_sms' %}active{% endif %}" href="{% url 'org_send_sms' organization.slug %}">
+                        <i class="bi bi-send-fill me-1"></i>Send Messages
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'org_upload_contacts' %}active{% endif %}" href="{% url 'org_upload_contacts' organization.slug %}">
+                        <i class="bi bi-person-lines-fill me-1"></i>Contacts
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'org_groups' %}active{% endif %}" href="{% url 'org_groups' organization.slug %}">
+                        <i class="bi bi-people-fill me-1"></i>Groups
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'org_templates' %}active{% endif %}" href="{% url 'org_templates' organization.slug %}">
+                        <i class="bi bi-folder-fill me-1"></i>Templates
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'org_message_logs' %}active{% endif %}" href="{% url 'org_message_logs' organization.slug %}">
+                        <i class="bi bi-journal-text me-1"></i>Message Logs
+                    </a>
+                </li>
+                {% if user.is_superuser or user.is_staff or user.role == 'org_admin' or user.role == 'owner' %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'org_settings' %}active{% endif %}" href="{% url 'org_settings' organization.slug %}">
+                        <i class="bi bi-gear-fill me-1"></i>Settings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'org_billing' %}active{% endif %}" href="{% url 'org_billing' organization.slug %}">
+                        <i class="bi bi-cash-stack me-1"></i>Billing
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <!-- User Menu (Right side) -->
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle me-1"></i>
+                        <span class="d-none d-lg-inline">{{ user.get_full_name|default:user.username }}</span>
+                        <span class="d-lg-none">{{ user.get_full_name|default:user.username|truncatechars:10 }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<style>
+/* Mobile-friendly navigation styles */
+@media (max-width: 991.98px) {
+    .navbar-brand {
+        padding: 0.5rem;
+    }
+
+    .navbar-brand img {
+        height: 28px;
+        margin-right: 8px;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin: 2px 0;
+    }
+
+    .navbar-nav .nav-link.active {
+        background-color: rgba(13, 110, 253, 0.1);
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .navbar-collapse {
+        border-top: 1px solid #dee2e6;
+        margin-top: 1rem;
+        padding-top: 1rem;
+    }
+
+    /* Stack navigation items vertically on mobile */
+    .navbar-nav {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .navbar-nav .nav-item {
+        width: 100%;
+    }
+
+    /* User dropdown styling for mobile */
+    .navbar-nav:last-child {
+        border-top: 1px solid #dee2e6;
+        margin-top: 1rem;
+        padding-top: 1rem;
+    }
+
+    .navbar-nav:last-child .nav-item {
+        width: auto;
+    }
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+.nav-link {
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    margin: 0 0.25rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background-color: #f8f9fa;
+}
+
+.nav-link.active {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Ensure proper spacing */
+.org-admin-page {
+    padding-top: 0;
+}
+</style>

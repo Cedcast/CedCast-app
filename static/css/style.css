@@ -215,6 +215,55 @@ body {
   .metric-card .metric-value {
     font-size: 2rem;
   }
+
+  /* Mobile-friendly containers */
+  .container-fluid {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  /* Better spacing for mobile */
+  .org-admin-page {
+    padding-top: 0;
+  }
+
+  /* Card spacing on mobile */
+  .card {
+    margin-bottom: 1rem;
+  }
+
+  /* Button sizing for mobile */
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Form controls on mobile */
+  .form-control, .form-select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.5rem;
+  }
+
+  /* Table responsiveness */
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+
+  /* Modal improvements for mobile */
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  /* Alert positioning on mobile */
+  .alert {
+    margin-bottom: 1rem;
+  }
+
+  /* Badge sizing */
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
+  }
 }
 
 /* Loading animation */
