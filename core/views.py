@@ -28,6 +28,13 @@ def home_view(request):
 	}
 
 	return render(request, "home.html", context)
+
+
+def privacy_policy_view(request):
+	"""Privacy policy page view"""
+	return render(request, "privacy_policy.html")
+
+
 from django.conf import settings
 from core.hubtel_utils import send_sms
 from django.utils.text import slugify
