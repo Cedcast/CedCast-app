@@ -143,19 +143,19 @@ class OrgMessage(models.Model):
 
 	def get_recipients_count(self):
 		"""Get total number of recipients for this message"""
-		return self.orgalertrecipient_set.count()
+		return self.recipients_status.count()
 
 	def get_sent_recipients_count(self):
 		"""Get number of successfully sent recipients"""
-		return self.orgalertrecipient_set.filter(status='sent').count()
+		return self.recipients_status.filter(status='sent').count()
 
 	def get_failed_recipients_count(self):
 		"""Get number of failed recipients"""
-		return self.orgalertrecipient_set.filter(status='failed').count()
+		return self.recipients_status.filter(status='failed').count()
 
 	def get_pending_recipients_count(self):
 		"""Get number of pending recipients"""
-		return self.orgalertrecipient_set.filter(status='pending').count()
+		return self.recipients_status.filter(status='pending').count()
 
 	def get_delivery_rate(self):
 		"""Calculate delivery rate for this message"""
@@ -165,7 +165,7 @@ class OrgMessage(models.Model):
 
 	def get_average_send_time(self):
 		"""Calculate average time to send messages"""
-		sent_recipients = self.orgalertrecipient_set.filter(status='sent', sent_at__isnull=False)
+		sent_recipients = self.recipients_status.filter(status='sent', sent_at__isnull=False)
 		if not sent_recipients.exists():
 			return None
 		total_time = sum((recipient.sent_at - self.created_at).total_seconds() for recipient in sent_recipients)
@@ -177,8 +177,8 @@ class OrgMessage(models.Model):
 		if total == 0:
 			return {'hubtel': 0, 'clicksend': 0, 'unknown': 0}
 		
-		hubtel_sent = self.orgalertrecipient_set.filter(status='sent', provider_message_id__isnull=False).exclude(provider_message_id='').count()
-		clicksend_sent = self.orgalertrecipient_set.filter(status='sent', provider_message_id__isnull=True).count()
+		hubtel_sent = self.recipients_status.filter(status='sent', provider_message_id__isnull=False).exclude(provider_message_id='').count()
+		clicksend_sent = self.recipients_status.filter(status='sent', provider_message_id__isnull=True).count()
 		unknown_sent = self.get_sent_recipients_count() - hubtel_sent - clicksend_sent
 		
 		return {
@@ -209,7 +209,7 @@ class OrgMessage(models.Model):
 		import datetime
 		
 		now = timezone.now()
-		recipients = self.orgalertrecipient_set.filter(sent_at__isnull=False)
+		recipients = self.recipients_status.filter(sent_at__isnull=False)
 		
 		# Last 24 hours
 		last_24h = now - datetime.timedelta(hours=24)
@@ -445,7 +445,8 @@ class Organization(models.Model):
 		from django.db.models import Count
 		today = timezone.now().date()
 
-		return self.orgalertrecipient_set.filter(
+		return OrgAlertRecipient.objects.filter(
+			message__organization=self,
 			sent_at__date=today,
 			status='sent'
 		).count()
@@ -456,7 +457,8 @@ class Organization(models.Model):
 		from django.db.models import Count
 		week_ago = timezone.now() - timezone.timedelta(days=7)
 
-		return self.orgalertrecipient_set.filter(
+		return OrgAlertRecipient.objects.filter(
+			message__organization=self,
 			sent_at__gte=week_ago,
 			status='sent'
 		).count()
@@ -467,7 +469,8 @@ class Organization(models.Model):
 		from django.db.models import Count
 		month_ago = timezone.now() - timezone.timedelta(days=30)
 
-		return self.orgalertrecipient_set.filter(
+		return OrgAlertRecipient.objects.filter(
+			message__organization=self,
 			sent_at__gte=month_ago,
 			status='sent'
 		).count()
