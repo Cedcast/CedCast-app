@@ -1236,6 +1236,126 @@ def super_edit_org_view(request, org_slug=None):
 			   'sender_present': bool(org.sender_id)}
 	return render(request, 'super_org_edit.html', context)
 
+
+@login_required
+def super_ban_org_view(request, org_slug=None):
+	"""Ban (deactivate) an organization"""
+	if request.user.role != User.SUPER_ADMIN:
+		return redirect('dashboard')
+
+	from .models import Organization
+	try:
+		org = Organization.objects.get(slug=org_slug)
+	except Organization.DoesNotExist:
+		messages.error(request, 'Organization not found.')
+		return redirect('onboarding')
+
+	if request.method == 'POST' or request.method == 'GET':  # Allow GET for direct links
+		org.is_active = False
+		org.save()
+
+		# Audit log
+		try:
+			from django.contrib.admin.models import LogEntry
+			from django.contrib.contenttypes.models import ContentType
+			ct = ContentType.objects.get_for_model(Organization)
+			LogEntry.objects.log_action(
+				user_id=request.user.id,
+				content_type_id=ct.id,
+				object_id=org.id,
+				object_repr=str(org),
+				action_flag=2,
+				change_message='Banned organization via super admin UI',
+			)
+		except Exception:
+			pass
+
+		messages.success(request, f'Organization "{org.name}" has been banned.')
+		return redirect('super_edit_org', org_slug=org.slug)
+
+	return redirect('super_edit_org', org_slug=org.slug)
+
+
+@login_required
+def super_unban_org_view(request, org_slug=None):
+	"""Unban (reactivate) an organization"""
+	if request.user.role != User.SUPER_ADMIN:
+		return redirect('dashboard')
+
+	from .models import Organization
+	try:
+		org = Organization.objects.get(slug=org_slug)
+	except Organization.DoesNotExist:
+		messages.error(request, 'Organization not found.')
+		return redirect('onboarding')
+
+	if request.method == 'POST' or request.method == 'GET':  # Allow GET for direct links
+		org.is_active = True
+		org.save()
+
+		# Audit log
+		try:
+			from django.contrib.admin.models import LogEntry
+			from django.contrib.contenttypes.models import ContentType
+			ct = ContentType.objects.get_for_model(Organization)
+			LogEntry.objects.log_action(
+				user_id=request.user.id,
+				content_type_id=ct.id,
+				object_id=org.id,
+				object_repr=str(org),
+				action_flag=2,
+				change_message='Unbanned organization via super admin UI',
+			)
+		except Exception:
+			pass
+
+		messages.success(request, f'Organization "{org.name}" has been unbanned.')
+		return redirect('super_edit_org', org_slug=org.slug)
+
+	return redirect('super_edit_org', org_slug=org.slug)
+
+
+@login_required
+def super_delete_org_view(request, org_slug=None):
+	"""Permanently delete an organization and all associated data"""
+	if request.user.role != User.SUPER_ADMIN:
+		return redirect('dashboard')
+
+	from .models import Organization
+	try:
+		org = Organization.objects.get(slug=org_slug)
+	except Organization.DoesNotExist:
+		messages.error(request, 'Organization not found.')
+		return redirect('onboarding')
+
+	if request.method == 'POST' or request.method == 'GET':  # Allow GET for direct links
+		org_name = org.name
+
+		# Audit log before deletion
+		try:
+			from django.contrib.admin.models import LogEntry
+			from django.contrib.contenttypes.models import ContentType
+			ct = ContentType.objects.get_for_model(Organization)
+			LogEntry.objects.log_action(
+				user_id=request.user.id,
+				content_type_id=ct.id,
+				object_id=org.id,
+				object_repr=str(org),
+				action_flag=3,  # DELETION
+				change_message='Deleted organization via super admin UI',
+			)
+		except Exception:
+			pass
+
+		# Delete the organization (this will cascade delete related objects due to foreign keys)
+		org.delete()
+
+		messages.success(request, f'Organization "{org_name}" has been permanently deleted.')
+		return redirect('onboarding')
+
+	return redirect('super_edit_org', org_slug=org_slug)
+
+
 @login_required
 def org_dashboard(request, org_slug=None):
 	user = request.user

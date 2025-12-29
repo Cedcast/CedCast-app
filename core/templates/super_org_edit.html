@@ -73,7 +73,149 @@
             <label class="form-check-label" for="is_active">Active</label>
         </div>
         <button class="btn btn-primary" type="submit">Save</button>
+
+        <hr class="my-4">
+        <h4 class="text-danger mb-3">Danger Zone</h4>
+        <p class="text-muted small">These actions cannot be undone. Please be certain.</p>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card border-warning">
+                    <div class="card-body">
+                        <h6 class="card-title text-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Ban Organization
+                        </h6>
+                        <p class="card-text small">Temporarily disable this organization. They won't be able to send SMS or access their account.</p>
+                        {% if org.is_active %}
+                            <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#banModal">
+                                <i class="bi bi-pause-circle me-1"></i>Ban Organization
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#unbanModal">
+                                <i class="bi bi-play-circle me-1"></i>Unban Organization
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-danger">
+                    <div class="card-body">
+                        <h6 class="card-title text-danger">
+                            <i class="bi bi-trash-fill me-2"></i>Delete Organization
+                        </h6>
+                        <p class="card-text small">Permanently delete this organization and all associated data. This action cannot be reversed.</p>
+                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="bi bi-trash me-1"></i>Delete Organization
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </form>
+
+    <!-- Ban Organization Modal -->
+    <div class="modal fade" id="banModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-warning">Ban Organization</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to ban <strong>{{ org.name }}</strong>?</p>
+                    <p class="text-muted small">This will disable their account and prevent them from sending SMS or accessing the platform. You can unban them later if needed.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="{% url 'super_ban_org' org.slug %}" class="btn btn-warning">Ban Organization</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unban Organization Modal -->
+    <div class="modal fade" id="unbanModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-success">Unban Organization</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to unban <strong>{{ org.name }}</strong>?</p>
+                    <p class="text-muted small">This will restore their account access and allow them to send SMS again.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="{% url 'super_unban_org' org.slug %}" class="btn btn-success">Unban Organization</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Organization Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">Delete Organization</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-danger"><strong>WARNING: This action cannot be undone!</strong></p>
+                    <p>Are you sure you want to permanently delete <strong>{{ org.name }}</strong>?</p>
+                    <p class="text-muted small">This will delete all associated data including:</p>
+                    <ul class="text-muted small">
+                        <li>Organization settings and credentials</li>
+                        <li>All SMS messages and delivery records</li>
+                        <li>Contact lists and groups</li>
+                        <li>User accounts and permissions</li>
+                        <li>Billing history and balance</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal">Delete Organization</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-danger fw-bold">Final Confirmation Required</p>
+                    <p>Please type <code>DELETE</code> to confirm permanent deletion of <strong>{{ org.name }}</strong>:</p>
+                    <input type="text" class="form-control" id="deleteConfirmation" placeholder="Type DELETE to confirm">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>Confirm Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+// Enable delete button only when user types "DELETE"
+document.getElementById('deleteConfirmation').addEventListener('input', function() {
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    if (this.value === 'DELETE') {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<a href="{% url "super_delete_org" org.slug %}" class="text-white text-decoration-none"><i class="bi bi-trash me-1"></i>Confirm Delete</a>';
+    } else {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = 'Confirm Delete';
+    }
+});
+</script>
 </body>
 </html>
