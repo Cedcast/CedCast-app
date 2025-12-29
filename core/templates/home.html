@@ -240,13 +240,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Ghana flag inspired elements */
-.ghana-flag {
-    background: linear-gradient(to bottom,
-        var(--ghana-red) 33%,
-        var(--ghana-gold) 33% 66%,
-        var(--ghana-green) 66%);
-    border-radius: 4px;
-}
 
 /* Welcome message styling */
 .welcome-text {
@@ -382,8 +375,8 @@ html {
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="#hero">
-                <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:64px; margin-right:8px;" onerror="this.style.display='none'">
-                <span class="fw-bold">CedCast</span>
+                <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:64px; margin-right:8px; background: white; padding: 4px; border-radius: 4px;" onerror="this.style.display='none'">
+                <span class="fw-bold">CEDCAST</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -451,13 +444,9 @@ html {
                 </div>
                 <div class="col-lg-6 text-center fade-in-up">
                     <div class="position-relative">
-                        <!-- Ghana Flag Inspired Design -->
-                        <div class="ghana-flag mx-auto mb-4" style="width: 300px; height: 200px; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);">
-                            <div class="d-flex align-items-center justify-content-center h-100">
-                                <div class="text-center">
-                                    <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="width: 250px; height: auto; max-width: 100%;" onerror="this.style.display='none'">
-                                </div>
-                            </div>
+                        <!-- CedCast Logo -->
+                        <div class="mx-auto mb-4 text-center">
+                            <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="width: 250px; height: auto; max-width: 100%;" onerror="this.style.display='none'">
                         </div>
                     </div>
                 </div>
@@ -1179,4 +1168,121 @@ html {
             });
         });
     </script>
+
+    <style>
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        /* Hero Section Mobile */
+        .hero {
+            min-height: 70vh !important;
+            padding: 3rem 0 !important;
+        }
+
+        .hero h1.display-4 {
+            font-size: 2rem !important;
+            line-height: 1.2 !important;
+        }
+
+        .hero .lead {
+            font-size: 1rem !important;
+            line-height: 1.5 !important;
+        }
+
+        /* Hero buttons mobile */
+        .hero .d-flex.gap-3 {
+            flex-direction: column !important;
+            gap: 1rem !important;
+        }
+
+        .hero .btn {
+            width: 100% !important;
+            margin-bottom: 0.5rem !important;
+        }
+
+        /* Logo mobile */
+        .hero img[alt="CedCast"] {
+            width: 150px !important;
+            height: auto !important;
+        }
+
+        /* Feature cards mobile */
+        .features .row {
+            --bs-gutter-x: 1rem !important;
+        }
+
+        .features .card {
+            margin-bottom: 1.5rem !important;
+        }
+
+        /* Organization cards mobile */
+        .organizations .row {
+            --bs-gutter-x: 0.5rem !important;
+        }
+
+        .org-type-card {
+            margin-bottom: 1rem !important;
+            padding: 1.5rem !important;
+        }
+
+        .org-type-card h5 {
+            font-size: 1.1rem !important;
+        }
+
+        .org-type-card p {
+            font-size: 0.9rem !important;
+        }
+
+        /* CTA section mobile */
+        .cta h2 {
+            font-size: 1.8rem !important;
+        }
+
+        .cta .lead {
+            font-size: 1rem !important;
+        }
+
+        /* Footer mobile */
+        .footer .row > div {
+            margin-bottom: 2rem !important;
+            text-align: center !important;
+        }
+
+        /* Navigation mobile */
+        .navbar-brand img {
+            height: 48px !important;
+        }
+
+        .navbar-brand span {
+            font-size: 1.1rem !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        /* Extra small screens */
+        .hero {
+            min-height: 60vh !important;
+            padding: 2rem 0 !important;
+        }
+
+        .hero h1.display-4 {
+            font-size: 1.75rem !important;
+        }
+
+        .hero img[alt="CedCast"] {
+            width: 120px !important;
+        }
+
+        .features h2 {
+            font-size: 1.8rem !important;
+        }
+
+        .organizations h2 {
+            font-size: 1.8rem !important;
+        }
+
+        .cta h2 {
+            font-size: 1.5rem !important;
+        }
+    }
+    </style>
 {% endblock %}
