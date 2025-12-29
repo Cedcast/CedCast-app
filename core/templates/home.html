@@ -1,14 +1,24 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load core_filters %}
-{% block title %}CedCast - Modern SMS Platform for Organizations{% endblock %}
+{% block title %}CedCast - Ghana's Leading SMS Platform for Organizations{% endblock %}
 {% block body_class %}landing-page{% endblock %}
 {% block extra_head %}
 <link rel="icon" href="{% static 'images/cedcast_logo.png' %}" type="image/png">
 <style>
+/* Ghana-inspired color palette */
+:root {
+    --ghana-red: #CE1126;
+    --ghana-gold: #FCD116;
+    --ghana-green: #006B3F;
+    --ghana-blue: #002B7F;
+    --accent-orange: #FF6B35;
+    --warm-yellow: #F4A261;
+}
+
 .hero {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-    min-height: 70vh;
+    background: linear-gradient(135deg, var(--ghana-green) 0%, var(--ghana-blue) 50%, var(--ghana-red) 100%);
+    min-height: 80vh;
     display: flex;
     align-items: center;
     position: relative;
@@ -21,33 +31,244 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="%23ffffff" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="%23ffffff" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="%23ffffff" opacity="0.05"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="kente" width="20" height="20" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="10" height="10" fill="%23CE1126" opacity="0.1"/><rect x="10" y="10" width="10" height="10" fill="%23FCD116" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23kente)"/></svg>');
     pointer-events: none;
 }
-.features {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-.branding {
-    background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 50%, #d1e7ff 100%);
-    position: relative;
-}
-.branding::before {
+.hero::after {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="%23667eea" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
+    background: radial-gradient(circle at 30% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 30%, rgba(255, 107, 53, 0.1) 0%, transparent 50%);
     pointer-events: none;
 }
+
+.features {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f1f3f4 100%);
+}
+
+.branding {
+    background: linear-gradient(135deg, #fff8e1 0%, #fff3c4 50%, #ffe082 100%);
+    position: relative;
+}
+
 .cta {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: linear-gradient(135deg, var(--ghana-green) 0%, var(--ghana-blue) 50%, var(--ghana-red) 100%);
     position: relative;
 }
 .cta::before {
     content: '';
     position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="stars" width="30" height="30" patternUnits="userSpaceOnUse"><circle cx="15" cy="15" r="2" fill="%23FCD116" opacity="0.3"/></pattern></defs><rect width="100" height="100" fill="url(%23stars)"/></svg>');
+    pointer-events: none;
+}
+
+.card {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--ghana-green) 0%, var(--ghana-blue) 100%);
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 107, 63, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #005a32 0%, #001b4f 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 107, 63, 0.4);
+}
+
+.btn-outline-primary {
+    border-color: var(--ghana-green);
+    color: var(--ghana-green);
+}
+
+.btn-outline-primary:hover {
+    background: var(--ghana-green);
+    border-color: var(--ghana-green);
+}
+
+.stat-card {
+    padding: 2rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    margin-bottom: 1rem;
+    border: 2px solid rgba(206, 17, 38, 0.1);
+    transition: all 0.3s ease;
+    color: var(--ghana-blue);
+    backdrop-filter: blur(10px);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.98);
+    border-color: var(--ghana-red);
+    box-shadow: 0 8px 25px rgba(206, 17, 38, 0.2);
+}
+
+.pricing-card {
+    border: 2px solid rgba(252, 209, 22, 0.8) !important;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: 20px !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 248, 225, 0.9) 100%);
+}
+
+.pricing-card:hover {
+    border-color: var(--ghana-gold) !important;
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 25px 50px rgba(252, 209, 22, 0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 248, 225, 0.95) 100%);
+}
+
+.step-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ghana-red) 0%, var(--ghana-gold) 50%, var(--ghana-green) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 10px 30px rgba(206, 17, 38, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.step-circle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.step-circle:hover::before {
+    transform: translateX(100%);
+}
+
+.step-circle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 15px 40px rgba(206, 17, 38, 0.4);
+}
+
+/* Ghana-inspired typography */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    color: var(--ghana-blue);
+}
+
+.display-4 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Local cultural elements */
+.ghana-pattern {
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(206, 17, 38, 0.1) 10px,
+        rgba(206, 17, 38, 0.1) 20px
+    );
+}
+
+.flag-colors {
+    background: linear-gradient(to right, var(--ghana-red) 33%, var(--ghana-gold) 33% 66%, var(--ghana-green) 66%);
+}
+
+/* Enhanced navbar with Ghana colors */
+.navbar {
+    background: linear-gradient(135deg, var(--ghana-green) 0%, var(--ghana-blue) 100%) !important;
+    border-bottom: 3px solid var(--ghana-gold);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+/* Professional spacing */
+.py-5 {
+    padding-top: 5rem !important;
+    padding-bottom: 5rem !important;
+}
+
+/* Ghana flag inspired elements */
+.ghana-flag {
+    background: linear-gradient(to bottom,
+        var(--ghana-red) 33%,
+        var(--ghana-gold) 33% 66%,
+        var(--ghana-green) 66%);
+    border-radius: 4px;
+}
+
+/* Cultural icons */
+.cultural-icon {
+    position: relative;
+}
+
+.cultural-icon::after {
+    content: '🇬🇭';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.2em;
+}
+
+/* Welcome message styling */
+.welcome-text {
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    color: var(--ghana-blue);
+}
+</style>
+{% endblock %}
     top: 0;
     left: 0;
     right: 0;
@@ -177,11 +398,11 @@ html {
 {% endblock %}
 {% block content %}
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="#hero">
                 <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:32px; margin-right:8px;" onerror="this.style.display='none'">
-                <span>CedCast</span>
+                <span class="fw-bold">🇬🇭 CedCast</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -192,62 +413,98 @@ html {
                     <li class="nav-item"><a class="nav-link" href="#branding">Branding</a></li>
                     <li class="nav-item"><a class="nav-link" href="#premium">Premium</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-                    <li class="nav-item"><button class="btn btn-outline-light ms-2" data-bs-toggle="modal" data-bs-target="#enrollmentModal">Request Enrollment</button></li>
+                    <li class="nav-item"><button class="btn btn-outline-warning ms-2" data-bs-toggle="modal" data-bs-target="#enrollmentModal">Join CedCast</button></li>
                 </ul>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section id="hero" class="hero bg-primary text-white py-5">
+    <section id="hero" class="hero text-white py-5">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-lg-6">
-                    <h1 class="display-4 fw-bold mb-4">Enterprise SMS Platform for <span class="text-warning">Modern Organizations</span></h1>
-                    <p class="lead mb-4">Professional SMS communication platform with streamlined enrollment, pay-as-you-go billing, and enterprise-grade reliability. Trusted by schools, businesses, and organizations across Ghana.</p>
+                <div class="col-lg-6 fade-in-up">
+                    <div class="welcome-text mb-3">
+                        <h2 class="h4 mb-2">🇬🇭 Welcome to Ghana's SMS Revolution</h2>
+                    </div>
+                    <h1 class="display-4 fw-bold mb-4">
+                        Enterprise SMS Platform for <span class="text-warning">Ghanaian Organizations</span>
+                    </h1>
+                    <p class="lead mb-4">
+                        Join thousands of Ghanaian businesses, schools, and organizations already using CedCast for reliable, affordable SMS communication. Built for Ghana, trusted nationwide.
+                    </p>
                     <div class="d-flex gap-3 mb-4">
                         <button class="btn btn-light btn-lg px-4" data-bs-toggle="modal" data-bs-target="#enrollmentModal">
-                            <i class="bi bi-person-plus me-2"></i>Request Enrollment
+                            <i class="bi bi-person-plus me-2"></i>Join CedCast Today
                         </button>
-                        <a href="#features" class="btn btn-outline-light btn-lg px-4">Learn More</a>
+                        <a href="#features" class="btn btn-outline-light btn-lg px-4">
+                            <i class="bi bi-info-circle me-2"></i>Discover More
+                        </a>
                     </div>
                     <div class="row text-light">
                         <div class="col-6">
                             <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-check-circle-fill me-2"></i>
-                                <small>Pay-as-you-go pricing</small>
+                                <i class="bi bi-check-circle-fill me-2 text-warning"></i>
+                                <small>₵0.14 per SMS delivered</small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-check-circle-fill me-2"></i>
-                                <small>Streamlined approval process</small>
+                                <i class="bi bi-check-circle-fill me-2 text-warning"></i>
+                                <small>Ghanaian-owned & operated</small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-check-circle-fill me-2"></i>
-                                <small>Custom sender IDs</small>
+                                <i class="bi bi-check-circle-fill me-2 text-warning"></i>
+                                <small>Custom sender IDs available</small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="d-flex align-items-center">
-                                <i class="bi bi-check-circle-fill me-2"></i>
-                                <small>Enterprise support</small>
+                                <i class="bi bi-check-circle-fill me-2 text-warning"></i>
+                                <small>24/7 local support</small>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6 text-center">
+                <div class="col-lg-6 text-center fade-in-up">
                     <div class="position-relative">
-                        <svg width="300" height="300" viewBox="0 0 32 32" class="mb-4">
-                            <circle cx="16" cy="16" r="15" fill="#ffffff" stroke="#0d6efd" stroke-width="1"/>
-                            <text x="16" y="12" font-family="Arial, sans-serif" font-size="6" font-weight="bold" text-anchor="middle" fill="#0d6efd">CedCast</text>
-                            <circle cx="16" cy="20" r="1.5" fill="#0d6efd" opacity="0.8"/>
-                            <circle cx="12" cy="22" r="1" fill="#0d6efd" opacity="0.6"/>
-                            <circle cx="20" cy="22" r="1" fill="#0d6efd" opacity="0.6"/>
-                        </svg>
+                        <!-- Ghana Flag Inspired Design -->
+                        <div class="ghana-flag mx-auto mb-4" style="width: 300px; height: 200px; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);">
+                            <div class="d-flex align-items-center justify-content-center h-100">
+                                <div class="text-center">
+                                    <div class="bg-white rounded-circle p-4 mx-auto mb-3" style="width: 120px; height: 120px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
+                                        <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="width: 80px; height: auto;" onerror="this.style.display='none'">
+                                        <div class="text-dark fw-bold" style="font-size: 2rem;">📱</div>
+                                    </div>
+                                    <h3 class="text-white mb-0" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">CedCast</h3>
+                                    <p class="text-white-50 mb-0 small">Ghana's SMS Platform</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Floating Stats -->
                         <div class="position-absolute top-0 start-0 translate-middle">
+                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
+                                <small class="text-dark fw-bold">🚀 10,000+ SMS sent daily</small>
+                            </div>
+                        </div>
+                        <div class="position-absolute top-0 end-0 translate-middle">
+                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
+                                <small class="text-dark fw-bold">⭐ 500+ organizations</small>
+                            </div>
+                        </div>
+                        <div class="position-absolute bottom-0 start-50 translate-middle-x">
+                            <div class="bg-white rounded-pill px-3 py-2 shadow-sm">
+                                <small class="text-dark fw-bold">🇬🇭 Proudly Ghanaian</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
                             <div class="bg-success rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
                                 <i class="bi bi-chat-dots text-white fs-4"></i>
                             </div>
@@ -586,28 +843,28 @@ html {
             <!-- How It Works -->
             <div class="row mt-5">
                 <div class="col-12">
-                    <h3 class="text-center mb-4">How It Works</h3>
+                    <h3 class="text-center mb-5">Your Journey to SMS Success 🇬🇭</h3>
                     <div class="row g-4">
                         <div class="col-md-4 text-center">
                             <div class="step-circle mx-auto mb-3">
                                 <span class="display-4 fw-bold text-primary">1</span>
                             </div>
-                            <h5>Request Enrollment</h5>
-                            <p class="text-muted">Submit your organization details for superadmin approval</p>
+                            <h5>Join the Family</h5>
+                            <p class="text-muted">Join thousands of Ghanaian organizations already using our platform for reliable communication</p>
                         </div>
                         <div class="col-md-4 text-center">
                             <div class="step-circle mx-auto mb-3">
                                 <span class="display-4 fw-bold text-success">2</span>
                             </div>
-                            <h5>Get Approved & Funded</h5>
-                            <p class="text-muted">Once approved, top-up your account balance via Paystack</p>
+                            <h5>Fund & Go Live</h5>
+                            <p class="text-muted">Top-up your account securely with Paystack and start sending messages immediately</p>
                         </div>
                         <div class="col-md-4 text-center">
                             <div class="step-circle mx-auto mb-3">
                                 <span class="display-4 fw-bold text-info">3</span>
                             </div>
-                            <h5>Start Sending SMS</h5>
-                            <p class="text-muted">Send messages and pay only ₵0.14 per SMS delivered</p>
+                            <h5>Grow Your Reach</h5>
+                            <p class="text-muted">Send unlimited SMS at just ₵0.14 per message with enterprise-grade delivery</p>
                         </div>
                     </div>
                 </div>
@@ -658,34 +915,36 @@ html {
     </section>
 
     <!-- CTA Section -->
-    <section class="cta py-5 bg-primary text-white">
+    <section class="cta py-5 text-white">
         <div class="container text-center">
-            <h2 class="mb-4">Ready to Transform Your Communication?</h2>
-            <p class="lead mb-4">Join organizations already using CedCast for professional SMS communication. Get started with our superadmin-controlled enrollment process.</p>
+            <h2 class="mb-4">Ready to Join Ghana's SMS Revolution? 🇬🇭</h2>
+            <p class="lead mb-4">Join thousands of Ghanaian organizations already using CedCast for reliable, affordable SMS communication. Start sending messages in minutes!</p>
             <div class="d-flex justify-content-center gap-3 mb-4">
                 <button class="btn btn-light btn-lg px-4" data-bs-toggle="modal" data-bs-target="#enrollmentModal">
-                    <i class="bi bi-person-plus me-2"></i>Request Enrollment
+                    <i class="bi bi-person-plus me-2"></i>Join CedCast Today
                 </button>
-                <a href="#features" class="btn btn-outline-light btn-lg px-4">Learn More</a>
+                <a href="#features" class="btn btn-outline-light btn-lg px-4">
+                    <i class="bi bi-info-circle me-2"></i>Explore Features
+                </a>
             </div>
             <div class="row justify-content-center">
                 <div class="col-md-8">
                     <div class="alert alert-light border-0">
                         <div class="row text-center">
                             <div class="col-4">
-                                <i class="bi bi-shield-check display-6 text-primary mb-2"></i>
-                                <div><strong>Secure Approval</strong></div>
-                                <small>Superadmin-reviewed enrollment</small>
+                                <i class="bi bi-shield-check display-6 text-success mb-2"></i>
+                                <div><strong>Secure & Reliable</strong></div>
+                                <small>Enterprise-grade SMS delivery</small>
                             </div>
                             <div class="col-4">
-                                <i class="bi bi-cash display-6 text-success mb-2"></i>
-                                <div><strong>Pay-as-You-Go</strong></div>
-                                <small>₵0.25 per SMS, no commitments</small>
+                                <i class="bi bi-cash display-6 text-warning mb-2"></i>
+                                <div><strong>Affordable Pricing</strong></div>
+                                <small>Just ₵0.14 per SMS delivered</small>
                             </div>
                             <div class="col-4">
                                 <i class="bi bi-headset display-6 text-info mb-2"></i>
-                                <div><strong>24/7 Support</strong></div>
-                                <small>Dedicated assistance available</small>
+                                <div><strong>Ghanaian Support</strong></div>
+                                <small>Local assistance you can trust</small>
                             </div>
                         </div>
                     </div>
