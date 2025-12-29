@@ -5,49 +5,7 @@
 {% block title %}Super Admin — CedCast{% endblock %}
 
 {% block content %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}">
-            <i class="bi bi-shield-check me-2"></i>CedCast Super Admin
-        </a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link active" href="{% url 'dashboard' %}">
-                        <i class="bi bi-house-door me-1"></i>Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'super_orgs' %}">
-                        <i class="bi bi-building me-1"></i>Organizations
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'global_templates' %}">
-                        <i class="bi bi-file-earmark-text me-1"></i>Templates
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'system_logs' %}">
-                        <i class="bi bi-journal-text me-1"></i>Logs
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'audit_message_logs' %}">
-                        <i class="bi bi-shield me-1"></i>Audit Logs
-                    </a>
-                </li>
-            </ul>
-
-            <ul class="navbar-nav">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="userMenu" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle me-1"></i>{{ request.user.username }}
+{% include "super_admin_combined_nav.html" %}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="/logout/">

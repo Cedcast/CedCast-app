@@ -7,18 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'dashboard' %}">
-                <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:28px; margin-right:8px; object-fit:contain;" onerror="this.style.display='none'">
-                <span class="align-middle">CedCast</span>
-            </a>
-            <div class="d-flex">
-                <a href="{% url 'dashboard' %}" class="btn btn-outline-light me-2">Dashboard</a>
-                <a href="/logout/" class="btn btn-outline-light">Logout</a>
-            </div>
-        </div>
-    </nav>
+    {% include "super_admin_combined_nav.html" %}
     <div class="container">
         <h3>Global Templates</h3>
         <p class="text-muted">Templates created for organizations. Use these as master templates to copy to organizations.</p>

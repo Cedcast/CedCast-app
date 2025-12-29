@@ -5,32 +5,7 @@
 {% block title %}Super Admin — Payment Analytics{% endblock %}
 
 {% block content %}
-
-<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
-  <div class="container-fluid">
-    <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
-      <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:32px; margin-right:8px;" onerror="this.style.display='none'">
-      <span class="fw-bold">CedCast</span>
-    </a>
-    <div class="d-flex align-items-center gap-3">
-      <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left"></i> Back to Dashboard
-      </a>
-      <div class="dropdown">
-        <a class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" href="#">
-          <div class="avatar rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:34px; height:34px;">{{ request.user.username|slice:":1"|upper }}</div>
-          <span class="ms-2 d-none d-sm-inline">{{ request.user.username }}</span>
-        </a>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-          <li><a class="dropdown-item" href="#">Profile</a></li>
-          <li><a class="dropdown-item" href="#">Settings</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/logout/">Logout</a></li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</nav>
+{% include "super_admin_combined_nav.html" %}
 
 <div class="container py-4">
     <div class="row mb-4">

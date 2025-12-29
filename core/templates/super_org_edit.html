@@ -7,13 +7,9 @@
     <title>Edit Organization Settings</title>
 </head>
 <body>
+{% include "super_admin_combined_nav.html" %}
+
 <div class="container mt-4">
-    <div class="mb-3">
-        <a href="{% url 'dashboard' %}">
-            <img src="{% static 'images/cedcast_logo.png' %}" alt="CedCast" style="height:48px">
-        </a>
-    </div>
-    <a href="{% url 'dashboard' %}" class="btn btn-secondary mb-3">Back to Dashboard</a>
     <h2>Edit {{ org.name }}</h2>
     {% if notice %}
         <div class="alert alert-success">{{ notice }}</div>
