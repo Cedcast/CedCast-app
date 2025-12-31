@@ -335,13 +335,13 @@ class Organization(models.Model):
 	# ClickSend per-tenant credentials & sender id
 	clicksend_username = models.CharField(max_length=100, blank=True, null=True)
 	clicksend_api_key = models.CharField(max_length=100, blank=True, null=True)
-	sender_id = models.CharField(max_length=50, blank=True, null=True)
+	sender_id = models.CharField(max_length=255, blank=True, null=True)
 	# Hubtel per-tenant credentials (optional)
 	hubtel_api_url = models.CharField(max_length=255, blank=True, null=True)
 	hubtel_client_id = models.CharField(max_length=255, blank=True, null=True)
 	hubtel_client_secret = models.CharField(max_length=255, blank=True, null=True)
 	hubtel_api_key = models.CharField(max_length=255, blank=True, null=True)
-	hubtel_sender_id = models.CharField(max_length=50, blank=True, null=True)
+	hubtel_sender_id = models.CharField(max_length=255, blank=True, null=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	# administrative flags
 	is_active = models.BooleanField(default=True)
