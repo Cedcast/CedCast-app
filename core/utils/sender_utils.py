@@ -108,59 +108,9 @@ def _send_via_sender_pool(organization, message, sms_body, user, sender):
 
 def _send_via_legacy_system(organization, message, sms_body, user):
     """Fallback SMS sending using legacy organization-based credentials."""
-    from .. import hubtel_utils
-    
-    processed = 0
-    total_cost = Decimal('0')
-    sent_ids = []
-
-    # Check organization credit balance first
-    recipient_count = message.recipients_status.count()
-    required_credits = organization.get_current_sms_rate() * recipient_count
-    if organization.sms_credit_balance < required_credits:
-        raise Exception("Insufficient SMS credits. Please top up your balance.")
-
-    # Send using organization's legacy credentials
-    for ar in message.recipients_status.all():
-        try:
-            # Use legacy hubtel_utils.send_sms function
-            sent_id = hubtel_utils.send_sms(
-                to_number=ar.contact.phone_number,
-                message_body=sms_body,
-                tenant=organization  # Pass organization as tenant
-            )
-            sent_ids.append(sent_id)
-            ar.provider_message_id = str(sent_id)
-            ar.status = 'sent'
-            ar.sent_at = timezone.now()
-            processed += 1
-        except Exception as e:
-            logger.error(f"Failed to send SMS to {ar.contact.phone_number}: {str(e)}")
-            ar.status = 'failed'
-            ar.error_message = str(e)
-            sent_ids.append(None)
-        ar.save()
-
-    # Deduct balance for successful sends
-    if processed > 0:
-        organization.deduct_sms_cost(processed)
-        total_cost = organization.get_current_sms_rate() * processed
-
-    # Update message status
-    message.sent = True
-    message.save()
-
-    # Audit log
-    AuditLog.objects.create(
-        user=user,
-        organization=organization,
-        action='sms_sent_legacy',
-        details={
-            'recipients_count': processed,
-            'total_cost': str(total_cost),
-            'message_id': message.id,
-            'fallback_used': True
-        },
+    # NOTE: This fallback is currently broken because organization SMS credentials 
+    # were removed in migration 0036. For now, raise a clear error.
+    raise Exception(
+        "No sender assigned to organization and legacy SMS credentials are not available. "
+        "Please contact support to assign a sender from the sender pool."
     )
-
-    return processed, total_cost, None
