@@ -473,6 +473,16 @@ class Organization(models.Model):
 		"""Check if organization has critical balance (< 5 GHS)"""
 		return self.sms_credit_balance < Decimal('5.00')
 
+	@property
+	def balance(self):
+		"""Backward compatibility property for sms_credit_balance"""
+		return self.sms_credit_balance
+
+	@balance.setter
+	def balance(self, value):
+		"""Allow setting balance (maps to sms_credit_balance)"""
+		self.sms_credit_balance = value
+
 	def __str__(self):
 		return f"{self.name} ({self.org_type})"
 
