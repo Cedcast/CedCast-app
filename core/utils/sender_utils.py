@@ -107,13 +107,58 @@ def _send_via_sender_pool(organization, message, sms_body, user, sender):
 
 
 def _send_via_legacy_system(organization, message, sms_body, user):
-    """Fallback SMS sending using legacy organization-based credentials."""
-    # NOTE: This fallback is currently broken because organization SMS credentials 
-    # were removed in migration 0036. For now, raise a clear error.
-    raise Exception(
-        "No sender assigned to organization and legacy SMS credentials are not available. "
-        "Please contact support to assign a sender from the sender pool."
-    )
+    """Fallback SMS sending using settings-based credentials (temporary until sender pool is set up)."""
+    logger.warning(f"Using legacy SMS sending for organization {organization.slug} - sender pool not configured")
+    
+    # Check organization credit balance
+    recipient_count = message.recipients_status.count()
+    required_credits = organization.get_current_sms_rate() * recipient_count
+    if organization.sms_credit_balance < required_credits:
+        raise Exception("Insufficient SMS credits. Please top up your balance.")
+
+    processed = 0
+    total_cost = Decimal('0')
+
+    # Try Hubtel first (primary), then ClickSend (fallback)
+    sent_ids = []
+    for ar in message.recipients_status.all():
+        sent_id = None
+        
+        # Try Hubtel
+        try:
+            from .. import hubtel_utils
+            # Use organization as tenant for settings-based credentials
+            sent_id = hubtel_utils.send_sms(ar.contact.phone_number, sms_body, organization)
+        except Exception as e:
+            logger.warning(f"Hubtel failed for {ar.contact.phone_number}: {str(e)}")
+            # Try ClickSend as fallback
+            try:
+                from .. import clicksend_utils
+                sent_id = clicksend_utils.send_sms(ar.contact.phone_number, sms_body, organization)
+            except Exception as e2:
+                logger.error(f"ClickSend also failed for {ar.contact.phone_number}: {str(e2)}")
+                sent_id = None
+        
+        sent_ids.append(sent_id)
+        if sent_id:
+            ar.provider_message_id = str(sent_id)
+            ar.status = 'sent'
+            ar.sent_at = timezone.now()
+            processed += 1
+        else:
+            ar.status = 'failed'
+        ar.save()
+
+    # Deduct balance if any messages were sent
+    if processed > 0:
+        organization.deduct_sms_cost(processed)
+        total_cost = organization.get_current_sms_rate() * processed
+
+    # Update message status
+    message.sent = True
+    message.save()
+
+    return processed, total_cost, None  # No sender for legacy system
 
 
 def send_via_hubtel(sender, message, sms_body):
