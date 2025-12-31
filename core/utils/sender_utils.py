@@ -114,3 +114,51 @@ def _send_via_legacy_system(organization, message, sms_body, user):
         "No sender assigned to organization and legacy SMS credentials are not available. "
         "Please contact support to assign a sender from the sender pool."
     )
+
+
+def send_via_hubtel(sender, message, sms_body):
+    """Send SMS via Hubtel using sender credentials"""
+    from .. import hubtel_utils
+
+    sent_ids = []
+    for ar in message.recipients_status.all():
+        try:
+            # Use sender's credentials instead of organization's
+            sent_id = hubtel_utils.send_sms_with_credentials(
+                to_number=ar.contact.phone_number,
+                message=sms_body,
+                api_url=sender.hubtel_api_url,
+                client_id=sender.hubtel_client_id,
+                client_secret=sender.hubtel_client_secret,
+                api_key=sender.hubtel_api_key,
+                sender_id=sender.sender_id
+            )
+            sent_ids.append(sent_id)
+        except Exception as e:
+            logger.error(f"Hubtel send failed for {ar.contact.phone_number}: {str(e)}")
+            sent_ids.append(None)
+    return sent_ids
+
+
+def send_via_clicksend(sender, message, sms_body):
+    """Send SMS via ClickSend using sender credentials"""
+    try:
+        from .. import clicksend_utils
+    except ImportError:
+        raise Exception("ClickSend integration not available")
+
+    sent_ids = []
+    for ar in message.recipients_status.all():
+        try:
+            sent_id = clicksend_utils.send_sms_with_credentials(
+                to_number=ar.contact.phone_number,
+                message=sms_body,
+                username=sender.clicksend_username,
+                api_key=sender.clicksend_api_key,
+                sender_id=sender.sender_id
+            )
+            sent_ids.append(sent_id)
+        except Exception as e:
+            logger.error(f"ClickSend send failed for {ar.contact.phone_number}: {str(e)}")
+            sent_ids.append(None)
+    return sent_ids
