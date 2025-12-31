@@ -124,7 +124,7 @@ def send_via_hubtel(sender, message, sms_body):
         try:
             # Use sender's credentials instead of organization's
             sent_id = hubtel_utils.send_sms_with_credentials(
-                phone=ar.contact.phone_number,
+                to_number=ar.contact.phone_number,
                 message=sms_body,
                 api_url=sender.hubtel_api_url,
                 client_id=sender.hubtel_client_id,
@@ -150,7 +150,7 @@ def send_via_clicksend(sender, message, sms_body):
     for ar in message.recipients_status.all():
         try:
             sent_id = clicksend_utils.send_sms_with_credentials(
-                phone=ar.contact.phone_number,
+                to_number=ar.contact.phone_number,
                 message=sms_body,
                 username=sender.clicksend_username,
                 api_key=sender.clicksend_api_key,
