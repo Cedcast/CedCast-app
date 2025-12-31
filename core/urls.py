@@ -43,6 +43,7 @@ urlpatterns = [
     path('super/enroll/', views.enroll_tenant_view, name='enroll_tenant'),
     path('super/system-logs/', views.system_logs_view, name='system_logs'),
     path('super/audit-logs/', views.audit_logs_view, name='audit_logs'),
+    path('super/audit-message-logs/', views.audit_message_logs_view, name='audit_message_logs'),
     path('super/sender-pool/', views.sender_pool_view, name='sender_pool'),
     path('super/sender-assignments/', views.sender_assignments_view, name='sender_assignments'),
     path('super/global-templates/', views.global_templates_view, name='global_templates'),

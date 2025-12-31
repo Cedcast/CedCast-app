@@ -574,6 +574,10 @@ def dashboard(request, school_slug=None):
 			day_payments = Payment.objects.filter(status='success', created_at__date=d).count()
 			payments_trend.append(day_payments)
 
+		# Calculate trend totals for template display
+		total_orgs_this_week = sum(orgs_trend)
+		total_payments_this_week = sum(payments_trend)
+
 		# Recent payment transactions (last 10 successful payments)
 		recent_payment_transactions = Payment.objects.filter(status='success').select_related('organization').order_by('-created_at')[:10]
 
@@ -617,6 +621,8 @@ def dashboard(request, school_slug=None):
 			"total_org_balance": total_org_balance,
 			"avg_org_balance": avg_org_balance,
 			"payments_trend": payments_trend,
+			"total_orgs_this_week": total_orgs_this_week,
+			"total_payments_this_week": total_payments_this_week,
 			"top_payers": top_payers,
 			# Premium analytics
 			"premium_orgs": premium_orgs,
