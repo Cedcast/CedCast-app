@@ -56,43 +56,73 @@
                         </div>
 
                         <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th><i class="fas fa-user me-1"></i>Name</th>
-                                        <th><i class="fas fa-phone me-1"></i>Phone Number</th>
-                                        <th class="text-end"><i class="fas fa-cogs me-1"></i>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="contactsTableBody">
-                                    {% for c in contacts %}
-                                    <tr data-name="{{ c.name|lower }}" data-phone="{{ c.phone_number }}">
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
-                                                     style="width: 32px; height: 32px; font-size: 14px; font-weight: bold;">
-                                                    {{ c.name|slice:":1"|upper }}
+                            <form id="bulkDeleteForm" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="bulk_delete_contacts">
+                                
+                                <!-- Bulk Actions Bar -->
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <button type="button" id="selectAllBtn" class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-check-square me-1"></i>Select All
+                                        </button>
+                                        <button type="button" id="deselectAllBtn" class="btn btn-outline-secondary btn-sm d-none">
+                                            <i class="fas fa-square me-1"></i>Deselect All
+                                        </button>
+                                        <span id="selectedCount" class="ms-2 text-muted">0 selected</span>
+                                    </div>
+                                    <div>
+                                        <button type="submit" id="bulkDeleteBtn" class="btn btn-danger btn-sm d-none">
+                                            <i class="fas fa-trash me-1"></i>Delete Selected
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 40px;">
+                                                <input type="checkbox" id="selectAllCheckbox" class="form-check-input">
+                                            </th>
+                                            <th><i class="fas fa-user me-1"></i>Name</th>
+                                            <th><i class="fas fa-phone me-1"></i>Phone Number</th>
+                                            <th class="text-end"><i class="fas fa-cogs me-1"></i>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="contactsTableBody">
+                                        {% for c in contacts %}
+                                        <tr data-name="{{ c.name|lower }}" data-phone="{{ c.phone_number }}">
+                                            <td>
+                                                <input type="checkbox" name="selected_contacts" value="{{ c.id }}" 
+                                                       class="form-check-input contact-checkbox">
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                                                         style="width: 32px; height: 32px; font-size: 14px; font-weight: bold;">
+                                                        {{ c.name|slice:":1"|upper }}
+                                                    </div>
+                                                    <span class="fw-semibold">{{ c.name }}</span>
                                                 </div>
-                                                <span class="fw-semibold">{{ c.name }}</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="font-monospace">{{ c.phone_number }}</span>
-                                        </td>
-                                        <td class="text-end">
-                                            <button class="btn btn-outline-primary btn-sm me-1"
-                                                    onclick="editContact({{ c.id }}, '{{ c.name }}', '{{ c.phone_number }}')">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </button>
-                                            <button class="btn btn-outline-danger btn-sm"
-                                                    onclick="deleteContact({{ c.id }}, '{{ c.name }}')">
-                                                <i class="fas fa-trash"></i> Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                            </td>
+                                            <td>
+                                                <span class="font-monospace">{{ c.phone_number }}</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <button class="btn btn-outline-primary btn-sm me-1"
+                                                        onclick="editContact({{ c.id }}, '{{ c.name }}', '{{ c.phone_number }}')">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm"
+                                                        onclick="deleteContact({{ c.id }}, '{{ c.name }}')">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </form>
                         </div>
                         {% else %}
                         <div class="text-center py-5">
@@ -293,5 +323,90 @@
         // Reset form after successful submission (will be handled by page reload)
         setTimeout(resetContactForm, 100);
     });
+
+    // Bulk selection functionality
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const contactCheckboxes = document.querySelectorAll('.contact-checkbox');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const selectedCount = document.getElementById('selectedCount');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+
+    function updateSelectionUI() {
+        const checkedBoxes = document.querySelectorAll('.contact-checkbox:checked');
+        const totalChecked = checkedBoxes.length;
+        
+        selectedCount.textContent = `${totalChecked} selected`;
+        
+        if (totalChecked > 0) {
+            bulkDeleteBtn.classList.remove('d-none');
+        } else {
+            bulkDeleteBtn.classList.add('d-none');
+        }
+        
+        // Update select all checkbox state
+        const totalCheckboxes = contactCheckboxes.length;
+        if (totalChecked === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (totalChecked === totalCheckboxes) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+            selectAllCheckbox.checked = false;
+        }
+    }
+
+    // Select all checkbox
+    selectAllCheckbox.addEventListener('change', function() {
+        const isChecked = this.checked;
+        contactCheckboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+        });
+        updateSelectionUI();
+    });
+
+    // Individual checkboxes
+    contactCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectionUI);
+    });
+
+    // Select All button
+    selectAllBtn.addEventListener('click', function() {
+        contactCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectionUI();
+        selectAllBtn.classList.add('d-none');
+        deselectAllBtn.classList.remove('d-none');
+    });
+
+    // Deselect All button
+    deselectAllBtn.addEventListener('click', function() {
+        contactCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectionUI();
+        deselectAllBtn.classList.add('d-none');
+        selectAllBtn.classList.remove('d-none');
+    });
+
+    // Bulk delete confirmation
+    bulkDeleteBtn.addEventListener('click', function(e) {
+        const checkedBoxes = document.querySelectorAll('.contact-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+            e.preventDefault();
+            return;
+        }
+        
+        const confirmMessage = `Are you sure you want to delete ${checkedBoxes.length} selected contact(s)? This action cannot be undone.`;
+        if (!confirm(confirmMessage)) {
+            e.preventDefault();
+        }
+    });
+
+    // Initialize selection UI
+    updateSelectionUI();
 </script>
 {% endblock %}

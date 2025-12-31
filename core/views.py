@@ -2257,6 +2257,17 @@ def org_upload_contacts(request, org_slug=None):
 				except Exception:
 					message = 'Could not delete contact.'
 
+			elif action == 'bulk_delete_contacts':
+				selected_ids = request.POST.getlist('selected_contacts')
+				if selected_ids:
+					try:
+						deleted_count = Contact.objects.filter(id__in=selected_ids, organization=organization).delete()[0]
+						message = f'Successfully deleted {deleted_count} contact(s).'
+					except Exception:
+						message = 'Could not delete selected contacts.'
+				else:
+					message = 'No contacts selected for deletion.'
+
 			elif action == 'paste_contacts':
 				pasted = request.POST.get('pasted', '')
 				try:
