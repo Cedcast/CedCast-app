@@ -6,418 +6,545 @@
 
 {% block content %}
 {% include "super_admin_combined_nav.html" %}
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="/logout/">
-                            <i class="bi bi-box-arrow-right me-2"></i>Logout
-                        </a></li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
 
-<div class="container-fluid py-4">
-    <!-- CSRF Token for AJAX requests -->
-    {% csrf_token %}
-
-    <!-- Alert for dry-run mode -->
-    {% if hubtel_dry_run or clicksend_dry_run %}
-    <div class="alert alert-warning">
-        <i class="bi bi-info-circle me-2"></i>
-        <strong>Test Mode Active:</strong>
-        {% if hubtel_dry_run %}Hubtel{% endif %}
-        {% if clicksend_dry_run %}{% if hubtel_dry_run %} & {% endif %}ClickSend{% endif %}
-        are running in dry-run mode — outgoing messages are simulated.
-    </div>
-    {% endif %}
-
-    <!-- Welcome Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h1 class="h3 mb-1">Welcome back, {{ request.user.username }}</h1>
-                            <p class="text-muted mb-0">Monitor system performance and manage organizations</p>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <a href="{% url 'enroll_tenant' %}" class="btn btn-primary">
-                                <i class="bi bi-plus-circle me-1"></i>Enroll Organization
-                            </a>
-                        </div>
-                    </div>
-                </div>
+<!-- Modern Dashboard Header -->
+<div class="dashboard-header bg-gradient-primary py-5">
+  <div class="container-fluid">
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        <div class="hero-card p-4 mb-4">
+          <div class="d-flex align-items-center mb-3">
+            <div class="avatar-modern rounded-circle d-flex align-items-center justify-content-center me-3">
+              <i class="bi bi-shield-check fs-4"></i>
             </div>
-        </div>
-    </div>
-
-    <!-- Key Metrics -->
-    <div class="row mb-4 g-3">
-        <div class="col-xl-3 col-md-6">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-building text-primary fs-1 mb-2"></i>
-                    <h3 class="h4 mb-1">{{ total_orgs|default:0 }}</h3>
-                    <p class="text-muted small mb-0">Organizations</p>
-                </div>
+            <div>
+              <h1 class="h2 mb-1 text-white fw-bold">Welcome back, {{ request.user.username }}</h1>
+              <p class="text-white-50 mb-0">System administration dashboard</p>
             </div>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="hero-badge">
+              <i class="bi bi-building me-1"></i>{{ total_orgs|default:0 }} Organizations
+            </span>
+            <span class="hero-badge">
+              <i class="bi bi-chat-dots me-1"></i>{{ total_sms_sent_all|default:0|format_number }} SMS Sent
+            </span>
+            <span class="hero-badge">
+              <i class="bi bi-cash me-1"></i>₵{{ total_balance_all|default:0|floatformat:0|format_number }} Balance
+            </span>
+          </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-chat-dots text-success fs-1 mb-2"></i>
-                    <h3 class="h4 mb-1">{{ total_sms_sent_all|default:0|format_number }}</h3>
-                    <p class="text-muted small mb-0">SMS Sent</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-cash text-warning fs-1 mb-2"></i>
-                    <h3 class="h4 mb-1">₵{{ total_balance_all|default:0|floatformat:0|format_number }}</h3>
-                    <p class="text-muted small mb-0">Total Balance</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-person-plus text-info fs-1 mb-2"></i>
-                    <h3 class="h4 mb-1">{{ pending_enrollments|length }}</h3>
-                    <p class="text-muted small mb-0">Pending Enrollments</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Platform Statistics Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-bar-chart-line me-2"></i>Platform Statistics
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-4 mb-4">
-                            <div class="stat-card">
-                                <i class="bi bi-building display-4 mb-3 text-primary"></i>
-                                <h2 class="display-4 fw-bold">{{ total_orgs|default:0 }}</h2>
-                                <p class="mb-0">Active Organizations</p>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-4">
-                            <div class="stat-card">
-                                <i class="bi bi-chat-dots display-4 mb-3 text-success"></i>
-                                <h2 class="display-4 fw-bold">{{ total_sms_sent_all|default:0|format_number }}</h2>
-                                <p class="mb-0">Total SMS Sent</p>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-4">
-                            <div class="stat-card">
-                                <i class="bi bi-activity display-4 mb-3 text-info"></i>
-                                <h2 class="display-4 fw-bold">{{ recent_sms|default:0|format_number }}</h2>
-                                <p class="mb-0">SMS Sent (30 days)</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-center mt-4">
-                        <p class="mb-0">
-                            <small class="text-muted">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Real-time statistics updated daily
-                            </small>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Quick Actions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'enroll_tenant' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-plus-circle me-1"></i>Enroll Organization
-                        </a>
-                        <a href="{% url 'super_orgs' %}" class="btn btn-outline-success">
-                            <i class="bi bi-building me-1"></i>Manage Organizations
-                        </a>
-                        <a href="{% url 'global_templates' %}" class="btn btn-outline-info">
-                            <i class="bi bi-file-earmark-text me-1"></i>Global Templates
-                        </a>
-                        <a href="{% url 'system_logs' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-journal-text me-1"></i>System Logs
-                        </a>
-                        <a href="{% url 'audit_message_logs' %}" class="btn btn-outline-warning">
-                            <i class="bi bi-shield me-1"></i>Audit Logs
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Enrollment Management Overview -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Enrollment Management</h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <div class="text-center p-3 border rounded bg-light">
-                        <div class="h4 text-warning mb-1">{{ pending_enrollment_requests|length }}</div>
-                        <div class="small text-muted">Pending Review</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="text-center p-3 border rounded bg-success">
-                        <div class="h4 text-white mb-1">{{ approved_enrollment_requests|length }}</div>
-                        <div class="small text-white">Ready for Setup</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="text-center p-3 border rounded bg-info">
-                        <div class="h4 text-white mb-1">{{ total_enrollment_requests|default:0 }}</div>
-                        <div class="small text-white">Total This Month</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="text-center p-3 border rounded bg-secondary">
-                        <div class="h4 text-white mb-1">{{ rejected_enrollment_requests|default:0 }}</div>
-                        <div class="small text-white">Rejected</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Pending Enrollment Requests - Need Review -->
-    {% if pending_enrollment_requests %}
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Pending Enrollment Requests</h5>
-            <span class="badge bg-warning">{{ pending_enrollment_requests|length }} Awaiting Review</span>
-        </div>
-        <div class="card-body">
-            <div class="alert alert-warning">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                New enrollment requests require review. Approve to enable account creation or reject if requirements aren't met.
-            </div>
-            <div class="row g-3">
-                {% for request in pending_enrollment_requests %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 border-warning">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="card-title mb-1">{{ request.org_name }}</h6>
-                                <small class="text-muted">{{ request.created_at|date:"M d, Y" }}</small>
-                            </div>
-                            <div class="small text-muted mb-3">
-                                <div><i class="bi bi-person me-1"></i>{{ request.contact_name }}</div>
-                                <div><i class="bi bi-envelope me-1"></i>{{ request.email }}</div>
-                                <div><i class="bi bi-telephone me-1"></i>{{ request.phone }}</div>
-                                {% if request.org_type %}
-                                <div><i class="bi bi-building me-1"></i>{{ request.org_type|title }}</div>
-                                {% endif %}
-                                {% if request.address %}
-                                <div><i class="bi bi-geo-alt me-1"></i>{{ request.address|truncatechars:30 }}</div>
-                                {% endif %}
-                                {% if request.message %}
-                                <div class="mt-2"><strong>Message:</strong> {{ request.message|truncatechars:50 }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-success btn-sm flex-fill" onclick="approveRequest({{ request.id }}, event)" 
-                                        title="Approve this request to enable account creation" data-bs-toggle="tooltip">
-                                    <i class="bi bi-check-circle me-1"></i>Approve
-                                </button>
-                                <button class="btn btn-danger btn-sm flex-fill" onclick="rejectRequest({{ request.id }})"
-                                        title="Reject this request with a reason" data-bs-toggle="tooltip">
-                                    <i class="bi bi-x-circle me-1"></i>Reject
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="viewRequestDetails({{ request.id }})"
-                                        title="View full request details" data-bs-toggle="tooltip">
-                                    <i class="bi bi-eye me-1"></i>Details
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- New Enrollment Requests - Ready for Account Creation -->
-    {% if approved_enrollment_requests %}
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">New Enrollment Requests</h5>
-            <span class="badge bg-success">{{ approved_enrollment_requests|length }} Ready for Setup</span>
-        </div>
-        <div class="card-body">
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle me-2"></i>
-                New organizations have requested enrollment. Use the details below to manually create their accounts.
-            </div>
-            <div class="row g-3">
-                {% for request in approved_enrollment_requests %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 border-success">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="card-title mb-1">{{ request.org_name }}</h6>
-                                <small class="text-muted">{{ request.reviewed_at|date:"M d, Y" }}</small>
-                            </div>
-                            <div class="small text-muted mb-3">
-                                <div><i class="bi bi-person me-1"></i>{{ request.contact_name }}</div>
-                                <div><i class="bi bi-envelope me-1"></i>{{ request.email }}</div>
-                                <div><i class="bi bi-telephone me-1"></i>{{ request.phone }}</div>
-                                {% if request.org_type %}
-                                <div><i class="bi bi-building me-1"></i>{{ request.org_type|title }}</div>
-                                {% endif %}
-                                {% if request.address %}
-                                <div><i class="bi bi-geo-alt me-1"></i>{{ request.address|truncatechars:30 }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="d-flex gap-2">
-                                <a href="{% url 'enroll_tenant' %}?prefill={{ request.id }}" class="btn btn-primary btn-sm flex-fill"
-                                   title="Create organization/school account for this request" data-bs-toggle="tooltip">
-                                    <i class="bi bi-plus-circle me-1"></i>Create Account
-                                </a>
-                                <button class="btn btn-danger btn-sm" onclick="declineApprovedRequest({{ request.id }})"
-                                        title="Decline this approved request with a reason" data-bs-toggle="tooltip">
-                                    <i class="bi bi-x-circle me-1"></i>Decline
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="viewRequestDetails({{ request.id }})"
-                                        title="View full request details" data-bs-toggle="tooltip">
-                                    <i class="bi bi-eye me-1"></i>Details
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Recent Payment Transactions -->
-    {% if recent_payment_transactions %}
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Recent Payment Transactions</h5>
-            <a href="{% url 'super_payments' %}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-arrow-right me-1"></i>View All Transactions
+      </div>
+      <div class="col-lg-4">
+        <div class="hero-card p-4">
+          <h5 class="text-white mb-3">Quick Actions</h5>
+          <div class="d-grid gap-2">
+            <a href="{% url 'enroll_tenant' %}" class="btn btn-light btn-sm">
+              <i class="bi bi-plus-circle me-2"></i>Enroll Organization
             </a>
+            <a href="{% url 'super_orgs' %}" class="btn btn-outline-light btn-sm">
+              <i class="bi bi-building me-2"></i>Manage Organizations
+            </a>
+            <a href="{% url 'system_logs' %}" class="btn btn-outline-light btn-sm">
+              <i class="bi bi-journal-text me-2"></i>View System Logs
+            </a>
+          </div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Organization</th>
-                            <th>Amount</th>
-                            <th>Reference</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for payment in recent_payment_transactions %}
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-building text-primary me-2"></i>
-                                    <div>
-                                        <div class="fw-bold">{{ payment.organization.name }}</div>
-                                        <small class="text-muted">{{ payment.organization.slug }}</small>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="badge bg-success">₵{{ payment.amount|floatformat:2 }}</span>
-                            </td>
-                            <td>
-                                <code class="small">{{ payment.paystack_reference|truncatechars:20 }}</code>
-                            </td>
-                            <td>
-                                <small class="text-muted">{{ payment.created_at|date:"M d, Y H:i" }}</small>
-                            </td>
-                            <td>
-                                <span class="badge bg-success">
-                                    <i class="bi bi-check-circle me-1"></i>{{ payment.status|title }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+      </div>
     </div>
-    {% endif %}
-
-    <!-- System Status -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">System Status</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <i class="bi bi-server text-success fs-1 mb-2"></i>
-                            <h6>Database</h6>
-                            <span class="badge bg-success">Online</span>
-                        </div>
-                        <div class="col-md-3">
-                            <i class="bi bi-cloud text-primary fs-1 mb-2"></i>
-                            <h6>SMS Services</h6>
-                            <span class="badge bg-primary">Active</span>
-                        </div>
-                        <div class="col-md-3">
-                            <i class="bi bi-envelope text-info fs-1 mb-2"></i>
-                            <h6>Email Service</h6>
-                            <span class="badge bg-info">Active</span>
-                        </div>
-                        <div class="col-md-3">
-                            <i class="bi bi-shield-check text-warning fs-1 mb-2"></i>
-                            <h6>Security</h6>
-                            <span class="badge bg-warning">Secure</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 
-<!-- JavaScript for enrollment actions -->
+<div class="container-fluid py-4">
+  <!-- CSRF Token for AJAX requests -->
+  {% csrf_token %}
+
+  <!-- Alert for dry-run mode -->
+  {% if hubtel_dry_run or clicksend_dry_run %}
+  <div class="alert alert-warning alert-dismissible fade show">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Test Mode Active:</strong>
+    {% if hubtel_dry_run %}Hubtel{% endif %}
+    {% if clicksend_dry_run %}{% if hubtel_dry_run %} & {% endif %}ClickSend{% endif %}
+    are running in dry-run mode — outgoing messages are simulated.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
+
+  <!-- Enhanced Key Metrics -->
+  <div class="row mb-4 g-3">
+    <div class="col-xl-3 col-md-6">
+      <div class="metric-card-modern p-4 text-center text-white">
+        <div class="metric-icon mb-3">
+          <i class="bi bi-building fs-1"></i>
+        </div>
+        <div class="metric-value display-4 fw-bold mb-2">{{ total_orgs|default:0 }}</div>
+        <div class="metric-label">Active Organizations</div>
+        {% if active_orgs_recent %}
+        <div class="metric-trend mt-2">
+          <i class="bi bi-arrow-up-circle text-success me-1"></i>
+          {{ active_orgs_recent }} active this month
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+      <div class="metric-card-modern p-4 text-center text-white">
+        <div class="metric-icon mb-3">
+          <i class="bi bi-chat-dots fs-1"></i>
+        </div>
+        <div class="metric-value display-4 fw-bold mb-2">{{ total_sms_sent_all|default:0|format_number }}</div>
+        <div class="metric-label">Total SMS Sent</div>
+        {% if recent_sms %}
+        <div class="metric-trend mt-2">
+          <i class="bi bi-graph-up text-success me-1"></i>
+          {{ recent_sms|format_number }} this month
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+      <div class="metric-card-modern p-4 text-center text-white">
+        <div class="metric-icon mb-3">
+          <i class="bi bi-cash fs-1"></i>
+        </div>
+        <div class="metric-value display-4 fw-bold mb-2">₵{{ total_balance_all|default:0|floatformat:0|format_number }}</div>
+        <div class="metric-label">Total Balance</div>
+        {% if total_revenue %}
+        <div class="metric-trend mt-2">
+          <i class="bi bi-currency-dollar text-success me-1"></i>
+          ₵{{ total_revenue|floatformat:0|format_number }} revenue
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+      <div class="metric-card-modern p-4 text-center text-white">
+        <div class="metric-icon mb-3">
+          <i class="bi bi-person-plus fs-1"></i>
+        </div>
+        <div class="metric-value display-4 fw-bold mb-2">{{ pending_enrollment_requests|length }}</div>
+        <div class="metric-label">Pending Reviews</div>
+        {% if approved_enrollment_requests %}
+        <div class="metric-trend mt-2">
+          <i class="bi bi-check-circle text-success me-1"></i>
+          {{ approved_enrollment_requests|length }} ready for setup
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Trend Analytics Section -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="glassmorphism-card p-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <div>
+            <h4 class="mb-1 fw-bold text-white">
+              <i class="bi bi-graph-up me-2"></i>7-Day Trends
+            </h4>
+            <p class="text-white-50 mb-0">SMS delivery and organization growth patterns</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-light btn-sm" onclick="refreshTrends()">
+              <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-8">
+            <canvas id="trendsChart" height="200"></canvas>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex flex-column gap-3">
+              <div class="status-item p-3 rounded-3">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="bi bi-chat-dots-fill text-success fs-5 me-2"></i>
+                  <span class="fw-bold text-white">SMS Performance</span>
+                </div>
+                <div class="text-white-50 small">Average {{ avg_delivery_rate|floatformat:1 }}% delivery rate</div>
+              </div>
+              <div class="status-item p-3 rounded-3">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="bi bi-building-fill text-primary fs-5 me-2"></i>
+                  <span class="fw-bold text-white">Organization Growth</span>
+                </div>
+                <div class="text-white-50 small">{{ orgs_trend|sum }} new orgs this week</div>
+              </div>
+              <div class="status-item p-3 rounded-3">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="bi bi-cash-fill text-warning fs-5 me-2"></i>
+                  <span class="fw-bold text-white">Revenue Trend</span>
+                </div>
+                <div class="text-white-50 small">{{ payments_trend|sum }} payments this week</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Streamlined Enrollment Management -->
+  {% if pending_enrollment_requests or approved_enrollment_requests %}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="glassmorphism-card p-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <div>
+            <h4 class="mb-1 fw-bold text-white">
+              <i class="bi bi-people-fill me-2"></i>Enrollment Management
+            </h4>
+            <p class="text-white-50 mb-0">Review and process new organization requests</p>
+          </div>
+          <div class="d-flex gap-2">
+            {% if pending_enrollment_requests %}
+            <span class="badge bg-warning fs-6 px-3 py-2">{{ pending_enrollment_requests|length }} Pending</span>
+            {% endif %}
+            {% if approved_enrollment_requests %}
+            <span class="badge bg-success fs-6 px-3 py-2">{{ approved_enrollment_requests|length }} Ready</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Pending Requests -->
+        {% if pending_enrollment_requests %}
+        <div class="mb-4">
+          <h6 class="text-warning mb-3">
+            <i class="bi bi-exclamation-triangle me-2"></i>Requires Review
+          </h6>
+          <div class="row g-3">
+            {% for request in pending_enrollment_requests %}
+            <div class="col-md-6 col-lg-4">
+              <div class="glassmorphism-card p-3 border border-warning border-opacity-50">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="text-white mb-1">{{ request.org_name|truncatechars:25 }}</h6>
+                  <small class="text-white-50">{{ request.created_at|date:"M d" }}</small>
+                </div>
+                <div class="small text-white-50 mb-3">
+                  <div><i class="bi bi-person me-1"></i>{{ request.contact_name }}</div>
+                  <div><i class="bi bi-envelope me-1"></i>{{ request.email|truncatechars:25 }}</div>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-success btn-sm flex-fill" onclick="approveRequest({{ request.id }}, event)">
+                    <i class="bi bi-check-circle me-1"></i>Approve
+                  </button>
+                  <button class="btn btn-danger btn-sm flex-fill" onclick="rejectRequest({{ request.id }})">
+                    <i class="bi bi-x-circle me-1"></i>Reject
+                  </button>
+                  <button class="btn btn-outline-light btn-sm" onclick="viewRequestDetails({{ request.id }})">
+                    <i class="bi bi-eye me-1"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Approved Requests Ready for Setup -->
+        {% if approved_enrollment_requests %}
+        <div>
+          <h6 class="text-success mb-3">
+            <i class="bi bi-check-circle me-2"></i>Ready for Account Creation
+          </h6>
+          <div class="row g-3">
+            {% for request in approved_enrollment_requests %}
+            <div class="col-md-6 col-lg-4">
+              <div class="glassmorphism-card p-3 border border-success border-opacity-50">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="text-white mb-1">{{ request.org_name|truncatechars:25 }}</h6>
+                  <small class="text-white-50">{{ request.reviewed_at|date:"M d" }}</small>
+                </div>
+                <div class="small text-white-50 mb-3">
+                  <div><i class="bi bi-person me-1"></i>{{ request.contact_name }}</div>
+                  <div><i class="bi bi-envelope me-1"></i>{{ request.email|truncatechars:25 }}</div>
+                </div>
+                <div class="d-flex gap-2">
+                  <a href="{% url 'enroll_tenant' %}?prefill={{ request.id }}" class="btn btn-primary btn-sm flex-fill">
+                    <i class="bi bi-plus-circle me-1"></i>Create Account
+                  </a>
+                  <button class="btn btn-danger btn-sm" onclick="declineApprovedRequest({{ request.id }})">
+                    <i class="bi bi-x-circle me-1"></i>Decline
+                  </button>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Recent Activity & Quick Access -->
+  <div class="row mb-4">
+    <!-- Recent Payments -->
+    {% if recent_payment_transactions %}
+    <div class="col-lg-6">
+      <div class="glassmorphism-card p-4 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-cash-fill text-warning fs-4 me-3"></i>
+            <h5 class="mb-0 fw-bold text-white">Recent Payments</h5>
+          </div>
+          <a href="{% url 'super_payments' %}" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-arrow-right me-1"></i>View All
+          </a>
+        </div>
+        <div class="space-y-3">
+          {% for payment in recent_payment_transactions %}
+          <div class="d-flex align-items-center justify-content-between p-3 rounded-3 status-item">
+            <div class="d-flex align-items-center">
+              <div class="avatar-modern rounded-circle d-flex align-items-center justify-content-center me-3 fw-bold">
+                {{ payment.organization.name|slice:":1"|upper }}
+              </div>
+              <div>
+                <div class="fw-bold text-white">{{ payment.organization.name|truncatechars:20 }}</div>
+                <small class="text-white-50">{{ payment.created_at|date:"M d, H:i" }}</small>
+              </div>
+            </div>
+            <div class="text-end">
+              <div class="fw-bold text-success">₵{{ payment.amount|floatformat:2 }}</div>
+              <small class="badge-modern bg-success">{{ payment.status|title }}</small>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Access Panel -->
+    <div class="col-lg-6">
+      <div class="glassmorphism-card p-4 h-100">
+        <div class="d-flex align-items-center mb-4">
+          <i class="bi bi-grid-fill text-info fs-4 me-3"></i>
+          <h5 class="mb-0 fw-bold text-white">Quick Access</h5>
+        </div>
+        <div class="row g-3">
+          <div class="col-6">
+            <a href="{% url 'super_orgs' %}" class="action-card p-3 text-center text-decoration-none">
+              <div class="action-icon mb-2">
+                <i class="bi bi-building fs-3 text-primary"></i>
+              </div>
+              <div class="fw-bold text-white small">Organizations</div>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="{% url 'global_templates' %}" class="action-card p-3 text-center text-decoration-none">
+              <div class="action-icon mb-2">
+                <i class="bi bi-file-earmark-text fs-3 text-success"></i>
+              </div>
+              <div class="fw-bold text-white small">Templates</div>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="{% url 'system_logs' %}" class="action-card p-3 text-center text-decoration-none">
+              <div class="action-icon mb-2">
+                <i class="bi bi-journal-text fs-3 text-warning"></i>
+              </div>
+              <div class="fw-bold text-white small">System Logs</div>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="{% url 'audit_message_logs' %}" class="action-card p-3 text-center text-decoration-none">
+              <div class="action-icon mb-2">
+                <i class="bi bi-shield-check fs-3 text-danger"></i>
+              </div>
+              <div class="fw-bold text-white small">Audit Logs</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- JavaScript for enrollment actions and charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-function viewRequestDetails(requestId) {
-    // For now, just redirect to enroll page with prefill
-    // In future, could show a modal with full details
-    window.location.href = `/super/enroll/?prefill=${requestId}`;
+let trendsChart = null;
+
+// Initialize trends chart
+function initTrendsChart() {
+  const ctx = document.getElementById('trendsChart');
+  if (!ctx) return;
+
+  const messagesData = {{ messages_trend|safe }};
+  const orgsData = {{ orgs_trend|safe }};
+  const deliveryData = {{ delivery_trend|safe }};
+
+  // Generate labels for last 7 days
+  const labels = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  }
+
+  trendsChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'SMS Sent',
+        data: messagesData,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        tension: 0.4,
+        fill: true
+      }, {
+        label: 'New Organizations',
+        data: orgsData,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: 'rgba(255, 255, 255, 0.8)'
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.7)'
+          }
+        },
+        y: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.7)'
+          }
+        }
+      }
+    }
+  });
 }
-</script>
+
+function refreshTrends() {
+  // Add loading state
+  const refreshBtn = document.querySelector('button[onclick="refreshTrends()"]');
+  const originalText = refreshBtn.innerHTML;
+  refreshBtn.disabled = true;
+  refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise bi-spin me-1"></i>Refreshing...';
+
+  // Simulate refresh (in real implementation, this would fetch new data)
+  setTimeout(() => {
+    // Reinitialize chart with potentially new data
+    if (trendsChart) {
+      trendsChart.destroy();
+    }
+    initTrendsChart();
+
+    // Reset button
+    refreshBtn.disabled = false;
+    refreshBtn.innerHTML = originalText;
+
+    showToast('Trends updated successfully!', 'success');
+  }, 1500);
+}
+
+// Add fade-in animations on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize chart
+  initTrendsChart();
+
+  // Animate metric cards
+  const metricCards = document.querySelectorAll('.metric-card-modern');
+  metricCards.forEach((card, index) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      card.style.transition = 'all 0.6s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, index * 100);
+  });
+
+  // Animate action cards
+  const actionCards = document.querySelectorAll('.action-card');
+  actionCards.forEach((card, index) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      card.style.transition = 'all 0.6s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, (index * 100) + 400);
+  });
+
+  // Add hover effects for table rows
+  const tableRows = document.querySelectorAll('.table-row-hover');
+  tableRows.forEach(row => {
+    row.addEventListener('mouseenter', function() {
+      this.style.transform = 'scale(1.01)';
+    });
+    row.addEventListener('mouseleave', function() {
+      this.style.transform = 'scale(1)';
+    });
+  });
+
+  // Add click ripple effect for buttons
+  const buttons = document.querySelectorAll('.btn, .action-card');
+  buttons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      const ripple = document.createElement('div');
+      ripple.style.position = 'absolute';
+      ripple.style.borderRadius = '50%';
+      ripple.style.background = 'rgba(255, 255, 255, 0.3)';
+      ripple.style.transform = 'scale(0)';
+      ripple.style.animation = 'ripple 0.6s linear';
+      ripple.style.left = (e.offsetX - 10) + 'px';
+      ripple.style.top = (e.offsetY - 10) + 'px';
+      ripple.style.width = '20px';
+      ripple.style.height = '20px';
+
+      this.style.position = 'relative';
+      this.style.overflow = 'hidden';
+      this.appendChild(ripple);
+
+      setTimeout(() => {
+        ripple.remove();
+      }, 600);
+    });
+  });
+});
+
+// Add ripple animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes ripple {
+    to {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+  .bi-spin {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+document.head.appendChild(style);
 
               <div class="action-icon mb-3">
                 <i class="bi bi-journal-text fs-2 text-secondary"></i>
@@ -448,7 +575,7 @@ function viewRequestDetails(requestId) {
         <div class="d-flex align-items-center justify-content-between mb-4">
           <div class="d-flex align-items-center">
             <i class="bi bi-building-fill text-primary fs-4 me-3"></i>
-            <h3 class="h4 mb-0 fw-bold">Recent Organizations</h3>
+            <h4 class="mb-0 fw-bold text-white">Recent Organizations</h4>
           </div>
           <a href="{% url 'super_orgs' %}" class="btn btn-outline-light btn-sm">
             View All <i class="bi bi-arrow-right ms-1"></i>
@@ -460,12 +587,12 @@ function viewRequestDetails(requestId) {
           <table class="table table-hover-modern">
             <thead>
               <tr>
-                <th class="border-0 fw-bold">Organization</th>
-                <th class="border-0 fw-bold">Type</th>
-                <th class="border-0 fw-bold">SMS Sent</th>
-                <th class="border-0 fw-bold">Balance</th>
-                <th class="border-0 fw-bold">Status</th>
-                <th class="border-0 fw-bold">Actions</th>
+                <th class="border-0 fw-bold text-white">Organization</th>
+                <th class="border-0 fw-bold text-white">Type</th>
+                <th class="border-0 fw-bold text-white">SMS Sent</th>
+                <th class="border-0 fw-bold text-white">Balance</th>
+                <th class="border-0 fw-bold text-white">Status</th>
+                <th class="border-0 fw-bold text-white">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -473,20 +600,20 @@ function viewRequestDetails(requestId) {
               <tr class="table-row-hover">
                 <td class="border-0">
                   <div class="d-flex align-items-center">
-                    <div class="org-avatar rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3 fw-bold" style="width:40px; height:40px;">
+                    <div class="org-avatar rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3 fw-bold">
                       {{ org.name|slice:":1"|upper }}
                     </div>
                     <div>
-                      <div class="fw-bold">{{ org.name }}</div>
-                      <small class="text-muted">{{ org.slug }}</small>
+                      <div class="fw-bold text-white">{{ org.name }}</div>
+                      <small class="text-white-50">{{ org.slug }}</small>
                     </div>
                   </div>
                 </td>
                 <td class="border-0">
                   <span class="badge-modern bg-primary">{{ org.get_org_type_display }}</span>
                 </td>
-                <td class="border-0 fw-semibold">{{ org.total_sms_sent|format_number }}</td>
-                <td class="border-0 fw-semibold">₵{{ org.balance|floatformat:2 }}</td>
+                <td class="border-0 fw-semibold text-white">{{ org.total_sms_sent|format_number }}</td>
+                <td class="border-0 fw-semibold text-white">₵{{ org.balance|floatformat:2 }}</td>
                 <td class="border-0">
                   {% if org.is_active %}
                     <span class="badge-modern bg-success">
@@ -540,30 +667,30 @@ function viewRequestDetails(requestId) {
         <div class="glassmorphism-card p-4">
           <div class="d-flex align-items-center mb-4">
             <i class="bi bi-info-circle-fill text-info fs-4 me-3"></i>
-            <h5 class="mb-0 fw-bold">System Status</h5>
+            <h5 class="mb-0 fw-bold text-white">System Status</h5>
           </div>
 
-          <div class="status-item d-flex align-items-center mb-3 p-3 rounded-3" style="background: rgba(25, 135, 84, 0.1);">
+          <div class="status-item d-flex align-items-center mb-3 p-3 rounded-3">
             <div class="status-icon me-3">
               <i class="bi bi-check-circle-fill text-success fs-4"></i>
             </div>
             <div class="flex-grow-1">
               <div class="fw-bold text-success">System Health</div>
-              <small class="text-muted">All services operational</small>
+              <small class="text-white-50">All services operational</small>
             </div>
           </div>
 
-          <div class="status-item d-flex align-items-center mb-3 p-3 rounded-3" style="background: rgba(13, 110, 253, 0.1);">
+          <div class="status-item d-flex align-items-center mb-3 p-3 rounded-3">
             <div class="status-icon me-3">
               <i class="bi bi-database-fill text-primary fs-4"></i>
             </div>
             <div class="flex-grow-1">
               <div class="fw-bold text-primary">Database</div>
-              <small class="text-muted">Connected and responsive</small>
+              <small class="text-white-50">Connected and responsive</small>
             </div>
           </div>
 
-          <div class="status-item d-flex align-items-center p-3 rounded-3 {% if hubtel_dry_run or clicksend_dry_run %}bg-warning bg-opacity-10{% else %}bg-success bg-opacity-10{% endif %}">
+          <div class="status-item d-flex align-items-center p-3 rounded-3 {% if hubtel_dry_run or clicksend_dry_run %}border border-warning{% else %}border border-success{% endif %}">
             <div class="status-icon me-3">
               {% if hubtel_dry_run or clicksend_dry_run %}
                 <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
@@ -573,7 +700,7 @@ function viewRequestDetails(requestId) {
             </div>
             <div class="flex-grow-1">
               <div class="fw-bold {% if hubtel_dry_run or clicksend_dry_run %}text-warning{% else %}text-success{% endif %}">SMS Providers</div>
-              <small class="text-muted">
+              <small class="text-white-50">
                 {% if hubtel_dry_run or clicksend_dry_run %}
                   Test mode active
                 {% else %}
@@ -588,21 +715,21 @@ function viewRequestDetails(requestId) {
         <div class="glassmorphism-card p-4">
           <div class="d-flex align-items-center mb-4">
             <i class="bi bi-bar-chart-fill text-success fs-4 me-3"></i>
-            <h5 class="mb-0 fw-bold">Quick Stats</h5>
+            <h5 class="mb-0 fw-bold text-white">Quick Stats</h5>
           </div>
 
           <div class="quick-stat-item d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-white border-opacity-10">
-            <span class="text-muted">This Week</span>
+            <span class="text-white-50">This Week</span>
             <span class="fw-bold text-success">+{{ recent_sms|default:0|format_number }}</span>
           </div>
 
           <div class="quick-stat-item d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom border-white border-opacity-10">
-            <span class="text-muted">Active Orgs</span>
+            <span class="text-white-50">Active Orgs</span>
             <span class="fw-bold text-primary">{{ active_orgs_recent|default:0 }}</span>
           </div>
 
           <div class="quick-stat-item d-flex justify-content-between align-items-center">
-            <span class="text-muted">Avg Response</span>
+            <span class="text-white-50">Avg Response</span>
             <span class="fw-bold text-info">< 2s</span>
           </div>
         </div>
@@ -815,6 +942,115 @@ function declineApprovedRequest(requestId) {
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('confirmRejectBtn').addEventListener('click', submitRejection);
   
+  // Initialize tooltips
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+});
+
+// Enrollment request management functions
+function viewRequestDetails(requestId) {
+    // For now, just redirect to enroll page with prefill
+    // In future, could show a modal with full details
+    window.location.href = `/super/enroll/?prefill=${requestId}`;
+}
+
+function rejectRequest(requestId) {
+  // Store the request ID for the modal submission
+  window.currentRejectRequestId = requestId;
+
+  // Clear previous reason
+  document.getElementById('rejectionReason').value = '';
+
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+  modal.show();
+}
+
+function submitRejection() {
+  const requestId = window.currentRejectRequestId;
+  const reason = document.getElementById('rejectionReason').value.trim();
+
+  if (!reason) {
+    alert('Please provide a rejection reason.');
+    return;
+  }
+
+  // Disable button to prevent double submission
+  const btn = document.getElementById('confirmRejectBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Rejecting...';
+
+  fetch(`/super/reject-enrollment/${requestId}/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+    body: new URLSearchParams({ reason: reason })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Hide modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
+      modal.hide();
+
+      // Show success toast
+      showToast('Enrollment request rejected successfully!', 'success');
+
+      // Remove the request card with animation
+      const requestCard = document.querySelector(`[data-request-id="${requestId}"]`);
+      if (requestCard) {
+        requestCard.style.transition = 'all 0.3s ease';
+        requestCard.style.opacity = '0';
+        requestCard.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          requestCard.remove();
+          location.reload(); // Reload to update counts
+        }, 300);
+      } else {
+        setTimeout(() => location.reload(), 1000);
+      }
+    } else {
+      showToast('Error: ' + (data.error || 'Unknown error occurred'), 'error');
+      // Re-enable button
+      btn.disabled = false;
+      btn.innerHTML = 'Reject Request';
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('An error occurred while processing the request.');
+    // Re-enable button
+    btn.disabled = false;
+    btn.innerHTML = 'Reject Request';
+  });
+}
+
+// Function to decline an already approved request
+function declineApprovedRequest(requestId) {
+  // Store the request ID for the modal submission
+  window.currentRejectRequestId = requestId;
+
+  // Clear previous reason
+  document.getElementById('rejectionReason').value = '';
+
+  // Update modal title to reflect this is declining an approved request
+  document.getElementById('rejectModalLabel').textContent = 'Decline Approved Enrollment Request';
+
+  // Show modal
+  const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+  modal.show();
+}
+
+// Add event listener for the reject button
+document.addEventListener('DOMContentLoaded', function() {
+  const confirmRejectBtn = document.getElementById('confirmRejectBtn');
+  if (confirmRejectBtn) {
+    confirmRejectBtn.addEventListener('click', submitRejection);
+  }
+
   // Initialize tooltips
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
   tooltipTriggerList.map(function (tooltipTriggerEl) {

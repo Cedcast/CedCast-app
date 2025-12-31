@@ -104,6 +104,81 @@ def send_sms(to_number, message_body, tenant: School):
         raise Exception(f"Hubtel send error: {e}")
 
 
+def send_sms_with_credentials(to_number, message_body, api_url=None, client_id=None, client_secret=None, api_key=None, sender_id=None):
+    """
+    Send SMS using explicit Hubtel credentials (for sender pool).
+
+    Arguments:
+        to_number (str): recipient phone number
+        message_body (str): message text
+        api_url (str): Hubtel API URL
+        client_id (str): Hubtel client ID
+        client_secret (str): Hubtel client secret
+        api_key (str): Hubtel API key (alternative to client_secret)
+        sender_id (str): sender ID to use
+
+    Returns:
+        str: message id
+    """
+    if not api_url:
+        raise Exception("Hubtel API URL not provided")
+
+    if not client_id or not (client_secret or api_key):
+        raise Exception("Hubtel credentials not provided")
+
+    # Use api_key as client_secret if provided
+    if not client_secret and api_key:
+        client_secret = api_key
+
+    try:
+        import requests
+    except Exception as e:
+        logger.exception("requests library is required for Hubtel integration")
+        raise Exception("requests library is required to call Hubtel API")
+
+    # Normalize numeric MSISDNs
+    def _normalize_number(n: str) -> str | None:
+        if not n:
+            return None
+        return n.lstrip('+').strip()
+
+    to_norm = _normalize_number(to_number)
+    from_norm = _normalize_number(sender_id) if sender_id else None
+
+    params = [
+        ('clientid', client_id),
+        ('clientsecret', client_secret),
+    ]
+    if from_norm:
+        params.append(('from', from_norm))
+    params.append(('to', to_norm if to_norm is not None else to_number))
+    params.append(('content', message_body))
+
+    try:
+        resp = requests.get(api_url, params=params, timeout=15)
+        resp.raise_for_status()
+        try:
+            data = resp.json()
+        except Exception:
+            data = {'response_text': resp.text}
+
+        message_id = None
+        if isinstance(data, dict):
+            for key in ('message_id', 'messageId', 'id', 'MessageId'):
+                if key in data:
+                    message_id = data.get(key)
+                    break
+            if not message_id:
+                message_id = data.get('response_text') or str(data)
+        else:
+            message_id = str(data)
+
+        return message_id
+    except Exception as e:
+        logger.exception("Error sending SMS via Hubtel: %s", e)
+        raise Exception(f"Hubtel send error: {e}")
+
+
 def get_sms_delivery_status(message_id, tenant: School):
     """
     Query Hubtel for delivery status.

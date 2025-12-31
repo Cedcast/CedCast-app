@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Organization Management — CedCast{% endblock %}
+{% block title %}Tenant Management — CedCast{% endblock %}
 
 {% block body_class %}bg-light{% endblock %}
 
@@ -38,7 +38,7 @@
         </li>
         <li class="nav-item">
           <a class="nav-link active" href="{% url 'super_orgs' %}">
-            <i class="bi bi-building me-1"></i>Organizations
+            <i class="bi bi-building me-1"></i>Tenants
           </a>
         </li>
         <li class="nav-item">
@@ -160,21 +160,22 @@
       </div>
     </div>
 
-    <!-- Organizations Table -->
+    <!-- Tenants Table -->
     <div class="col-lg-8">
       <div class="dashboard-card">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
           <h5 class="mb-0">
-            <i class="bi bi-list-ul me-2"></i>All Organizations
+            <i class="bi bi-list-ul me-2"></i>All Tenants
           </h5>
-          <span class="badge bg-light text-primary">{{ orgs|length }} organizations</span>
+          <span class="badge bg-light text-primary">{{ tenants|length }} tenants</span>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table table-hover mb-0">
               <thead class="table-light">
                 <tr>
-                  <th class="border-0">Organization</th>
+                  <th class="border-0">Tenant</th>
+                  <th class="border-0">Type</th>
                   <th class="border-0">Slug</th>
                   <th class="border-0">Sender ID</th>
                   <th class="border-0 text-center">Status</th>
@@ -182,42 +183,39 @@
                 </tr>
               </thead>
               <tbody>
-                {% for org in orgs %}
+                {% for tenant in tenants %}
                 <tr>
                   <td>
                     <div class="d-flex align-items-center">
-                      {% if org.logo %}
-                        <img src="{{ org.logo.url }}" alt="{{ org.name }}" class="rounded me-3" style="width:40px; height:40px; object-fit:cover;">
-                      {% else %}
-                        <div class="bg-secondary text-white rounded me-3 d-flex align-items-center justify-content-center fw-bold" style="width:40px; height:40px;">
-                          {{ org.name|slice:":1"|upper }}
-                        </div>
-                      {% endif %}
+                      <div class="bg-secondary text-white rounded me-3 d-flex align-items-center justify-content-center fw-bold" style="width:40px; height:40px;">
+                        {{ tenant.name|slice:":1"|upper }}
+                      </div>
                       <div>
-                        <div class="fw-bold">{{ org.name }}</div>
-                        <small class="text-muted">{{ org.org_type|title }}</small>
+                        <div class="fw-bold">{{ tenant.name }}</div>
+                        <small class="text-muted">{{ tenant.org_type|title }}</small>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <code class="small">{{ org.slug }}</code>
+                    <span class="badge bg-info">{{ tenant.type|title }}</span>
                   </td>
                   <td>
-                    {% if org.sender_id %}
-                      <span class="badge bg-success">{{ org.sender_id }}</span>
-                    {% else %}
-                      <span class="text-muted small">Not set</span>
-                    {% endif %}
+                    <code class="small">{{ tenant.slug }}</code>
+                  </td>
+                  <td>
+                    <span class="text-muted small">N/A</span>
                   </td>
                   <td class="text-center">
-                    {% if org.onboarded and org.is_active %}
+                    {% if tenant.is_active %}
                       <span class="badge bg-success">
                         <i class="bi bi-check-circle me-1"></i>Active
                       </span>
-                    {% elif org.onboarded and not org.is_active %}
+                    {% else %}
                       <span class="badge bg-warning text-dark">
-                        <i class="bi bi-pause-circle me-1"></i>Suspended
+                        <i class="bi bi-pause-circle me-1"></i>Inactive
                       </span>
+                    {% endif %}
+                  </td>
                     {% else %}
                       <span class="badge bg-secondary">
                         <i class="bi bi-clock me-1"></i>Pending
@@ -225,19 +223,37 @@
                     {% endif %}
                   </td>
                   <td class="text-center">
-                    <a href="{% url 'super_edit_org' org_slug=org.slug %}" class="btn btn-sm btn-outline-primary">
-                      <i class="bi bi-pencil me-1"></i>Edit
-                    </a>
+                    <div class="btn-group" role="group">
+                      {% if tenant.type == 'organization' %}
+                      <button class="btn btn-sm btn-outline-secondary configure-btn" data-slug="{{ tenant.slug }}" data-name="{{ tenant.name }}">
+                        <i class="bi bi-gear"></i>
+                      </button>
+                      {% if tenant.is_active %}
+                      <button class="btn btn-sm btn-outline-warning suspend-btn" data-slug="{{ tenant.slug }}" data-name="{{ tenant.name }}">
+                        <i class="bi bi-pause"></i>
+                      </button>
+                      {% else %}
+                      <button class="btn btn-sm btn-outline-success activate-btn" data-slug="{{ tenant.slug }}" data-name="{{ tenant.name }}">
+                        <i class="bi bi-play"></i>
+                      </button>
+                      {% endif %}
+                      {% endif %}
+                      {% if tenant.type == 'school' %}
+                      <button class="btn btn-sm btn-outline-danger remove-btn" data-slug="{{ tenant.slug }}" data-name="{{ tenant.name }}">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                      {% endif %}
+                    </div>
                   </td>
                 </tr>
                 {% empty %}
                 <tr>
-                  <td colspan="5" class="text-center py-4">
+                  <td colspan="6" class="text-center py-4">
                     <div class="text-muted">
                       <i class="bi bi-building display-4 mb-3"></i>
-                      <p>No organizations found.</p>
+                      <p>No tenants found.</p>
                       <a href="{% url 'enroll_tenant' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-1"></i>Enroll First Organization
+                        <i class="bi bi-plus-circle me-1"></i>Enroll First Tenant
                       </a>
                     </div>
                   </td>
@@ -358,6 +374,62 @@
 {% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function(){
+    // New button handlers
+    // Configure button
+    document.querySelectorAll('.configure-btn').forEach(btn => {
+        btn.addEventListener('click', function(){
+            const slug = this.getAttribute('data-slug');
+            const name = this.getAttribute('data-name');
+            document.getElementById('modal-cfg-slug').value = slug;
+            document.getElementById('modal-cfg-slug-label').textContent = name;
+            const modal = new bootstrap.Modal(document.getElementById('configureModal'));
+            modal.show();
+        });
+    });
+
+    // Suspend button
+    document.querySelectorAll('.suspend-btn').forEach(btn => {
+        btn.addEventListener('click', function(){
+            const slug = this.getAttribute('data-slug');
+            const name = this.getAttribute('data-name');
+            document.getElementById('modal-suspend-slug').value = slug;
+            document.getElementById('modal-suspend-slug-label').textContent = name;
+            const modal = new bootstrap.Modal(document.getElementById('suspendModal'));
+            modal.show();
+        });
+    });
+
+    // Activate button
+    document.querySelectorAll('.activate-btn').forEach(btn => {
+        btn.addEventListener('click', function(){
+            const slug = this.getAttribute('data-slug');
+            const name = this.getAttribute('data-name');
+            document.getElementById('modal-activate-slug').value = slug;
+            document.getElementById('modal-activate-slug-label').textContent = name;
+            const modal = new bootstrap.Modal(document.getElementById('activateModal'));
+            modal.show();
+        });
+    });
+
+    // Remove button for schools
+    document.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', function(){
+            const slug = this.getAttribute('data-slug');
+            const name = this.getAttribute('data-name');
+            if(confirm(`Are you sure you want to remove ${name}?`)){
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}" />
+                    <input type="hidden" name="slug" value="${slug}" />
+                    <input type="hidden" name="action" value="suspend" />
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    });
+
     // Configure modal population
     const cfgBtn = document.querySelector('[data-bs-target="#configureModal"]');
     if(cfgBtn){

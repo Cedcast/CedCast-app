@@ -81,47 +81,32 @@ class Command(BaseCommand):
                     ar.save()
                     continue
 
-                # Prefer Hubtel as the primary provider; fall back to ClickSend when Hubtel fails or is not configured
-                sent_id = None
+                # Use the new sender pool system
+                from core.utils.sender_utils import send_sms_through_sender_pool
                 try:
-                    sent_id = hubtel_utils.send_sms(phone, content, tenant)
-                except Exception as e_hub:
-                    logger.warning("Hubtel send failed for %s: %s", phone, e_hub)
-                    if clicksend_utils is not None:
-                        try:
-                            sent_id = clicksend_utils.send_sms(phone, content, tenant)
-                        except Exception as e_click:
-                            raise Exception(f"Hubtel error: {e_hub}; ClickSend error: {e_click}")
+                    # For background commands, we don't have a user context, so pass None
+                    processed_count, total_cost, sender_used = send_sms_through_sender_pool(
+                        tenant, ar.message, content, None
+                    )
+                    
+                    # Since we're processing individual recipients, check if this specific one was sent
+                    ar.refresh_from_db()  # Reload to get updated status
+                    if ar.status == 'sent':
+                        self.stdout.write(f"Sent to {phone} via {sender_used.name if sender_used else 'unknown sender'} (cost: ₵{total_cost:.2f})")
                     else:
-                        raise Exception(f"Hubtel error: {e_hub}; ClickSend not available")
-
-                # success
-                ar.provider_message_id = str(sent_id)
-                ar.status = 'sent'
-                ar.sent_at = timezone.now()
-                ar.error_message = ''
-                ar.save()
-
-                # if all recipients for the message are sent, mark message.sent
-                msg = ar.message
-                pending_exists = msg.recipients_status.filter(status='pending').exists()
-                if not pending_exists:
-                    msg.sent = True
-                    msg.save()
-
-                self.stdout.write(f"Sent to {phone} (id={ar.provider_message_id})")
-
-            except Exception as e:
-                logger.exception("Failed sending to %s: %s", phone, e)
-                # increment retry counter
-                ar.retry_count = (ar.retry_count or 0) + 1
-                ar.last_retry_at = timezone.now()
-                ar.error_message = str(e)
-                if ar.retry_count >= max_retries:
-                    ar.status = 'failed'
-                else:
-                    ar.status = 'pending'
-                ar.save()
-                self.stdout.write(f"Failed {phone}: {e} (retry {ar.retry_count}/{max_retries})")
+                        raise Exception("Message was not sent successfully")
+                        
+                except Exception as e:
+                    logger.exception("Failed sending to %s: %s", phone, e)
+                    # increment retry counter
+                    ar.retry_count = (ar.retry_count or 0) + 1
+                    ar.last_retry_at = timezone.now()
+                    ar.error_message = str(e)
+                    if ar.retry_count >= max_retries:
+                        ar.status = 'failed'
+                    else:
+                        ar.status = 'pending'
+                    ar.save()
+                    self.stdout.write(f"Failed {phone}: {e} (retry {ar.retry_count}/{max_retries})")
 
         self.stdout.write(f"Done — processed {processed} recipients")

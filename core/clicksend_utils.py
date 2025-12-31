@@ -80,6 +80,64 @@ def send_sms(to_number, message_body, school: School):
         raise Exception(f"Error sending SMS: {str(e)}")
 
 
+def send_sms_with_credentials(to_number, message_body, username=None, api_key=None, sender_id=None):
+    """
+    Send SMS using explicit ClickSend credentials (for sender pool).
+
+    Args:
+        to_number (str): Recipient phone number
+        message_body (str): Message content
+        username (str): ClickSend username
+        api_key (str): ClickSend API key
+        sender_id (str): Sender ID to use
+
+    Returns:
+        str: Message ID from ClickSend
+
+    Raises:
+        Exception: If credentials not provided or API call fails
+    """
+    if not (username and api_key):
+        raise Exception("ClickSend credentials not provided")
+
+    # Configure ClickSend client
+    configuration = clicksend_client.Configuration()
+    configuration.username = username
+    configuration.password = api_key
+
+    # Create API instance
+    api_instance = SMSApi(clicksend_client.ApiClient(configuration))
+
+    # Prepare SMS message
+    sms_message = SmsMessage(
+        source="django",
+        body=message_body,
+        to=to_number,
+        _from=sender_id if sender_id else None,
+        custom_string="cedcast"
+    )
+
+    sms_messages = SmsMessageCollection(messages=[sms_message])
+
+    try:
+        api_response = api_instance.sms_send_post(sms_messages)
+
+        if api_response.response_code == "SUCCESS":
+            if api_response.data.messages and len(api_response.data.messages) > 0:
+                return api_response.data.messages[0].message_id
+            else:
+                raise Exception("No message ID returned from ClickSend")
+        else:
+            raise Exception(f"ClickSend API error: {api_response.response_msg}")
+
+    except ApiException as e:
+        logger.exception("ClickSend API exception during sms_send_post")
+        raise Exception(f"ClickSend API exception: {str(e)}")
+    except Exception as e:
+        logger.exception("Unexpected error during sms_send_post")
+        raise Exception(f"Error sending SMS: {str(e)}")
+
+
 def get_sms_delivery_status(message_id, school: School):
     """
     Check delivery status of a sent SMS

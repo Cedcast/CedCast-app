@@ -1,6 +1,4 @@
 <!DOCTYPE html>
-
-<!DOCTYPE html>
 <html>
 <head>
     <title>CedCast SMS platform</title>
@@ -40,68 +38,142 @@
                 </form>
             </div>
         </div>
-        <div class="parent-list">
-            <h3>Contacts & Profiles</h3>
-            <ul>
-                {% for parent in school.parent_set.all %}
-                    <li>
-                        <strong>{{ parent.name }}</strong> - {{ parent.phone_number }}<br>
-                        <span style="font-size:0.95em; color:#555;">Wards:
-                            {% if parent.wards.all %}
-                                {% for ward in parent.wards.all %}
-                                    {{ ward.name }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
-                            {% else %}
-                                None
-                            {% endif %}
-                        </span>
-                    </li>
-                {% empty %}
-                    <li>No parents added yet.</li>
-                {% endfor %}
-            </ul>
+
+        <!-- Metrics -->
+        <div class="row mb-3">
+            <div class="col-sm-6 col-md-3 mb-2">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">Contacts</h6>
+                        <h3 class="card-title">{{ contacts_count|default:0 }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3 mb-2">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">Templates</h6>
+                        <h3 class="card-title">{{ templates_count|default:0 }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3 mb-2">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">Sent Today</h6>
+                        <h3 class="card-title">{{ msgs_sent_today|default:0 }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3 mb-2">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">Delivery Rate</h6>
+                        <h3 class="card-title">{{ delivery_rate|floatformat:1 }}%</h3>
+                    </div>
+                </div>
+            </div>
         </div>
-        <h3>Add Contact & Profile</h3>
-        <form method="post">
-            {% csrf_token %}
-            <label for="name">Contact Name:</label>
-            <input type="text" name="parent_name" required>
-            <label for="phone_number">Phone Number:</label>
-            <input type="text" name="parent_phone" required placeholder="Include country code, e.g. +233501234567">
-            <small style="color: #888;">Include country code. Example: +233501234567</small>
-            <label for="ward_name">Profile Name:</label>
-            <input type="text" name="ward_name" required>
-            <button type="submit">Add Contact & Profile</button>
-        </form>
-        <h3>Schedule SMS Alert</h3>
-    <form method="post" action="{% url 'school_dashboard' school.slug %}">
-            {% csrf_token %}
-            <label for="sms_body">Message Content:</label>
-            <input type="text" name="sms_body" required>
-            <label for="scheduled_time">Scheduled Time:</label>
-            <input type="datetime-local" name="scheduled_time" required>
-            <label for="recipients">Send to (comma-separated phone numbers, or leave blank for all):</label>
-            <input type="text" name="recipients">
-            <button type="submit">Schedule SMS</button>
-        </form>
-        <h3>Scheduled & Sent Messages</h3>
-        <ul>
-            {% for message in messages %}
-                <li>
-                    <strong>{{ message.content }}</strong><br>
-                    Scheduled: {{ message.scheduled_time|date:'Y-m-d H:i' }}<br>
-                    Status: {% if message.sent %}Sent{% else %}Pending{% endif %}<br>
-                    Recipients:
-                    <ul>
-                        {% for ar in message.recipients_status.all %}
-                            <li>{{ ar.parent.name }} ({{ ar.parent.phone_number }}): {{ ar.status }}{% if ar.sent_at %} at {{ ar.sent_at|date:'Y-m-d H:i' }}{% endif %}{% if ar.error_message %} <span style="color:red;">Error: {{ ar.error_message }}</span>{% endif %}</li>
-                        {% endfor %}
-                    </ul>
-                </li>
-            {% empty %}
-                <li>No messages scheduled or sent yet.</li>
-            {% endfor %}
-        </ul>
+
+        <div class="row mb-3">
+            <div class="col-md-6 mb-2">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">Quick Actions</div>
+                    <div class="card-body">
+                        <a href="{% url 'school_send_sms' school.slug %}" class="btn btn-sm btn-outline-primary me-2">Send SMS</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-2">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">Add Contact</div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input name="parent_name" class="form-control" placeholder="Full name" />
+                                </div>
+                                <div class="col-6">
+                                    <input name="parent_phone" class="form-control" placeholder="Phone (include +233)" />
+                                </div>
+                                <div class="col-12">
+                                    <input name="ward_name" class="form-control" placeholder="Profile Name" />
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button class="btn btn-primary btn-sm" type="submit">Add Contact</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-2">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">Messages (Last 7 days)</div>
+                    <div class="card-body">
+                        <p>Sent this week: <strong>{{ msgs_sent_week|default:0 }}</strong></p>
+                        <p>Sent this month: <strong>{{ msgs_sent_month|default:0 }}</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">Contacts & Profiles</div>
+                    <div class="card-body">
+                        <ul>
+                            {% for parent in school.parent_set.all %}
+                                <li>
+                                    <strong>{{ parent.name }}</strong> - {{ parent.phone_number }}<br>
+                                    <span style="font-size:0.95em; color:#555;">Wards:
+                                        {% if parent.wards.all %}
+                                            {% for ward in parent.wards.all %}
+                                                {{ ward.name }}{% if not forloop.last %}, {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            None
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            {% empty %}
+                                <li>No parents added yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">Scheduled & Sent Messages</div>
+                    <div class="card-body">
+                        <ul>
+                            {% for message in messages %}
+                                <li>
+                                    <strong>{{ message.content }}</strong><br>
+                                    Scheduled: {{ message.scheduled_time|date:'Y-m-d H:i' }}<br>
+                                    Status: {% if message.sent %}Sent{% else %}Pending{% endif %}<br>
+                                    Recipients:
+                                    <ul>
+                                        {% for ar in message.recipients_status.all %}
+                                            <li>{{ ar.parent.name }} ({{ ar.parent.phone_number }}): {{ ar.status }}{% if ar.sent_at %} at {{ ar.sent_at|date:'Y-m-d H:i' }}{% endif %}{% if ar.error_message %} <span style="color:red;">Error: {{ ar.error_message }}</span>{% endif %}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% empty %}
+                                <li>No messages scheduled or sent yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <a class="logout" href="/logout/">Logout</a>
     </div>
 </body>

@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Audit Logs — CedCast{% endblock %}
+
+{% block body_class %}bg-light{% endblock %}
+
+{% block content %}
+{% include "super_admin_combined_nav.html" %}
+
+<div class="container-fluid py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+      <li class="breadcrumb-item active">Audit Logs</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="dashboard-card">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h1 class="h3 mb-2">
+              <i class="bi bi-journal-text text-primary me-2"></i>
+              Audit Logs
+            </h1>
+            <p class="text-muted mb-0">Track all sender management and SMS operations</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logs Table -->
+  <div class="row">
+    <div class="col-12">
+      <div class="dashboard-card">
+        <div class="card-body">
+          {% if logs %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>User</th>
+                  <th>Action</th>
+                  <th>Organization</th>
+                  <th>Sender</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in logs %}
+                <tr>
+                  <td>{{ log.created_at|date:"M d, Y H:i:s" }}</td>
+                  <td>
+                    {% if log.user %}
+                      {{ log.user.username }}
+                    {% else %}
+                      <span class="text-muted">System</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge bg-secondary">{{ log.get_action_display }}</span>
+                  </td>
+                  <td>
+                    {% if log.organization %}
+                      {{ log.organization.name }}
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if log.sender %}
+                      {{ log.sender.name }}
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if log.details %}
+                      <small class="text-muted">{{ log.details|truncatechars:100 }}</small>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-journal-x text-muted" style="font-size: 3rem;"></i>
+            <h5 class="text-muted mt-3">No audit logs found</h5>
+            <p class="text-muted">Audit logs will appear here as actions are performed.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -332,16 +332,6 @@ class Organization(models.Model):
 	address = models.TextField(blank=True, null=True)
 	phone_primary = models.CharField(max_length=20, blank=True, null=True)
 	phone_secondary = models.CharField(max_length=20, blank=True, null=True)
-	# ClickSend per-tenant credentials & sender id
-	clicksend_username = models.CharField(max_length=100, blank=True, null=True)
-	clicksend_api_key = models.CharField(max_length=100, blank=True, null=True)
-	sender_id = models.CharField(max_length=255, blank=True, null=True)
-	# Hubtel per-tenant credentials (optional)
-	hubtel_api_url = models.CharField(max_length=255, blank=True, null=True)
-	hubtel_client_id = models.CharField(max_length=255, blank=True, null=True)
-	hubtel_client_secret = models.CharField(max_length=255, blank=True, null=True)
-	hubtel_api_key = models.CharField(max_length=255, blank=True, null=True)
-	hubtel_sender_id = models.CharField(max_length=255, blank=True, null=True)
 	created_at = models.DateTimeField(auto_now_add=True)
 	# administrative flags
 	is_active = models.BooleanField(default=True)
@@ -356,8 +346,8 @@ class Organization(models.Model):
 	approved_at = models.DateTimeField(blank=True, null=True)
 	approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_organizations')
 	rejection_reason = models.TextField(blank=True, null=True)
-	# billing
-	balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+	# SMS credit balance (Cedcast credits topped up by organizations)
+	sms_credit_balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 	# SMS usage tracking for pay-as-you-go billing
 	total_sms_sent = models.PositiveIntegerField(default=0, help_text="Total SMS sent by organization")
 	sms_rate = models.DecimalField(max_digits=5, decimal_places=4, default=Decimal('0.25'), help_text="Cost per SMS in cedis")
@@ -394,15 +384,15 @@ class Organization(models.Model):
 	def can_send_sms(self, count=1):
 		"""Check if organization can afford to send specified number of SMS"""
 		required_balance = self.get_current_sms_rate() * count
-		return self.balance >= required_balance
+		return self.sms_credit_balance >= required_balance
 
 	def deduct_sms_cost(self, count):
 		"""Deduct SMS cost from balance and update usage stats"""
 		cost = self.get_current_sms_rate() * count
-		if self.balance >= cost:
-			self.balance -= cost
+		if self.sms_credit_balance >= cost:
+			self.sms_credit_balance -= cost
 			self.total_sms_sent += count
-			self.save(update_fields=['balance', 'total_sms_sent'])
+			self.save(update_fields=['sms_credit_balance', 'total_sms_sent'])
 			return True, cost
 		return False, Decimal('0.00')
 
@@ -477,11 +467,11 @@ class Organization(models.Model):
 
 	def is_low_balance(self):
 		"""Check if organization has low balance (can't send 10 SMS)"""
-		return self.balance < (self.get_current_sms_rate() * 10)
+		return self.sms_credit_balance < (self.get_current_sms_rate() * 10)
 
 	def is_critical_balance(self):
 		"""Check if organization has critical balance (< 5 GHS)"""
-		return self.balance < Decimal('5.00')
+		return self.sms_credit_balance < Decimal('5.00')
 
 	def __str__(self):
 		return f"{self.name} ({self.org_type})"
@@ -705,3 +695,129 @@ class EnrollmentRequest(models.Model):
 
 	def __str__(self):
 		return f"{self.org_name} - {self.contact_name} ({self.status})"
+
+
+class Sender(models.Model):
+	"""Centralized sender management for SMS gateways"""
+	SENDER_TYPE_CHOICES = [
+		('numeric', 'Numeric'),
+		('alphanumeric', 'Alphanumeric'),
+	]
+	STATUS_CHOICES = [
+		('available', 'Available'),
+		('assigned', 'Assigned'),
+		('suspended', 'Suspended'),
+	]
+	PROVIDER_CHOICES = [
+		('hubtel', 'Hubtel'),
+		('clicksend', 'ClickSend'),
+	]
+
+	name = models.CharField(max_length=100, help_text="Display name for the sender")
+	sender_id = models.CharField(max_length=255, unique=True, help_text="The actual sender ID/number")
+	sender_type = models.CharField(max_length=20, choices=SENDER_TYPE_CHOICES)
+	provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
+	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
+
+	# Gateway credentials (encrypted)
+	hubtel_api_url = models.CharField(max_length=255, blank=True, null=True)
+	hubtel_client_id = models.CharField(max_length=255, blank=True, null=True)
+	hubtel_client_secret = models.CharField(max_length=255, blank=True, null=True)
+	hubtel_api_key = models.CharField(max_length=255, blank=True, null=True)
+
+	clicksend_username = models.CharField(max_length=100, blank=True, null=True)
+	clicksend_api_key = models.CharField(max_length=100, blank=True, null=True)
+
+	# Gateway balance (managed by superadmin)
+	gateway_balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text="Balance with the SMS provider")
+
+	# Usage tracking
+	total_sms_sent = models.PositiveIntegerField(default=0, help_text="Total SMS sent through this sender")
+	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		indexes = [
+			models.Index(fields=['status']),
+			models.Index(fields=['provider']),
+			models.Index(fields=['sender_type']),
+		]
+
+	def can_send_sms(self, count=1):
+		"""Check if sender has sufficient gateway balance"""
+		# For now, assume 0.25 per SMS, but this could be configurable per sender
+		rate = Decimal('0.25')
+		return self.gateway_balance >= (rate * count)
+
+	def deduct_gateway_balance(self, count):
+		"""Deduct from gateway balance"""
+		rate = Decimal('0.25')
+		cost = rate * count
+		if self.gateway_balance >= cost:
+			self.gateway_balance -= cost
+			self.total_sms_sent += count
+			self.save(update_fields=['gateway_balance', 'total_sms_sent'])
+			return True
+		return False
+
+	def get_assigned_organizations(self):
+		"""Get organizations assigned to this sender"""
+		return [assignment.organization for assignment in self.senderassignment_set.filter(is_active=True)]
+
+	def __str__(self):
+		return f"{self.name} ({self.sender_id}) - {self.provider}"
+
+
+class SenderAssignment(models.Model):
+	"""Assignment of senders to organizations"""
+	sender = models.ForeignKey(Sender, on_delete=models.CASCADE)
+	organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+	is_active = models.BooleanField(default=True)
+	assigned_at = models.DateTimeField(auto_now_add=True)
+	assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+	class Meta:
+		unique_together = ('sender', 'organization')
+		indexes = [
+			models.Index(fields=['organization', 'is_active']),
+			models.Index(fields=['sender', 'is_active']),
+		]
+
+	def __str__(self):
+		return f"{self.sender.name} -> {self.organization.name}"
+
+
+class AuditLog(models.Model):
+	"""Audit logs for sender management and SMS operations"""
+	ACTION_CHOICES = [
+		('sender_created', 'Sender Created'),
+		('sender_updated', 'Sender Updated'),
+		('sender_deleted', 'Sender Deleted'),
+		('sender_assigned', 'Sender Assigned'),
+		('sender_unassigned', 'Sender Unassigned'),
+		('org_credit_added', 'Organization Credit Added'),
+		('org_credit_deducted', 'Organization Credit Deducted'),
+		('sms_sent', 'SMS Sent'),
+		('sms_failed', 'SMS Failed'),
+		('gateway_balance_low', 'Gateway Balance Low'),
+	]
+
+	user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+	organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
+	sender = models.ForeignKey(Sender, on_delete=models.SET_NULL, null=True, blank=True)
+	action = models.CharField(max_length=50, choices=ACTION_CHOICES)
+	details = models.JSONField(default=dict, help_text="Additional details about the action")
+	ip_address = models.GenericIPAddressField(blank=True, null=True)
+	user_agent = models.TextField(blank=True, null=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		indexes = [
+			models.Index(fields=['action', 'created_at']),
+			models.Index(fields=['organization', 'created_at']),
+			models.Index(fields=['sender', 'created_at']),
+			models.Index(fields=['user', 'created_at']),
+		]
+
+	def __str__(self):
+		return f"{self.action} by {self.user} at {self.created_at}"

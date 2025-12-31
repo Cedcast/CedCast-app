@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Sender Pool Management — CedCast{% endblock %}
+
+{% block body_class %}bg-light{% endblock %}
+
+{% block content %}
+{% include "super_admin_combined_nav.html" %}
+
+<div class="container-fluid py-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+      <li class="breadcrumb-item active">Sender Pool</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="dashboard-card">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h1 class="h3 mb-2">
+              <i class="bi bi-broadcast text-primary me-2"></i>
+              Sender Pool Management
+            </h1>
+            <p class="text-muted mb-0">Manage SMS senders, gateway credentials, and balances</p>
+          </div>
+          <div class="col-md-4 text-end">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSenderModal">
+              <i class="bi bi-plus-circle me-1"></i>Add Sender
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Message -->
+  {% if message %}
+  <div class="alert alert-success border-radius-lg shadow-soft mb-4">
+    <i class="bi bi-check-circle me-2"></i>{{ message }}
+  </div>
+  {% endif %}
+
+  <!-- Senders Table -->
+  <div class="row">
+    <div class="col-12">
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-list-ul me-2"></i>Configured Senders
+          </h5>
+        </div>
+        <div class="card-body">
+          {% if senders %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Sender ID</th>
+                  <th>Type</th>
+                  <th>Provider</th>
+                  <th>Status</th>
+                  <th>Gateway Balance</th>
+                  <th>Total Sent</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for sender in senders %}
+                <tr>
+                  <td>{{ sender.name }}</td>
+                  <td><code>{{ sender.sender_id }}</code></td>
+                  <td>
+                    <span class="badge bg-{% if sender.sender_type == 'numeric' %}primary{% else %}info{% endif %}">
+                      {{ sender.get_sender_type_display }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge bg-{% if sender.provider == 'hubtel' %}success{% else %}warning{% endif %}">
+                      {{ sender.get_provider_display }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge bg-{% if sender.status == 'available' %}success{% elif sender.status == 'assigned' %}primary{% else %}danger{% endif %}">
+                      {{ sender.get_status_display }}
+                    </span>
+                  </td>
+                  <td>₵{{ sender.gateway_balance|floatformat:2 }}</td>
+                  <td>{{ sender.total_sms_sent }}</td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-outline-primary btn-sm" onclick="editSender({{ sender.id }})">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-outline-warning btn-sm" onclick="updateBalance({{ sender.id }})">
+                        <i class="bi bi-cash"></i>
+                      </button>
+                      <button class="btn btn-outline-danger btn-sm" onclick="deleteSender({{ sender.id }}, '{{ sender.name }}')">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-broadcast text-muted" style="font-size: 3rem;"></i>
+            <h5 class="text-muted mt-3">No senders configured</h5>
+            <p class="text-muted">Add your first sender to start sending SMS messages.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Sender Modal -->
+<div class="modal fade" id="addSenderModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Sender</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Sender Name</label>
+              <input type="text" name="name" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Sender ID</label>
+              <input type="text" name="sender_id" class="form-control" required placeholder="e.g., +233501234567 or CEDCAST">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Sender Type</label>
+              <select name="sender_type" class="form-select" required>
+                {% for type_choice in sender_types %}
+                <option value="{{ type_choice.0 }}">{{ type_choice.1 }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Provider</label>
+              <select name="provider" class="form-select" id="providerSelect" required>
+                {% for provider_choice in providers %}
+                <option value="{{ provider_choice.0 }}">{{ provider_choice.1 }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Initial Gateway Balance</label>
+              <input type="number" name="gateway_balance" class="form-control" step="0.01" min="0" value="0.00">
+            </div>
+          </div>
+
+          <!-- Hubtel Credentials -->
+          <div id="hubtelCredentials" class="mt-3" style="display: none;">
+            <h6 class="text-primary">Hubtel Credentials</h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">API URL</label>
+                <input type="url" name="hubtel_api_url" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Client ID</label>
+                <input type="text" name="hubtel_client_id" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Client Secret</label>
+                <input type="password" name="hubtel_client_secret" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">API Key</label>
+                <input type="password" name="hubtel_api_key" class="form-control">
+              </div>
+            </div>
+          </div>
+
+          <!-- ClickSend Credentials -->
+          <div id="clicksendCredentials" class="mt-3" style="display: none;">
+            <h6 class="text-primary">ClickSend Credentials</h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Username</label>
+                <input type="text" name="clicksend_username" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">API Key</label>
+                <input type="password" name="clicksend_api_key" class="form-control">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Sender</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Sender Modal -->
+<div class="modal fade" id="editSenderModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Sender</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="editSenderForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_status">
+        <input type="hidden" name="sender_id" id="editSenderId">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Sender Name</label>
+              <input type="text" id="editSenderName" class="form-control" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-select" id="editSenderStatus">
+                {% for status_choice in statuses %}
+                <option value="{{ status_choice.0 }}">{{ status_choice.1 }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Status</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Update Balance Modal -->
+<div class="modal fade" id="updateBalanceModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Update Gateway Balance</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="updateBalanceForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_balance">
+        <input type="hidden" name="sender_id" id="balanceSenderId">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Sender</label>
+              <input type="text" id="balanceSenderName" class="form-control" readonly>
+            </div>
+            <div class="col-12">
+              <label class="form-label">New Gateway Balance (₵)</label>
+              <input type="number" name="gateway_balance" class="form-control" step="0.01" min="0" id="newBalance" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Balance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    // Provider selection logic
+    const providerSelect = document.getElementById('providerSelect');
+    const hubtelCreds = document.getElementById('hubtelCredentials');
+    const clicksendCreds = document.getElementById('clicksendCredentials');
+
+    function toggleCredentials() {
+        const provider = providerSelect.value;
+        if (provider === 'hubtel') {
+            hubtelCreds.style.display = 'block';
+            clicksendCreds.style.display = 'none';
+        } else if (provider === 'clicksend') {
+            hubtelCreds.style.display = 'none';
+            clicksendCreds.style.display = 'block';
+        } else {
+            hubtelCreds.style.display = 'none';
+            clicksendCreds.style.display = 'none';
+        }
+    }
+
+    if (providerSelect) {
+        providerSelect.addEventListener('change', toggleCredentials);
+        toggleCredentials(); // Initial call
+    }
+});
+
+function editSender(senderId) {
+    // This would need AJAX to fetch sender details
+    // For now, just show the modal with basic info
+    document.getElementById('editSenderId').value = senderId;
+    const modal = new bootstrap.Modal(document.getElementById('editSenderModal'));
+    modal.show();
+}
+
+function updateBalance(senderId) {
+    document.getElementById('balanceSenderId').value = senderId;
+    const modal = new bootstrap.Modal(document.getElementById('updateBalanceModal'));
+    modal.show();
+}
+
+function deleteSender(senderId, senderName) {
+    if (confirm(`Are you sure you want to delete sender "${senderName}"?`)) {
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.innerHTML = `
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="sender_id" value="${senderId}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

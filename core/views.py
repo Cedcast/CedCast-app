@@ -388,8 +388,6 @@ def dashboard(request, school_slug=None):
 					name=name,
 					org_type=request.POST.get("org_type", "company"),
 					slug=unique_slug,
-					primary_color=primary_color,
-					secondary_color=secondary_color,
 					clicksend_username=clicksend_username,
 					clicksend_api_key=clicksend_api_key,
 					sender_id=sender_id or None,
@@ -539,6 +537,13 @@ def dashboard(request, school_slug=None):
 			sent = sent_by_date.get(d, 0)
 			delivery_trend.append(int((sent / total * 100)) if total else 0)
 
+		# Calculate average delivery rate
+		avg_delivery_rate = 0
+		if delivery_trend:
+			valid_rates = [rate for rate in delivery_trend if rate > 0]
+			if valid_rates:
+				avg_delivery_rate = sum(valid_rates) / len(valid_rates)
+
 		# Billing analytics
 		from .models import Payment
 		from django.db.models import Sum, Count, Avg
@@ -550,18 +555,16 @@ def dashboard(request, school_slug=None):
 		recent_payments = Payment.objects.filter(status='success', created_at__date__gte=start_date).count()
 
 		# Organization balance statistics
-		orgs_with_balance = Organization.objects.filter(balance__gt=Decimal('0')).count()
-		total_org_balance = Organization.objects.aggregate(total=Sum('balance'))['total'] or Decimal('0')
+		orgs_with_balance = Organization.objects.filter(sms_credit_balance__gt=Decimal('0')).count()
+		total_org_balance = Organization.objects.aggregate(total=Sum('sms_credit_balance'))['total'] or Decimal('0')
 		avg_org_balance = total_org_balance / orgs_with_balance if orgs_with_balance > 0 else Decimal('0')
-
-		# Premium organizations statistics
 		premium_orgs = Organization.objects.filter(is_premium=True).count()
 		total_orgs = Organization.objects.count()
 		premium_percentage = (premium_orgs / total_orgs * 100) if total_orgs > 0 else 0
 
 		# SMS usage statistics for pay-as-you-go
 		total_sms_sent_all = Organization.objects.aggregate(total=Sum('total_sms_sent'))['total'] or 0
-		total_balance_all = Organization.objects.aggregate(total=Sum('balance'))['total'] or Decimal('0.00')
+		total_balance_all = Organization.objects.aggregate(total=Sum('sms_credit_balance'))['total'] or Decimal('0.00')
 		avg_sms_rate = Organization.objects.aggregate(avg=Avg('sms_rate'))['avg'] or Decimal('0.25')
 
 		# Recent payments trend (7 days)
@@ -575,13 +578,13 @@ def dashboard(request, school_slug=None):
 		recent_payment_transactions = Payment.objects.filter(status='success').select_related('organization').order_by('-created_at')[:10]
 
 		# Top paying organizations
-		top_orgs = Organization.objects.filter(balance__gt=Decimal('0')).order_by('-balance')[:5]
+		top_orgs = Organization.objects.filter(sms_credit_balance__gt=Decimal('0')).order_by('-sms_credit_balance')[:5]
 		top_payers = []
 		for org in top_orgs:
 			total_paid = Payment.objects.filter(organization=org, status='success').aggregate(total=Sum('amount'))['total'] or Decimal('0')
 			top_payers.append({
 				'organization': org,
-				'balance': org.balance,
+				'balance': org.sms_credit_balance,
 				'total_paid': total_paid,
 			})
 
@@ -603,7 +606,7 @@ def dashboard(request, school_slug=None):
 
 		context = {"schools": schools, "school_stats": school_stats, "org_stats": org_stats, "notice": notice,
 			"total_messages": total_msgs, "total_sent": total_sent,
-			"messages_trend": messages_trend, "orgs_trend": orgs_trend, "delivery_trend": delivery_trend,
+			"messages_trend": messages_trend, "orgs_trend": orgs_trend, "delivery_trend": delivery_trend, "avg_delivery_rate": avg_delivery_rate,
 			"hubtel_dry_run": getattr(settings, 'HUBTEL_DRY_RUN', False),
 			"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
 			# Billing analytics
@@ -691,11 +694,30 @@ def dashboard(request, school_slug=None):
 					AlertRecipient.objects.create(message=message, parent=parent, status='pending')
 		from .models import Message
 		messages = Message.objects.filter(school=school).order_by('-scheduled_time')
+		from django.utils import timezone
+		today = timezone.now().date()
+		contacts_count = school.parent_set.count()
+		templates_count = school.smstemplate_set.count()
+		msgs_sent_today = messages.filter(sent=True, sent_at__date=today).count()
+		week_ago = today - timezone.timedelta(days=7)
+		msgs_sent_week = messages.filter(sent=True, sent_at__date__gte=week_ago).count()
+		month_ago = today - timezone.timedelta(days=30)
+		msgs_sent_month = messages.filter(sent=True, sent_at__date__gte=month_ago).count()
+		from .models import AlertRecipient
+		total_recipients = AlertRecipient.objects.filter(message__school=school).count()
+		sent_recipients = AlertRecipient.objects.filter(message__school=school, status='sent').count()
+		delivery_rate = (sent_recipients / total_recipients * 100) if total_recipients else 0
 		return render(request, "school_admin_dashboard.html", {
 			"school": school,
 			"primary_color": school.primary_color,
 			"secondary_color": school.secondary_color,
-			"messages": messages
+			"messages": messages,
+			"contacts_count": contacts_count,
+			"templates_count": templates_count,
+			"msgs_sent_today": msgs_sent_today,
+			"msgs_sent_week": msgs_sent_week,
+			"msgs_sent_month": msgs_sent_month,
+			"delivery_rate": delivery_rate
 		})
 	else:
 		# For organization admins, redirect to their dashboard
@@ -1108,77 +1130,119 @@ def onboarding_view(request):
 	if not request.user.role == User.SUPER_ADMIN:
 		return redirect('dashboard')
 
-	from .models import Organization
+	from .models import Organization, School
 	notice = None
 
 	if request.method == 'POST':
 		slug = request.POST.get('slug')
-		sender_id = request.POST.get('sender_id')
 		action = request.POST.get('action')
+		is_org = True
 		try:
-			org = Organization.objects.get(slug=slug)
+			tenant = Organization.objects.get(slug=slug)
+		except Organization.DoesNotExist:
+			try:
+				tenant = School.objects.get(slug=slug)
+				is_org = False
+			except School.DoesNotExist:
+				notice = 'Tenant not found.'
+				tenant = None
+		if tenant:
 			if action == 'configure':
-				org.sender_id = sender_id or org.sender_id
-				org.onboarded = True
-				org.save()
-				notice = f"Configured {org.name}"
-				# Audit/log this change using Django admin LogEntry for traceability
+				if is_org:
+					tenant.onboarded = True
+					tenant.save()
+				notice = f"Configured {tenant.name}"
+				# Audit/log this change
 				try:
 					from django.contrib.admin.models import LogEntry
 					from django.contrib.contenttypes.models import ContentType
-					ct = ContentType.objects.get_for_model(Organization)
+					ct = ContentType.objects.get_for_model(tenant.__class__)
 					LogEntry.objects.log_action(
 						user_id=request.user.id,
 						content_type_id=ct.id,
-						object_id=getattr(org, 'id', None),
-						object_repr=str(org),
+						object_id=getattr(tenant, 'id', None),
+						object_repr=str(tenant),
 						action_flag=2,  # change
-						change_message=f"Configured sender_id={org.sender_id}",
+						change_message=f"Configured tenant",
 					)
 				except Exception:
-					# don't break the user action if logging fails
 					pass
 			elif action == 'suspend':
-				org.is_active = False
-				org.save()
-				notice = f"Suspended {org.name}"
-				try:
-					from django.contrib.admin.models import LogEntry
-					from django.contrib.contenttypes.models import ContentType
-					ct = ContentType.objects.get_for_model(Organization)
-					LogEntry.objects.log_action(
-						user_id=request.user.id,
-						content_type_id=ct.id,
-						object_id=getattr(org, 'id', None),
-						object_repr=str(org),
-						action_flag=2,
-						change_message="Suspended organization via onboarding UI",
-					)
-				except Exception:
-					pass
+				if is_org:
+					tenant.is_active = False
+					tenant.save()
+					notice = f"Suspended {tenant.name}"
+					try:
+						from django.contrib.admin.models import LogEntry
+						from django.contrib.contenttypes.models import ContentType
+						ct = ContentType.objects.get_for_model(tenant.__class__)
+						LogEntry.objects.log_action(
+							user_id=request.user.id,
+							content_type_id=ct.id,
+							object_id=getattr(tenant, 'id', None),
+							object_repr=str(tenant),
+							action_flag=2,
+							change_message="Suspended tenant",
+						)
+					except Exception:
+						pass
+				else:
+					# For schools, delete
+					tenant.delete()
+					notice = f"Removed {tenant.name}"
 			elif action == 'activate':
-				org.is_active = True
-				org.save()
-				notice = f"Activated {org.name}"
-				try:
-					from django.contrib.admin.models import LogEntry
-					from django.contrib.contenttypes.models import ContentType
-					ct = ContentType.objects.get_for_model(Organization)
-					LogEntry.objects.log_action(
-						user_id=request.user.id,
-						content_type_id=ct.id,
-						object_id=getattr(org, 'id', None),
-						object_repr=str(org),
-						action_flag=2,
-						change_message="Activated organization via onboarding UI",
-					)
-				except Exception:
-					pass
-		except Organization.DoesNotExist:
-			notice = 'Organization not found.'
+				if is_org:
+					tenant.is_active = True
+					tenant.save()
+					notice = f"Activated {tenant.name}"
+					try:
+						from django.contrib.admin.models import LogEntry
+						from django.contrib.contenttypes.models import ContentType
+						ct = ContentType.objects.get_for_model(tenant.__class__)
+						LogEntry.objects.log_action(
+							user_id=request.user.id,
+							content_type_id=ct.id,
+							object_id=getattr(tenant, 'id', None),
+							object_repr=str(tenant),
+							action_flag=2,
+							change_message="Activated tenant",
+						)
+					except Exception:
+						pass
+				else:
+					notice = f"{tenant.name} is always active"
 
 	orgs = Organization.objects.all().order_by('-created_at')
-	return render(request, 'onboarding.html', {'orgs': orgs, 'notice': notice})
+	schools = School.objects.all().order_by('-created_at')
+	tenants = []
+	for org in orgs:
+		tenants.append({
+			'type': 'organization',
+			'id': org.id,
+			'name': org.name,
+			'slug': org.slug,
+			'created_at': org.created_at,
+			'is_active': org.is_active,
+			'approval_status': org.approval_status,
+			'org_type': getattr(org, 'org_type', ''),
+			'phone_primary': getattr(org, 'phone_primary', ''),
+			'address': getattr(org, 'address', ''),
+		})
+	for school in schools:
+		tenants.append({
+			'type': 'school',
+			'id': school.id,
+			'name': school.name,
+			'slug': school.slug,
+			'created_at': school.created_at,
+			'is_active': True,
+			'approval_status': 'approved',
+			'org_type': 'school',
+			'phone_primary': getattr(school, 'phone_primary', ''),
+			'address': getattr(school, 'address', ''),
+		})
+	tenants.sort(key=lambda x: x['created_at'], reverse=True)
+	return render(request, 'onboarding.html', {'tenants': tenants, 'notice': notice})
 
 
 @login_required
@@ -1462,7 +1526,6 @@ def org_dashboard(request, org_slug=None):
 		"hubtel_dry_run": getattr(settings, 'HUBTEL_DRY_RUN', False),
 		"clicksend_dry_run": getattr(settings, 'CLICKSEND_DRY_RUN', False),
 		"is_suspended": not organization.is_active,
-		"low_balance": organization.is_low_balance(),
 		"critical_balance": organization.is_critical_balance(),
 	})
 
@@ -1531,8 +1594,6 @@ def enroll_tenant_view(request):
 				name=name,
 				org_type=request.POST.get('org_type', 'company'),
 				slug=unique_slug,
-				primary_color=request.POST.get('primary_color') or '#0d6efd',
-				secondary_color=request.POST.get('secondary_color') or '#6c757d',
 				clicksend_username=request.POST.get('clicksend_username'),
 				clicksend_api_key=request.POST.get('clicksend_api_key'),
 				sender_id=sender_id,
@@ -1762,68 +1823,32 @@ def org_send_sms(request, org_slug=None):
 				OrgAlertRecipient.objects.create(message=msg, contact=c, status='pending')
 			# If action is send_now, attempt to send immediately (synchronous)
 			if action == 'send_now':
-				from django.utils import timezone as _tz
-				from core import hubtel_utils
-				from decimal import Decimal
+				from .utils.sender_utils import send_sms_through_sender_pool
 				try:
-					from core import clicksend_utils
-				except Exception:
-					# clicksend_client may not be installed in some deployments;
-					# defer failure until (and unless) it's actually used as a fallback.
-					clicksend_utils = None
-
-				# Balance already validated before message creation
-				# Proceed with sending
-				processed = 0
-				for ar in getattr(msg, 'recipients_status').all():
-					phone = ar.contact.phone_number
-					try:
-						# prefer Hubtel; fallback to ClickSend
-						sent_id = None
-						try:
-							sent_id = hubtel_utils.send_sms(phone, sms_body, org)
-						except Exception as e_hub:
-							# If ClickSend integration is available, try it as a fallback.
-							if clicksend_utils is not None:
-								try:
-									sent_id = clicksend_utils.send_sms(phone, sms_body, org)
-								except Exception as e_click:
-									raise Exception(f"Hubtel error: {e_hub}; ClickSend error: {e_click}")
-							else:
-								# No ClickSend client installed; surface the original Hubtel error.
-								raise Exception(f"Hubtel error: {e_hub}; ClickSend not available")
-						ar.provider_message_id = str(sent_id)
-						ar.status = 'sent'
-						ar.sent_at = _tz.now()
-						ar.error_message = ''
-						ar.save()
-						processed += 1
-					except Exception as e:
-						import logging
-						logger = logging.getLogger(__name__)
-						logger.error(f"SMS sending failed for contact {ar.contact.id} ({ar.contact.phone_number}): {str(e)}")
-						ar.retry_count = (ar.retry_count or 0) + 1
-						ar.last_retry_at = _tz.now()
-						ar.error_message = str(e)
-						if ar.retry_count >= getattr(settings, 'ORG_MESSAGE_MAX_RETRIES', 3):
-							ar.status = 'failed'
-							logger.warning(f"SMS failed permanently for contact {ar.contact.id} after {ar.retry_count} retries")
-						else:
-							ar.status = 'pending'
-							logger.info(f"SMS queued for retry for contact {ar.contact.id}, attempt {ar.retry_count}")
-						ar.save()
-
-				# Deduct SMS cost from balance
-				sms_cost = 0
-				if processed > 0:
-					from .utils import deduct_sms_balance
-					sms_deducted = deduct_sms_balance(org, processed, settings)
-					sms_cost = org.get_current_sms_rate() * processed
-
-				if processed > 0:
-					success = f"Message sent to {processed} recipients. Cost: ₵{sms_cost:.2f} (₵{org.sms_rate:.2f} per SMS). Balance: ₵{org.balance:.2f}."
-				else:
-					error = 'Failed to send any messages. Please try again.'
+					processed, total_cost, sender_used = send_sms_through_sender_pool(
+						org, msg, sms_body, request.user
+					)
+					if processed > 0:
+						success = f"Message sent to {processed} recipients. Cost: ₵{total_cost:.2f} (₵{org.sms_rate:.2f} per SMS). Balance: ₵{org.sms_credit_balance:.2f}."
+						
+						# Audit log for SMS sending
+						from .models import AuditLog
+						AuditLog.objects.create(
+							user=request.user,
+							organization=org,
+							sender=sender_used,
+							action='sms_sent',
+							details={
+								'recipients_count': processed,
+								'total_cost': str(total_cost),
+								'sender_name': sender_used.name if sender_used else None,
+								'message_id': msg.id
+							},
+						)
+					else:
+						error = 'Failed to send any messages. Please try again.'
+				except Exception as e:
+					error = f'SMS sending failed: {str(e)}'
 		else:
 			error = 'Please provide a message and at least one recipient.'
 
@@ -2544,9 +2569,9 @@ def org_billing(request, org_slug=None):
 			if amount > 0:
 				# In a real implementation, this would integrate with Paystack
 				# For now, we'll simulate balance top-up
-				organization.balance += amount
+				organization.sms_credit_balance += amount
 				organization.save()
-				message = f'Balance topped up successfully! ₵{amount:.2f} added. New balance: ₵{organization.balance:.2f}.'
+				message = f'Balance topped up successfully! ₵{amount:.2f} added. New balance: ₵{organization.sms_credit_balance:.2f}.'
 				if is_ajax:
 					return JsonResponse({'success': True, 'message': message})
 			else:
@@ -2656,9 +2681,9 @@ def org_billing_callback(request, org_slug=None):
 						}
 					)
 					if created:
-						organization.balance = (organization.balance or Decimal('0')) + amount
-						organization.save(update_fields=['balance'])
-				return JsonResponse({'success': True, 'message': 'Payment verified', 'balance': str(organization.balance)})
+						organization.sms_credit_balance = (organization.sms_credit_balance or Decimal('0')) + amount
+						organization.save(update_fields=['sms_credit_balance'])
+				return JsonResponse({'success': True, 'message': 'Payment verified', 'balance': str(organization.sms_credit_balance)})
 
 			# record failed attempt if not already stored
 			Payment.objects.get_or_create(
@@ -2698,11 +2723,11 @@ def org_billing_callback(request, org_slug=None):
 						}
 					)
 					if created:
-						organization.balance += amount
-						organization.save(update_fields=['balance'])
-						message = f'Payment successful! Balance added: GHS {amount}. New balance: GHS {organization.balance}'
+						organization.sms_credit_balance += amount
+						organization.save(update_fields=['sms_credit_balance'])
+						message = f'Payment successful! Balance added: GHS {amount}. New balance: GHS {organization.sms_credit_balance}'
 					else:
-						message = f'Payment already processed. Current balance: GHS {organization.balance}'
+						message = f'Payment already processed. Current balance: GHS {organization.sms_credit_balance}'
 				else:
 					message = 'Payment successful but amount not found.'
 			else:
@@ -2718,7 +2743,7 @@ def org_billing_callback(request, org_slug=None):
 
 	return render(request, 'org_billing.html', {
 		'organization': organization,
-		'balance': organization.balance,
+		'balance': organization.sms_credit_balance,
 		'sms_customer_rate': sms_customer_rate,
 		'sms_provider_cost': sms_provider_cost,
 		'sms_min_balance': sms_min_balance,
@@ -2898,3 +2923,208 @@ def edit_package_view(request, package_id):
         'package_types': Package.PACKAGE_TYPE_CHOICES,
     }
     return render(request, 'edit_package.html', context)
+
+
+# ===== SENDER POOL MANAGEMENT =====
+
+@login_required
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)
+def sender_pool_view(request):
+    """Superadmin view to manage the sender pool"""
+    from .models import Sender, SenderAssignment, Organization
+
+    message = None
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        sender_id = request.POST.get('sender_id')
+
+        if action == 'create':
+            try:
+                sender = Sender.objects.create(
+                    name=request.POST.get('name'),
+                    sender_id=request.POST.get('sender_id'),
+                    sender_type=request.POST.get('sender_type'),
+                    provider=request.POST.get('provider'),
+                    hubtel_api_url=request.POST.get('hubtel_api_url'),
+                    hubtel_client_id=request.POST.get('hubtel_client_id'),
+                    hubtel_client_secret=request.POST.get('hubtel_client_secret'),
+                    hubtel_api_key=request.POST.get('hubtel_api_key'),
+                    clicksend_username=request.POST.get('clicksend_username'),
+                    clicksend_api_key=request.POST.get('clicksend_api_key'),
+                    gateway_balance=Decimal(request.POST.get('gateway_balance', '0')),
+                )
+                # Audit log
+                from .models import AuditLog
+                AuditLog.objects.create(
+                    user=request.user,
+                    action='sender_created',
+                    details={'sender_name': sender.name, 'sender_id': sender.sender_id},
+                )
+                message = f'Sender "{sender.name}" created successfully!'
+            except Exception as e:
+                message = f'Error creating sender: {str(e)}'
+
+        elif action == 'update_status':
+            try:
+                sender = Sender.objects.get(id=sender_id)
+                new_status = request.POST.get('status')
+                old_status = sender.status
+                sender.status = new_status
+                sender.save()
+
+                # Audit log
+                from .models import AuditLog
+                AuditLog.objects.create(
+                    user=request.user,
+                    sender=sender,
+                    action='sender_updated',
+                    details={'field': 'status', 'old_value': old_status, 'new_value': new_status},
+                )
+                message = f'Sender status updated to {new_status}!'
+            except Sender.DoesNotExist:
+                message = 'Sender not found.'
+            except Exception as e:
+                message = f'Error updating sender: {str(e)}'
+
+        elif action == 'update_balance':
+            try:
+                sender = Sender.objects.get(id=sender_id)
+                new_balance = Decimal(request.POST.get('gateway_balance', '0'))
+                old_balance = sender.gateway_balance
+                sender.gateway_balance = new_balance
+                sender.save()
+
+                # Audit log
+                from .models import AuditLog
+                AuditLog.objects.create(
+                    user=request.user,
+                    sender=sender,
+                    action='sender_updated',
+                    details={'field': 'gateway_balance', 'old_value': str(old_balance), 'new_value': str(new_balance)},
+                )
+                message = f'Sender balance updated!'
+            except Sender.DoesNotExist:
+                message = 'Sender not found.'
+            except Exception as e:
+                message = f'Error updating balance: {str(e)}'
+
+        elif action == 'delete':
+            try:
+                sender = Sender.objects.get(id=sender_id)
+                # Check if sender has active assignments
+                active_assignments = SenderAssignment.objects.filter(sender=sender, is_active=True)
+                if active_assignments.exists():
+                    message = 'Cannot delete sender with active assignments. Unassign from organizations first.'
+                else:
+                    sender_name = sender.name
+                    sender.delete()
+
+                    # Audit log
+                    from .models import AuditLog
+                    AuditLog.objects.create(
+                        user=request.user,
+                        action='sender_deleted',
+                        details={'sender_name': sender_name, 'sender_id': sender_id},
+                    )
+                    message = f'Sender "{sender_name}" deleted!'
+            except Sender.DoesNotExist:
+                message = 'Sender not found.'
+
+    senders = Sender.objects.all().order_by('-created_at')
+    organizations = Organization.objects.filter(is_active=True).order_by('name')
+
+    context = {
+        'senders': senders,
+        'organizations': organizations,
+        'message': message,
+        'sender_types': Sender.SENDER_TYPE_CHOICES,
+        'providers': Sender.PROVIDER_CHOICES,
+        'statuses': Sender.STATUS_CHOICES,
+    }
+    return render(request, 'sender_pool.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)
+def sender_assignments_view(request):
+    """Superadmin view to manage sender-to-organization assignments"""
+    from .models import Sender, SenderAssignment, Organization
+
+    message = None
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'assign':
+            try:
+                sender = Sender.objects.get(id=request.POST.get('sender_id'))
+                organization = Organization.objects.get(id=request.POST.get('organization_id'))
+
+                assignment, created = SenderAssignment.objects.get_or_create(
+                    sender=sender,
+                    organization=organization,
+                    defaults={'assigned_by': request.user}
+                )
+
+                if created:
+                    # Audit log
+                    from .models import AuditLog
+                    AuditLog.objects.create(
+                        user=request.user,
+                        sender=sender,
+                        organization=organization,
+                        action='sender_assigned',
+                        details={'sender_name': sender.name, 'org_name': organization.name},
+                    )
+                    message = f'Sender "{sender.name}" assigned to "{organization.name}"!'
+                else:
+                    message = 'Sender is already assigned to this organization.'
+            except (Sender.DoesNotExist, Organization.DoesNotExist):
+                message = 'Sender or organization not found.'
+
+        elif action == 'unassign':
+            try:
+                assignment = SenderAssignment.objects.get(
+                    sender_id=request.POST.get('sender_id'),
+                    organization_id=request.POST.get('organization_id')
+                )
+                assignment.is_active = False
+                assignment.save()
+
+                # Audit log
+                from .models import AuditLog
+                AuditLog.objects.create(
+                    user=request.user,
+                    sender=assignment.sender,
+                    organization=assignment.organization,
+                    action='sender_unassigned',
+                    details={'sender_name': assignment.sender.name, 'org_name': assignment.organization.name},
+                )
+                message = f'Sender unassigned from organization!'
+            except SenderAssignment.DoesNotExist:
+                message = 'Assignment not found.'
+
+    assignments = SenderAssignment.objects.filter(is_active=True).select_related('sender', 'organization').order_by('organization__name')
+    available_senders = Sender.objects.filter(status='available')
+    available_orgs = Organization.objects.filter(is_active=True)
+
+    context = {
+        'assignments': assignments,
+        'available_senders': available_senders,
+        'available_orgs': available_orgs,
+        'message': message,
+    }
+    return render(request, 'sender_assignments.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)
+def audit_logs_view(request):
+    """Superadmin view to see audit logs"""
+    from .models import AuditLog
+
+    logs = AuditLog.objects.select_related('user', 'organization', 'sender').order_by('-created_at')[:500]
+
+    context = {
+        'logs': logs,
+    }
+    return render(request, 'audit_logs.html', context)
