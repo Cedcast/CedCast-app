@@ -29,7 +29,7 @@ def get_sender_for_organization(organization):
 def send_sms_through_sender_pool(organization, message, sms_body, user):
     """
     Send SMS through the assigned sender in the sender pool.
-    Falls back to legacy organization-based sending if no sender assigned.
+    Requires sender assignment - no fallback to legacy system.
 
     Args:
         organization: Organization instance
@@ -39,17 +39,22 @@ def send_sms_through_sender_pool(organization, message, sms_body, user):
 
     Returns:
         tuple: (processed_count, total_cost, sender_used)
+
+    Raises:
+        Exception: If no sender is assigned to the organization
     """
     # Get assigned sender
     sender = get_sender_for_organization(organization)
-    
+
     if sender:
-        # Use new sender pool system
+        # Use sender pool system
         return _send_via_sender_pool(organization, message, sms_body, user, sender)
     else:
-        # Fall back to legacy organization-based sending
-        logger.warning(f"No sender assigned to organization {organization.slug}, falling back to legacy SMS sending")
-        return _send_via_legacy_system(organization, message, sms_body, user)
+        # No fallback - sender pool is required
+        raise Exception(
+            f"No sender assigned to organization '{organization.name}' ({organization.slug}). "
+            "Please contact support to assign a sender from the sender pool."
+        )
 
 
 def _send_via_sender_pool(organization, message, sms_body, user, sender):
