@@ -29,6 +29,7 @@ def get_sender_for_organization(organization):
 def send_sms_through_sender_pool(organization, message, sms_body, user):
     """
     Send SMS through the assigned sender in the sender pool.
+    Falls back to legacy organization-based sending if no sender assigned.
 
     Args:
         organization: Organization instance
@@ -41,9 +42,18 @@ def send_sms_through_sender_pool(organization, message, sms_body, user):
     """
     # Get assigned sender
     sender = get_sender_for_organization(organization)
-    if not sender:
-        raise Exception("No active sender assigned to this organization. Please contact support.")
+    
+    if sender:
+        # Use new sender pool system
+        return _send_via_sender_pool(organization, message, sms_body, user, sender)
+    else:
+        # Fall back to legacy organization-based sending
+        logger.warning(f"No sender assigned to organization {organization.slug}, falling back to legacy SMS sending")
+        return _send_via_legacy_system(organization, message, sms_body, user)
 
+
+def _send_via_sender_pool(organization, message, sms_body, user, sender):
+    """Send SMS using the assigned sender from the pool."""
     # Check sender gateway balance
     if not sender.can_send_sms(message.recipients_status.count()):
         # Log low balance
@@ -79,85 +89,78 @@ def send_sms_through_sender_pool(organization, message, sms_body, user):
             ar.provider_message_id = str(sent_id)
             ar.status = 'sent'
             ar.sent_at = timezone.now()
-            ar.error_message = ''
-            ar.save()
             processed += 1
         else:
             ar.status = 'failed'
-            ar.error_message = 'Provider error'
-            ar.save()
+        ar.save()
 
+    # Deduct balances
     if processed > 0:
-        # Deduct from organization credits
-        cost = organization.get_current_sms_rate() * processed
-        organization.sms_credit_balance -= cost
-        organization.total_sms_sent += processed
-        organization.save(update_fields=['sms_credit_balance', 'total_sms_sent'])
-        total_cost = cost
-
-        # Deduct from sender gateway balance
         sender.deduct_gateway_balance(processed)
+        organization.deduct_sms_cost(processed)
 
-        # Audit log
-        AuditLog.objects.create(
-            user=user,  # Can be None for background commands
-            organization=organization,
-            sender=sender,
-            action='sms_sent',
-            details={
-                'message_id': message.id,
-                'recipients': processed,
-                'cost': str(total_cost),
-                'sender_used': sender.name
-            },
-        )
+    # Update message status
+    message.sent = True
+    message.save()
 
-    return processed, total_cost, sender
+    return processed, organization.get_current_sms_rate() * processed, sender
 
 
-def send_via_hubtel(sender, message, sms_body):
-    """Send SMS via Hubtel using sender credentials"""
+def _send_via_legacy_system(organization, message, sms_body, user):
+    """Fallback SMS sending using legacy organization-based credentials."""
     from .. import hubtel_utils
-
+    
+    processed = 0
+    total_cost = Decimal('0')
     sent_ids = []
+
+    # Check organization credit balance first
+    recipient_count = message.recipients_status.count()
+    required_credits = organization.get_current_sms_rate() * recipient_count
+    if organization.sms_credit_balance < required_credits:
+        raise Exception("Insufficient SMS credits. Please top up your balance.")
+
+    # Send using organization's legacy credentials
     for ar in message.recipients_status.all():
         try:
-            # Use sender's credentials instead of organization's
-            sent_id = hubtel_utils.send_sms_with_credentials(
+            # Use legacy hubtel_utils.send_sms function
+            sent_id = hubtel_utils.send_sms(
                 to_number=ar.contact.phone_number,
-                message=sms_body,
-                api_url=sender.hubtel_api_url,
-                client_id=sender.hubtel_client_id,
-                client_secret=sender.hubtel_client_secret,
-                api_key=sender.hubtel_api_key,
-                sender_id=sender.sender_id
+                message_body=sms_body,
+                tenant=organization  # Pass organization as tenant
             )
             sent_ids.append(sent_id)
+            ar.provider_message_id = str(sent_id)
+            ar.status = 'sent'
+            ar.sent_at = timezone.now()
+            processed += 1
         except Exception as e:
-            logger.error(f"Hubtel send failed for {ar.contact.phone_number}: {str(e)}")
+            logger.error(f"Failed to send SMS to {ar.contact.phone_number}: {str(e)}")
+            ar.status = 'failed'
+            ar.error_message = str(e)
             sent_ids.append(None)
-    return sent_ids
+        ar.save()
 
+    # Deduct balance for successful sends
+    if processed > 0:
+        organization.deduct_sms_cost(processed)
+        total_cost = organization.get_current_sms_rate() * processed
 
-def send_via_clicksend(sender, message, sms_body):
-    """Send SMS via ClickSend using sender credentials"""
-    try:
-        from .. import clicksend_utils
-    except ImportError:
-        raise Exception("ClickSend integration not available")
+    # Update message status
+    message.sent = True
+    message.save()
 
-    sent_ids = []
-    for ar in message.recipients_status.all():
-        try:
-            sent_id = clicksend_utils.send_sms_with_credentials(
-                to_number=ar.contact.phone_number,
-                message=sms_body,
-                username=sender.clicksend_username,
-                api_key=sender.clicksend_api_key,
-                sender_id=sender.sender_id
-            )
-            sent_ids.append(sent_id)
-        except Exception as e:
-            logger.error(f"ClickSend send failed for {ar.contact.phone_number}: {str(e)}")
-            sent_ids.append(None)
-    return sent_ids
+    # Audit log
+    AuditLog.objects.create(
+        user=user,
+        organization=organization,
+        action='sms_sent_legacy',
+        details={
+            'recipients_count': processed,
+            'total_cost': str(total_cost),
+            'message_id': message.id,
+            'fallback_used': True
+        },
+    )
+
+    return processed, total_cost, None
