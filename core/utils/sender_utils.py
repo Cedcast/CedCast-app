@@ -1,7 +1,7 @@
 import logging
 from decimal import Decimal
 from django.utils import timezone
-from .models import Sender, SenderAssignment, AuditLog
+from ..models import Sender, SenderAssignment, AuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ def send_sms_through_sender_pool(organization, message, sms_body, user):
 
 def send_via_hubtel(sender, message, sms_body):
     """Send SMS via Hubtel using sender credentials"""
-    from . import hubtel_utils
+    from .. import hubtel_utils
 
     sent_ids = []
     for ar in message.recipients_status.all():
@@ -142,7 +142,7 @@ def send_via_hubtel(sender, message, sms_body):
 def send_via_clicksend(sender, message, sms_body):
     """Send SMS via ClickSend using sender credentials"""
     try:
-        from . import clicksend_utils
+        from .. import clicksend_utils
     except ImportError:
         raise Exception("ClickSend integration not available")
 
