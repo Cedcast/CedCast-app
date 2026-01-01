@@ -745,29 +745,54 @@ function payWithPaystack(method) {
     });
 }
 
-// Enable/disable button based on amount input
-document.getElementById('amount').addEventListener('input', function() {
-    const amount = parseFloat(this.value);
+// Function to update button state based on amount
+function updateAmountButtonState() {
+    const amountInput = document.getElementById('amount');
     const btn = document.getElementById('addBalanceBtn');
-    const isValid = amount && amount >= MIN_PAYMENT_AMOUNT && amount <= MAX_PAYMENT_AMOUNT;
+    
+    if (!amountInput || !btn) return; // Elements not found yet
+    
+    const amount = parseFloat(amountInput.value);
+    const isValid = amount && !isNaN(amount) && amount >= MIN_PAYMENT_AMOUNT && amount <= MAX_PAYMENT_AMOUNT;
     btn.disabled = !isValid;
-});
+}
+
+// Attach event listeners - check if DOM is ready
+function attachAmountEventListeners() {
+    const amountInput = document.getElementById('amount');
+    
+    if (!amountInput) return; // Element not found
+    
+    // Remove any existing listener to avoid duplicates
+    const newInput = amountInput.cloneNode(true);
+    amountInput.parentNode.replaceChild(newInput, amountInput);
+    
+    // Add input event listener
+    newInput.addEventListener('input', function() {
+        updateAmountButtonState();
+    });
+    
+    // Initialize button state on first load
+    updateAmountButtonState();
+}
 
 // Quick amount setter
 function setAmount(amount) {
-    document.getElementById('amount').value = amount.toFixed(2);
+    const amountInput = document.getElementById('amount');
+    if (!amountInput) return;
+    
+    amountInput.value = amount.toFixed(2);
     // Trigger input event to enable/disable button
-    document.getElementById('amount').dispatchEvent(new Event('input'));
+    amountInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-// Initialize button state
-document.addEventListener('DOMContentLoaded', function() {
-    const amountInput = document.getElementById('amount');
-    const btn = document.getElementById('addBalanceBtn');
-    const amount = parseFloat(amountInput.value);
-    const isValid = amount && amount >= MIN_PAYMENT_AMOUNT && amount <= MAX_PAYMENT_AMOUNT;
-    btn.disabled = !isValid;
-});
+// Attach listeners when DOM is ready or immediately if already loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachAmountEventListeners);
+} else {
+    // DOM is already ready
+    attachAmountEventListeners();
+}
 </script>
 
 <style>

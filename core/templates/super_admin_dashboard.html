@@ -869,16 +869,28 @@ function declineApprovedRequest(requestId) {
   modal.show();
 }
 
-// Add event listener for the reject button
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('confirmRejectBtn').addEventListener('click', submitRejection);
+// Add event listener for the reject button - use DOMContentLoaded or immediate attach if DOM ready
+function attachEnrollmentEventListeners() {
+  const confirmRejectBtn = document.getElementById('confirmRejectBtn');
+  if (confirmRejectBtn) {
+    confirmRejectBtn.removeEventListener('click', submitRejection); // Remove any existing
+    confirmRejectBtn.addEventListener('click', submitRejection);
+  }
   
   // Initialize tooltips
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
   tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl);
   });
-});
+}
+
+// Attach listeners - check if DOM is already ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', attachEnrollmentEventListeners);
+} else {
+  // DOM is already ready, attach immediately
+  attachEnrollmentEventListeners();
+}
 
 // Enrollment request management functions
 function viewRequestDetails(requestId) {
@@ -930,6 +942,9 @@ function viewRequestDetails(requestId) {
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
         modal.show();
+        
+        // Reattach event listeners after updating DOM
+        attachEnrollmentEventListeners();
       } else {
         showToast('Error loading request details: ' + (data.error || 'Unknown error'), 'error');
       }
@@ -998,21 +1013,6 @@ function submitRejection() {
     btn.innerHTML = 'Reject Request';
   });
 }
-
-// Add event listener for the reject button
-document.addEventListener('DOMContentLoaded', function() {
-  const confirmRejectBtn = document.getElementById('confirmRejectBtn');
-  if (confirmRejectBtn) {
-    confirmRejectBtn.addEventListener('click', submitRejection);
-  }
-
-  // Initialize tooltips
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl);
-  });
-});
-
 // Toast notification function
 function showToast(message, type = 'info') {
   // Remove existing toasts
