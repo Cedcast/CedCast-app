@@ -952,7 +952,7 @@ function viewRequestDetails(requestId) {
     .catch(error => {
       console.error('Error:', error);
       showToast('Error loading request details', 'error');
-
+    });
 
 function submitRejection() {
   const requestId = window.currentRejectRequestId;
