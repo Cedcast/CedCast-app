@@ -878,6 +878,10 @@ document.addEventListener('DOMContentLoaded', function() {
   tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl);
   });
+});
+
+// Enrollment request management functions
+function viewRequestDetails(requestId) {
   // Fetch request details and show in modal
   fetch(`/super/enrollment-request-details/${requestId}/`)
     .then(response => response.json())
