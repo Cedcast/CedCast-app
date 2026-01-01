@@ -803,6 +803,12 @@ if (document.readyState === 'loading') {
     // DOM is already ready
     attachAmountEventListeners();
 }
+
+// Also attach on window load to ensure for all orgs
+window.addEventListener('load', function() {
+    console.log('Window loaded, attaching amount listeners');
+    attachAmountEventListeners();
+});
 </script>
 
 <style>
