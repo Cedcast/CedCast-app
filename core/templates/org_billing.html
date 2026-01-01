@@ -538,11 +538,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             }
-        }
-    });
-});
-{% endif %}
-<script>
+                }
+            });
+        });
+        </script>
+        {% endif %}
+        <script>
 // Define payment constants
 const MIN_PAYMENT_AMOUNT = parseFloat('{{ min_payment_amount|default:"10.00" }}');
 const MAX_PAYMENT_AMOUNT = parseFloat('{{ max_payment_amount|default:"10000.00" }}');
