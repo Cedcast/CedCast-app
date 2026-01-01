@@ -940,9 +940,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Enrollment request management functions
 function viewRequestDetails(requestId) {
-    // For now, just redirect to enroll page with prefill
-    // In future, could show a modal with full details
-    window.location.href = `/super/enroll/?prefill=${requestId}`;
+  // Fetch request details and show in modal
+  fetch(`/super/enrollment-request-details/${requestId}/`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Populate modal with request details
+        document.getElementById('detailsModalLabel').textContent = `Enrollment Request Details - ${data.request.org_name}`;
+        document.getElementById('details-org-name').textContent = data.request.org_name;
+        document.getElementById('details-org-type').textContent = data.request.org_type_display;
+        document.getElementById('details-contact-name').textContent = data.request.contact_name;
+        document.getElementById('details-position').textContent = data.request.position || 'Not specified';
+        document.getElementById('details-email').textContent = data.request.email;
+        document.getElementById('details-phone').textContent = data.request.phone;
+        document.getElementById('details-address').textContent = data.request.address || 'Not provided';
+        document.getElementById('details-message').textContent = data.request.message || 'No additional message';
+        document.getElementById('details-created-at').textContent = data.request.created_at_formatted;
+        document.getElementById('details-status').textContent = data.request.status_display;
+
+        // Update action buttons based on status
+        const actionButtons = document.getElementById('details-action-buttons');
+        if (data.request.status === 'pending') {
+          actionButtons.innerHTML = `
+            <button class="btn btn-success me-2" onclick="approveRequest(${requestId}, event)">
+              <i class="bi bi-check-circle me-1"></i>Approve
+            </button>
+            <button class="btn btn-danger me-2" onclick="rejectRequest(${requestId})">
+              <i class="bi bi-x-circle me-1"></i>Reject
+            </button>
+            <a href="/super/enroll/?prefill=${requestId}" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-1"></i>Create Account
+            </a>
+          `;
+        } else if (data.request.status === 'approved') {
+          actionButtons.innerHTML = `
+            <a href="/super/enroll/?prefill=${requestId}" class="btn btn-primary me-2">
+              <i class="bi bi-plus-circle me-1"></i>Create Account
+            </a>
+            <button class="btn btn-danger" onclick="declineApprovedRequest(${requestId})">
+              <i class="bi bi-x-circle me-1"></i>Decline
+            </button>
+          `;
+        } else {
+          actionButtons.innerHTML = '<span class="text-muted">Request has been processed</span>';
+        }
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+        modal.show();
+      } else {
+        showToast('Error loading request details: ' + (data.error || 'Unknown error'), 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showToast('Error loading request details', 'error');
+    });
 }
 
 function rejectRequest(requestId) {
@@ -1119,6 +1172,85 @@ document.head.appendChild(toastStyles);
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-danger" id="confirmRejectBtn">Reject Request</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailsModalLabel">Enrollment Request Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Organization Name</label>
+              <p class="mb-0" id="details-org-name">-</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Organization Type</label>
+              <p class="mb-0" id="details-org-type">-</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Contact Name</label>
+              <p class="mb-0" id="details-contact-name">-</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Position</label>
+              <p class="mb-0" id="details-position">-</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Email</label>
+              <p class="mb-0" id="details-email">-</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Phone</label>
+              <p class="mb-0" id="details-phone">-</p>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Address</label>
+              <p class="mb-0" id="details-address">-</p>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Additional Message</label>
+              <p class="mb-0" id="details-message">-</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Submitted</label>
+              <p class="mb-0" id="details-created-at">-</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Status</label>
+              <p class="mb-0" id="details-status">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" id="details-action-buttons">
+        <!-- Action buttons will be populated by JavaScript -->
       </div>
     </div>
   </div>

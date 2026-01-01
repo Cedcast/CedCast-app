@@ -63,6 +63,7 @@ urlpatterns = [
     path('super/reject-org/<int:org_id>/', views.reject_org_view, name='reject_org'),
     path('super/approve-enrollment/<int:request_id>/', views.approve_enrollment_request, name='approve_enrollment'),
     path('super/reject-enrollment/<int:request_id>/', views.reject_enrollment_request, name='reject_enrollment'),
+    path('super/enrollment-request-details/<int:request_id>/', views.enrollment_request_details, name='enrollment_request_details'),
     # Password reset (uses Django auth views with our templates)
     path('password_reset/', auth_views.PasswordResetView.as_view(
         template_name='registration/password_reset_form.html',

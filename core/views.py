@@ -971,6 +971,45 @@ def reject_enrollment_request(request, request_id):
 		return JsonResponse({'success': False, 'error': str(e)})
 
 
+@login_required
+@user_passes_test(lambda u: u.role == User.SUPER_ADMIN)  # type: ignore
+def enrollment_request_details(request, request_id):
+	"""Get enrollment request details for modal display"""
+	try:
+		from .models import EnrollmentRequest
+		enrollment_request = EnrollmentRequest.objects.get(id=request_id)
+
+		# Get display values for choices
+		org_type_display = dict(EnrollmentRequest.ORG_TYPE_CHOICES).get(enrollment_request.org_type, enrollment_request.org_type)
+		status_display = dict(EnrollmentRequest.STATUS_CHOICES).get(enrollment_request.status, enrollment_request.status)
+
+		return JsonResponse({
+			'success': True,
+			'request': {
+				'id': enrollment_request.id,
+				'org_name': enrollment_request.org_name,
+				'org_type': enrollment_request.org_type,
+				'org_type_display': org_type_display,
+				'contact_name': enrollment_request.contact_name,
+				'position': enrollment_request.position,
+				'email': enrollment_request.email,
+				'phone': enrollment_request.phone,
+				'address': enrollment_request.address,
+				'message': enrollment_request.message,
+				'status': enrollment_request.status,
+				'status_display': status_display,
+				'created_at_formatted': enrollment_request.created_at.strftime('%B %d, %Y at %I:%M %p'),
+			}
+		})
+	except EnrollmentRequest.DoesNotExist:
+		return JsonResponse({'success': False, 'error': 'Enrollment request not found'})
+	except Exception as e:
+		import logging
+		logger = logging.getLogger(__name__)
+		logger.error(f"Error fetching enrollment request details: {e}")
+		return JsonResponse({'success': False, 'error': str(e)})
+
+
 
 
 @login_required
@@ -1643,12 +1682,12 @@ def enroll_tenant_view(request):
 	generated_credentials = None
 	prefill_data = None
 
-	# Check for prefill parameter (approved enrollment request)
+	# Check for prefill parameter (enrollment request - can be pending or approved)
 	prefill_id = request.GET.get('prefill')
 	if prefill_id:
 		try:
 			from .models import EnrollmentRequest
-			enrollment_request = EnrollmentRequest.objects.get(id=prefill_id, status='approved')
+			enrollment_request = EnrollmentRequest.objects.get(id=prefill_id, status__in=['pending', 'approved'])
 			prefill_data = {
 				'id': enrollment_request.id,
 				'name': enrollment_request.org_name,
