@@ -543,18 +543,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 {% endif %}
 <script>
+// Define payment constants
+const MIN_PAYMENT_AMOUNT = parseFloat('{{ min_payment_amount|default:"10.00" }}');
+const MAX_PAYMENT_AMOUNT = parseFloat('{{ max_payment_amount|default:"10000.00" }}');
+
 function showPaymentModal() {
     const amountInput = document.getElementById('amount');
     const amount = parseFloat(amountInput.value);
 
-    if (!amount || amount < {{ min_payment_amount }}) {
-        alert('Please enter a valid amount (minimum ₵{{ min_payment_amount }}).');
+    if (!amount || amount < MIN_PAYMENT_AMOUNT) {
+        alert('Please enter a valid amount (minimum ₵' + MIN_PAYMENT_AMOUNT.toFixed(2) + ').');
         amountInput.focus();
         return;
     }
 
-    if (amount > {{ max_payment_amount }}) {
-        alert('Amount cannot exceed ₵{{ max_payment_amount|floatformat:0 }}.');
+    if (amount > MAX_PAYMENT_AMOUNT) {
+        alert('Amount cannot exceed ₵' + MAX_PAYMENT_AMOUNT.toFixed(0) + '.');
         amountInput.focus();
         return;
     }
@@ -575,8 +579,8 @@ function payWithPaystack(method) {
     console.log('Amount:', amount, 'Method:', method);
 
     // Validate amount
-    if (isNaN(amount) || amount < {{ min_payment_amount }}) { // Minimum {{ min_payment_amount }} GHS
-        alert('Please enter a valid amount (minimum ₵{{ min_payment_amount }})');
+    if (isNaN(amount) || amount < MIN_PAYMENT_AMOUNT) { // Minimum MIN_PAYMENT_AMOUNT GHS
+        alert('Please enter a valid amount (minimum ₵' + MIN_PAYMENT_AMOUNT.toFixed(2) + ')');
         return;
     }
 
@@ -745,7 +749,7 @@ function payWithPaystack(method) {
 document.getElementById('amount').addEventListener('input', function() {
     const amount = parseFloat(this.value);
     const btn = document.getElementById('addBalanceBtn');
-    const isValid = amount && amount >= {{ min_payment_amount }} && amount <= {{ max_payment_amount }};
+    const isValid = amount && amount >= MIN_PAYMENT_AMOUNT && amount <= MAX_PAYMENT_AMOUNT;
     btn.disabled = !isValid;
 });
 
@@ -761,7 +765,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const amountInput = document.getElementById('amount');
     const btn = document.getElementById('addBalanceBtn');
     const amount = parseFloat(amountInput.value);
-    const isValid = amount && amount >= {{ min_payment_amount }} && amount <= {{ max_payment_amount }};
+    const isValid = amount && amount >= MIN_PAYMENT_AMOUNT && amount <= MAX_PAYMENT_AMOUNT;
     btn.disabled = !isValid;
 });
 </script>
