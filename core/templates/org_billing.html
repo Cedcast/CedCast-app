@@ -751,10 +751,14 @@ function updateAmountButtonState() {
     const amountInput = document.getElementById('amount');
     const btn = document.getElementById('addBalanceBtn');
     
-    if (!amountInput || !btn) return;
+    if (!amountInput || !btn) {
+        console.error('Amount input or button not found');
+        return;
+    }
     
     const amount = parseFloat(amountInput.value);
     const isValid = amount && !isNaN(amount) && amount >= MIN_PAYMENT_AMOUNT && amount <= MAX_PAYMENT_AMOUNT;
+    console.log('Updating button state: amount=', amount, 'MIN=', MIN_PAYMENT_AMOUNT, 'MAX=', MAX_PAYMENT_AMOUNT, 'isValid=', isValid);
     btn.disabled = !isValid;
 }
 
@@ -762,11 +766,17 @@ function updateAmountButtonState() {
 function attachAmountEventListeners() {
     const amountInput = document.getElementById('amount');
     
-    if (!amountInput) return;
+    if (!amountInput) {
+        console.error('Amount input not found');
+        return;
+    }
     
-    // Attach input event listener
-    amountInput.addEventListener('input', function() {
-        updateAmountButtonState();
+    // Attach multiple event listeners to ensure updates
+    ['input', 'change', 'keyup'].forEach(eventType => {
+        amountInput.addEventListener(eventType, function() {
+            console.log('Amount input event:', eventType, 'value:', amountInput.value);
+            updateAmountButtonState();
+        });
     });
     
     // Initialize button state
@@ -779,8 +789,11 @@ function setAmount(amount) {
     if (!amountInput) return;
     
     amountInput.value = amount.toFixed(2);
+    console.log('Set amount to:', amount);
     // Trigger input event to update button state
     amountInput.dispatchEvent(new Event('input', { bubbles: true }));
+    // Also call directly to ensure
+    updateAmountButtonState();
 }
 
 // Attach listeners when DOM is ready or immediately if already loaded
