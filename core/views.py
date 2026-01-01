@@ -2716,6 +2716,7 @@ def org_billing(request, org_slug=None):
 	from django.db.models import Sum, Count
 	from django.utils import timezone
 	import datetime
+	from .constants import MIN_PAYMENT_AMOUNT, MAX_PAYMENT_AMOUNT
 
 	# Get payment history (last 10 payments)
 	payment_history = Payment.objects.filter(
@@ -2786,8 +2787,8 @@ def org_billing(request, org_slug=None):
 		'sms_min_balance': sms_min_balance,
 		'current_sms_rate': organization.get_current_sms_rate(),
 		'total_sms_sent': organization.total_sms_sent,
-		'max_payment_amount': getattr(settings, 'MAX_PAYMENT_AMOUNT', Decimal('10000')),
-		'min_payment_amount': getattr(settings, 'MIN_PAYMENT_AMOUNT', Decimal('0.01')),
+		'max_payment_amount': MAX_PAYMENT_AMOUNT,
+		'min_payment_amount': MIN_PAYMENT_AMOUNT,
 		'payment_history': payment_history,
 		'sms_usage': sms_usage,
 		'monthly_usage': list(monthly_usage),

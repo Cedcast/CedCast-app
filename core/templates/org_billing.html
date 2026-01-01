@@ -575,8 +575,8 @@ function payWithPaystack(method) {
     console.log('Amount:', amount, 'Method:', method);
 
     // Validate amount
-    if (isNaN(amount) || amount < 1) { // Minimum 1 GHS
-        alert('Please enter a valid amount (minimum ₵1.00)');
+    if (isNaN(amount) || amount < {{ min_payment_amount }}) { // Minimum {{ min_payment_amount }} GHS
+        alert('Please enter a valid amount (minimum ₵{{ min_payment_amount }})');
         return;
     }
 
