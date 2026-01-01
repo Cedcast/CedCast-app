@@ -649,14 +649,14 @@ function payWithPaystack(method) {
         // Initialize Paystack payment with server-generated reference
         console.log('Setting up Paystack handler...');
         const handler = PaystackPop.setup({
-            key: '{{ paystack_public_key }}',
-            email: '{{ user.email }}',
+            key: '{{ paystack_public_key|escapejs }}',
+            email: '{{ user.email|escapejs }}',
             amount: amount * 100, // Convert to pesewas
             currency: 'GHS',
             ref: initData.reference,
             metadata: {
-                organization_id: '{{ organization.id }}',
-                organization_slug: '{{ organization.slug }}',
+                organization_id: '{{ organization.id|escapejs }}',
+                organization_slug: '{{ organization.slug|escapejs }}',
                 payment_type: 'balance_topup',
                 payment_method: method
             },
