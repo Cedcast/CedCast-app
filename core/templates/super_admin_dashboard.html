@@ -851,65 +851,7 @@ function rejectRequest(requestId) {
   modal.show();
 }
 
-function submitRejection() {
-  const requestId = window.currentRejectRequestId;
-  const reason = document.getElementById('rejectionReason').value.trim();
 
-  if (!reason) {
-    alert('Please provide a rejection reason.');
-    return;
-  }
-
-  // Disable button to prevent double submission
-  const btn = document.getElementById('confirmRejectBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Rejecting...';
-
-  fetch(`/super/reject-enrollment/${requestId}/`, {
-    method: 'POST',
-    headers: {
-      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-    },
-    body: new URLSearchParams({ reason: reason })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // Hide modal
-      const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
-      modal.hide();
-
-      // Show success toast
-      showToast('Enrollment request rejected successfully!', 'success');
-      
-      // Remove the request card with animation
-      const requestCard = document.querySelector(`[data-request-id="${requestId}"]`);
-      if (requestCard) {
-        requestCard.style.transition = 'all 0.3s ease';
-        requestCard.style.opacity = '0';
-        requestCard.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-          requestCard.remove();
-          location.reload(); // Reload to update counts
-        }, 300);
-      } else {
-        setTimeout(() => location.reload(), 1000);
-      }
-    } else {
-      showToast('Error: ' + (data.error || 'Unknown error occurred'), 'error');
-      // Re-enable button
-      btn.disabled = false;
-      btn.innerHTML = 'Reject Request';
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alert('An error occurred while processing the request.');
-    // Re-enable button
-    btn.disabled = false;
-    btn.innerHTML = 'Reject Request';
-  });
-}
 
 // Function to decline an already approved request
 function declineApprovedRequest(requestId) {
@@ -936,10 +878,6 @@ document.addEventListener('DOMContentLoaded', function() {
   tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl);
   });
-});
-
-// Enrollment request management functions
-function viewRequestDetails(requestId) {
   // Fetch request details and show in modal
   fetch(`/super/enrollment-request-details/${requestId}/`)
     .then(response => response.json())
@@ -995,20 +933,7 @@ function viewRequestDetails(requestId) {
     .catch(error => {
       console.error('Error:', error);
       showToast('Error loading request details', 'error');
-    });
-}
 
-function rejectRequest(requestId) {
-  // Store the request ID for the modal submission
-  window.currentRejectRequestId = requestId;
-
-  // Clear previous reason
-  document.getElementById('rejectionReason').value = '';
-
-  // Show modal
-  const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
-  modal.show();
-}
 
 function submitRejection() {
   const requestId = window.currentRejectRequestId;
@@ -1067,25 +992,6 @@ function submitRejection() {
     // Re-enable button
     btn.disabled = false;
     btn.innerHTML = 'Reject Request';
-  });
-}
-
-// Function to decline an already approved request
-function declineApprovedRequest(requestId) {
-  // Store the request ID for the modal submission
-  window.currentRejectRequestId = requestId;
-
-  // Clear previous reason
-  document.getElementById('rejectionReason').value = '';
-
-  // Update modal title to reflect this is declining an approved request
-  document.getElementById('rejectModalLabel').textContent = 'Decline Approved Enrollment Request';
-
-  // Show modal
-  const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
-  modal.show();
-}
-
 // Add event listener for the reject button
 document.addEventListener('DOMContentLoaded', function() {
   const confirmRejectBtn = document.getElementById('confirmRejectBtn');

@@ -48,6 +48,8 @@ from django.http import JsonResponse, HttpResponse
 from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncMonth
 import json
 import os
 
@@ -2722,39 +2724,53 @@ def org_billing(request, org_slug=None):
 
 	# Get SMS usage statistics for the last 30 days
 	thirty_days_ago = timezone.now() - datetime.timedelta(days=30)
-	sms_usage = OrgAlertRecipient.objects.filter(
+	sms_usage_query = OrgAlertRecipient.objects.filter(
 		message__organization=organization,
 		sent_at__gte=thirty_days_ago,
 		status='sent'
-	).aggregate(
-		total_sent=Count('id'),
-		total_cost=Sum('cost')
-	)
+	).aggregate(total_sent=Count('id'))
+
+	# Calculate total cost based on organization's current SMS rate
+	sms_rate = organization.get_current_sms_rate()
+	sms_usage = {
+		'total_sent': sms_usage_query['total_sent'] or 0,
+		'total_cost': (sms_usage_query['total_sent'] or 0) * sms_rate
+	}
 
 	# Get monthly usage trend (last 6 months)
 	six_months_ago = timezone.now() - datetime.timedelta(days=180)
-	monthly_usage = OrgAlertRecipient.objects.filter(
+	monthly_usage_query = OrgAlertRecipient.objects.filter(
 		message__organization=organization,
 		sent_at__gte=six_months_ago,
 		status='sent'
 	).annotate(
-		month=timezone.TruncMonth('sent_at')
+		month=TruncMonth('sent_at')
 	).values('month').annotate(
-		sent_count=Count('id'),
-		total_cost=Sum('cost')
+		sent_count=Count('id')
 	).order_by('month')
 
+	# Add cost calculation to each monthly entry
+	monthly_usage = []
+	for entry in monthly_usage_query:
+		monthly_usage.append({
+			'month': entry['month'],
+			'sent_count': entry['sent_count'],
+			'total_cost': entry['sent_count'] * sms_rate
+		})
+
 	# Calculate projected monthly cost based on recent usage
-	recent_usage = OrgAlertRecipient.objects.filter(
+	recent_usage_query = OrgAlertRecipient.objects.filter(
 		message__organization=organization,
 		sent_at__gte=timezone.now() - datetime.timedelta(days=7),
 		status='sent'
-	).aggregate(
-		weekly_sent=Count('id'),
-		weekly_cost=Sum('cost')
-	)
+	).aggregate(weekly_sent=Count('id'))
 
-	projected_monthly_cost = (recent_usage['weekly_cost'] or Decimal('0')) * Decimal('4.3')  # Rough estimate
+	recent_usage = {
+		'weekly_sent': recent_usage_query['weekly_sent'] or 0,
+		'weekly_cost': (recent_usage_query['weekly_sent'] or 0) * sms_rate
+	}
+
+	projected_monthly_cost = recent_usage['weekly_cost'] * Decimal('4.3')  # Rough estimate
 
 	sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
 	sms_provider_cost = getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03'))
