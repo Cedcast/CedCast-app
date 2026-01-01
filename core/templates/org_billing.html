@@ -454,9 +454,9 @@
 {% block extra_scripts %}
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% if monthly_usage %}
 <script>
 // Render usage chart if data is available
-{% if monthly_usage %}
 document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('usageChart').getContext('2d');
     const monthlyData = {{ monthly_usage|safe }};
