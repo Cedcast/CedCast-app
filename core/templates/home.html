@@ -247,6 +247,31 @@ h1, h2, h3, h4, h5, h6 {
     font-style: italic;
     color: white;
 }
+
+/* Featured pricing card */
+.pricing-card.featured {
+    border: 3px solid var(--ghana-gold) !important;
+    box-shadow: 0 15px 35px rgba(252, 209, 22, 0.4) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.pricing-card.featured::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(252, 209, 22, 0.1), transparent);
+    animation: shimmer 3s infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
 </style>
 {% endblock %}
 {% block content %}
@@ -418,7 +443,7 @@ html {
                         <div class="col-6">
                             <div class="d-flex align-items-center mb-2">
                                 <i class="bi bi-check-circle-fill me-2 text-warning"></i>
-                                <small>₵0.14 per SMS delivered</small>
+                                <small>₵0.22 - ₵0.14 per SMS (volume-based)</small>
                             </div>
                         </div>
                         <div class="col-6">
@@ -460,68 +485,88 @@ html {
     <!-- Features Section -->
     <section id="features" class="features py-5 bg-light">
         <div class="container">
-            <h2 class="text-center mb-5">Why Choose CedCast?</h2>
+            <h2 class="text-center mb-5">Complete SMS Communication Platform</h2>
+            <p class="text-center text-muted mb-5">Everything you need for professional SMS communication, from basic messaging to enterprise-grade solutions</p>
+
             <div class="row g-4">
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body text-center">
-                            <i class="bi bi-chat-dots text-primary" style="font-size: 3rem;"></i>
-                            <h5 class="card-title mt-3">Multi-Tenant SMS</h5>
-                            <p class="card-text">Send targeted SMS alerts to contacts across multiple organizations with ease.</p>
+                            <i class="bi bi-shield-check text-success" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Multi-Provider Reliability</h5>
+                            <p class="card-text">Primary Hubtel + ClickSend fallback ensures 99.9% delivery success with automatic failover and retry mechanisms.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body text-center">
-                            <i class="bi bi-people text-primary" style="font-size: 3rem;"></i>
-                            <h5 class="card-title mt-3">Contact Management</h5>
-                            <p class="card-text">Organize and manage contact lists with advanced grouping and import features.</p>
+                            <i class="bi bi-people-fill text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Advanced Contact Management</h5>
+                            <p class="card-text">Organize contacts with groups, bulk import/export, custom fields, and segmentation for targeted messaging.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body text-center">
-                            <i class="bi bi-bar-chart text-primary" style="font-size: 3rem;"></i>
-                            <h5 class="card-title mt-3">Analytics & Reporting</h5>
-                            <p class="card-text">Track delivery rates, message trends, and performance metrics in real-time.</p>
+                            <i class="bi bi-bar-chart-line text-info" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Comprehensive Analytics</h5>
+                            <p class="card-text">Real-time delivery tracking, detailed reports, usage trends, and performance analytics with visual dashboards.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body text-center">
-                            <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
-                            <h5 class="card-title mt-3">Secure & Reliable</h5>
-                            <p class="card-text">Enterprise-grade security with multiple SMS provider integrations for reliability.</p>
+                            <i class="bi bi-file-text text-warning" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Message Templates</h5>
+                            <p class="card-text">Pre-built and custom templates for common messages, with variables for personalization and quick sending.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body text-center">
-                            <i class="bi bi-clock text-primary" style="font-size: 3rem;"></i>
-                            <h5 class="card-title mt-3">Scheduled Messaging</h5>
-                            <p class="card-text">Schedule messages for future delivery and automate recurring communications.</p>
+                            <i class="bi bi-clock-history text-danger" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Smart Scheduling</h5>
+                            <p class="card-text">Schedule messages for future delivery, set recurring campaigns, and automate time-sensitive communications.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body text-center">
-                            <i class="bi bi-tag text-primary" style="font-size: 3rem;"></i>
-                            <h5 class="card-title mt-3">Custom Sender ID</h5>
-                            <p class="card-text">Get your brand name as the sender ID instead of a phone number. Make your messages look professional and build brand recognition.</p>
+                            <i class="bi bi-lock text-dark" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Enterprise Security</h5>
+                            <p class="card-text">Encrypted credentials, audit logging, role-based permissions, and secure multi-tenant architecture.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body text-center">
-                            <i class="bi bi-trophy text-primary" style="font-size: 3rem;"></i>
-                            <h5 class="card-title mt-3">Premium Support</h5>
-                            <p class="card-text">Priority customer support with dedicated account managers and custom integrations.</p>
+                            <i class="bi bi-credit-card text-success" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Paystack Integration</h5>
+                            <p class="card-text">Secure mobile money and card payments with instant top-ups, payment history, and automated billing.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-tag-fill text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">Custom Sender IDs</h5>
+                            <p class="card-text">Professional branding with your organization name as sender. Build recognition and trust with every message.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-gear text-info" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3">API & Integrations</h5>
+                            <p class="card-text">REST API for seamless integration with CRM, ERP, and business systems. Webhooks for real-time updates.</p>
                         </div>
                     </div>
                 </div>
@@ -639,18 +684,18 @@ html {
     <!-- Pricing & Services Section -->
     <section id="premium" class="premium py-5 bg-light">
         <div class="container">
-            <h2 class="text-center mb-5">Pay-as-You-Go Pricing</h2>
+            <h2 class="text-center mb-5">Volume-Based Pricing - Save More by Sending More</h2>
             <div class="row g-4 justify-content-center">
-                <!-- Pay-as-You-Go Card -->
-                <div class="col-lg-6">
+                <!-- Tier 1: 0-500 SMS -->
+                <div class="col-lg-4">
                     <div class="card h-100 border-0 shadow-lg pricing-card">
                         <div class="card-header bg-success text-white text-center py-4">
-                            <h3 class="mb-0">Pay-as-You-Go</h3>
-                            <div class="display-4 fw-bold mt-2">₵0.25</div>
-                            <small>per SMS message</small>
+                            <h4 class="mb-0">Starter Tier</h4>
+                            <div class="display-4 fw-bold mt-2">₵0.22</div>
+                            <small>per SMS (0-500 messages)</small>
                         </div>
                         <div class="card-body text-center p-4">
-                            <h5 class="text-success mb-4">Perfect for Any Organization Size</h5>
+                            <h5 class="text-success mb-4">Perfect for Getting Started</h5>
                             <ul class="list-unstyled mb-4">
                                 <li class="mb-3">
                                     <i class="bi bi-check-circle-fill text-success me-2"></i>
@@ -680,55 +725,83 @@ html {
                     </div>
                 </div>
 
-                <!-- Premium Features Card -->
-                <div class="col-lg-6">
-                    <div class="card h-100 border-0 shadow-lg">
+                <!-- Tier 2: 500-5000 SMS -->
+                <div class="col-lg-4">
+                    <div class="card h-100 border-0 shadow-lg pricing-card">
+                        <div class="card-header bg-primary text-white text-center py-4">
+                            <h4 class="mb-0">Growth Tier</h4>
+                            <div class="display-4 fw-bold mt-2">₵0.18</div>
+                            <small>per SMS (500-5,000 messages)</small>
+                        </div>
+                        <div class="card-body text-center p-4">
+                            <h5 class="text-primary mb-4">For Growing Organizations</h5>
+                            <ul class="list-unstyled mb-4">
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                    <strong>18% savings vs Starter tier</strong>
+                                </li>
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                    <strong>All Starter features included</strong>
+                                </li>
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                    <strong>Advanced analytics dashboard</strong>
+                                </li>
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                    <strong>Contact management with groups</strong>
+                                </li>
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                                    <strong>Message templates & scheduling</strong>
+                                </li>
+                            </ul>
+                            <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#enrollmentModal">
+                                <i class="bi bi-rocket me-2"></i>Upgrade to Growth
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tier 3: 5000+ SMS -->
+                <div class="col-lg-4">
+                    <div class="card h-100 border-0 shadow-lg pricing-card featured">
                         <div class="card-header bg-warning text-dark text-center py-4">
-                            <h3 class="mb-0">Premium Features</h3>
+                            <h4 class="mb-0">Enterprise Tier</h4>
+                            <div class="display-4 fw-bold mt-2">₵0.14</div>
+                            <small>per SMS (5,000+ messages)</small>
                             <div class="mt-2">
-                                <span class="badge bg-danger fs-6">Available with Balance</span>
+                                <span class="badge bg-danger fs-6">Most Popular</span>
                             </div>
                         </div>
-                        <div class="card-body p-4">
-                            <h5 class="text-center mb-4">Enhanced Capabilities</h5>
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <div class="d-flex align-items-center p-3 bg-light rounded">
-                                        <i class="bi bi-tag text-primary me-3 fs-4"></i>
-                                        <div>
-                                            <h6 class="mb-1">Custom Sender ID</h6>
-                                            <small class="text-muted">Use your brand name instead of phone numbers</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="d-flex align-items-center p-3 bg-light rounded">
-                                        <i class="bi bi-bar-chart text-success me-3 fs-4"></i>
-                                        <div>
-                                            <h6 class="mb-1">Advanced Analytics</h6>
-                                            <small class="text-muted">Detailed reporting and delivery tracking</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="d-flex align-items-center p-3 bg-light rounded">
-                                        <i class="bi bi-clock text-info me-3 fs-4"></i>
-                                        <div>
-                                            <h6 class="mb-1">Scheduled Messaging</h6>
-                                            <small class="text-muted">Automate messages for future delivery</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="d-flex align-items-center p-3 bg-light rounded">
-                                        <i class="bi bi-people text-warning me-3 fs-4"></i>
-                                        <div>
-                                            <h6 class="mb-1">Contact Management</h6>
-                                            <small class="text-muted">Organize contacts with groups and segments</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="card-body text-center p-4">
+                            <h5 class="text-warning mb-4">Maximum Savings & Features</h5>
+                            <ul class="list-unstyled mb-4">
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                    <strong>36% savings vs Starter tier</strong>
+                                </li>
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                    <strong>All Growth features included</strong>
+                                </li>
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                    <strong>Custom sender ID branding</strong>
+                                </li>
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                    <strong>Priority support & API access</strong>
+                                </li>
+                                <li class="mb-3">
+                                    <i class="bi bi-check-circle-fill text-warning me-2"></i>
+                                    <strong>White-label dashboard option</strong>
+                                </li>
+                            </ul>
+                            <button class="btn btn-warning btn-lg px-4" data-bs-toggle="modal" data-bs-target="#enrollmentModal">
+                                <i class="bi bi-star me-2"></i>Go Enterprise
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -854,7 +927,7 @@ html {
                             <div class="col-4">
                                 <i class="bi bi-cash display-6 text-warning mb-2"></i>
                                 <div><strong>Affordable Pricing</strong></div>
-                                <small>Just ₵0.14 per SMS delivered</small>
+                                <small>₵0.22 - ₵0.14 per SMS (save more by sending more)</small>
                             </div>
                             <div class="col-4">
                                 <i class="bi bi-headset display-6 text-info mb-2"></i>
@@ -943,7 +1016,7 @@ html {
                                 <li>Our team reviews your enrollment request (typically within 24 hours)</li>
                                 <li>You receive login credentials via email</li>
                                 <li>Top-up your account balance to start sending SMS</li>
-                                <li>Pay only ₵0.25 per message sent</li>
+                                <li>Pay only ₵0.22-₵0.14 per message (save more by sending more)</li>
                             </ul>
                         </div>
                     </div>

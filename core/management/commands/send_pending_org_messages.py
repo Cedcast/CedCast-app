@@ -109,4 +109,10 @@ class Command(BaseCommand):
                     ar.save()
                     self.stdout.write(f"Failed {phone}: {e} (retry {ar.retry_count}/{max_retries})")
 
-        self.stdout.write(f"Done — processed {processed} recipients")
+            except Exception as e:
+                logger.exception("Unexpected error processing recipient %s: %s", phone, e)
+                # Mark as failed for unexpected errors
+                ar.status = 'failed'
+                ar.error_message = f"Unexpected error: {str(e)}"
+                ar.save()
+                self.stdout.write(f"Unexpected error for {phone}: {e}")

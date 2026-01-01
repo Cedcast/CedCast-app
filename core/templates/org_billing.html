@@ -138,6 +138,203 @@
             </div>
         </div>
 
+        <!-- Usage Analytics and Payment History -->
+        <div class="row mb-4 g-4">
+            <!-- Usage Analytics -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>SMS Usage Trends (Last 6 Months)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if monthly_usage %}
+                        <canvas id="usageChart" width="400" height="200"></canvas>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No usage data available yet</p>
+                            <small class="text-muted">Start sending SMS to see your usage trends</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i>Quick Stats
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">SMS Sent (30 days):</span>
+                                <strong class="text-primary">{{ sms_usage.total_sent|default:0 }}</strong>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Cost (30 days):</span>
+                                <strong class="text-success">₵{{ sms_usage.total_cost|default:0|floatformat:2 }}</strong>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Projected Monthly:</span>
+                                <strong class="text-warning">₵{{ projected_monthly_cost|floatformat:2 }}</strong>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Avg. Cost per SMS:</span>
+                                <strong>₵{{ current_sms_rate|floatformat:2 }}</strong>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                Send more SMS to get lower rates
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Volume-Based Pricing Tiers -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tags me-2"></i>Volume-Based Pricing - Save More by Sending More!
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">Your SMS rate decreases as you send more messages. Current rate: <strong class="text-primary">₵{{ current_sms_rate|floatformat:2 }}</strong> per SMS</p>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="card border-primary h-100 {% if total_sms_sent < 500 %}bg-primary bg-opacity-10{% endif %}">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title text-primary">Starter</h6>
+                                        <h4 class="text-primary fw-bold">₵0.22</h4>
+                                        <small class="text-muted">0 - 500 SMS/month</small>
+                                        {% if total_sms_sent < 500 %}
+                                        <div class="mt-2">
+                                            <span class="badge bg-primary">Your Current Tier</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-success h-100 {% if total_sms_sent >= 500 and total_sms_sent < 5000 %}bg-success bg-opacity-10{% endif %}">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title text-success">Professional</h6>
+                                        <h4 class="text-success fw-bold">₵0.18</h4>
+                                        <small class="text-muted">500 - 5,000 SMS/month</small>
+                                        {% if total_sms_sent >= 500 and total_sms_sent < 5000 %}
+                                        <div class="mt-2">
+                                            <span class="badge bg-success">Your Current Tier</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-warning h-100 {% if total_sms_sent >= 5000 %}bg-warning bg-opacity-10{% endif %}">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title text-warning">Enterprise</h6>
+                                        <h4 class="text-warning fw-bold">₵0.14</h4>
+                                        <small class="text-muted">5,000+ SMS/month</small>
+                                        {% if total_sms_sent >= 5000 %}
+                                        <div class="mt-2">
+                                            <span class="badge bg-warning">Your Current Tier</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Volume Discount:</strong> Your rate is automatically updated based on your monthly SMS volume. Send more to save more!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment History -->
+        {% if payment_history %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Recent Payment History
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Reference</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in payment_history %}
+                                    <tr>
+                                        <td>{{ payment.created_at|date:"M d, Y H:i" }}</td>
+                                        <td class="fw-bold text-success">₵{{ payment.amount|floatformat:2 }}</td>
+                                        <td>
+                                            {% if payment.status == 'success' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Success
+                                                </span>
+                                            {% elif payment.status == 'pending' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock me-1"></i>Pending
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times me-1"></i>Failed
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ payment.paystack_reference|truncatechars:20 }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if payment_history|length >= 10 %}
+                        <div class="text-center mt-3">
+                            <a href="#" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-eye me-1"></i>View All Payments
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Add Balance Section -->
         <div class="row mb-4">
             <div class="col-12">
@@ -172,6 +369,35 @@
                             <div class="badge bg-light text-muted px-4 py-2 rounded-pill">
                                 <i class="fas fa-shield-alt text-success me-2"></i>
                                 Secure payments powered by Paystack
+                            </div>
+                        </div>
+
+                        <!-- Quick Amount Buttons -->
+                        <div class="mt-4">
+                            <label class="form-label fw-semibold mb-3 text-primary">
+                                <i class="fas fa-bolt me-2"></i>Quick Amounts
+                            </label>
+                            <div class="row g-2">
+                                <div class="col-6 col-md-3">
+                                    <button type="button" class="btn btn-outline-primary w-100" onclick="setAmount(10)">
+                                        ₵10
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <button type="button" class="btn btn-outline-primary w-100" onclick="setAmount(25)">
+                                        ₵25
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <button type="button" class="btn btn-outline-primary w-100" onclick="setAmount(50)">
+                                        ₵50
+                                    </button>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <button type="button" class="btn btn-outline-primary w-100" onclick="setAmount(100)">
+                                        ₵100
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -227,6 +453,95 @@
 
 {% block extra_scripts %}
 <script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Render usage chart if data is available
+{% if monthly_usage %}
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('usageChart').getContext('2d');
+    const monthlyData = {{ monthly_usage|safe }};
+
+    const labels = monthlyData.map(item => {
+        const date = new Date(item.month);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+    });
+
+    const sentData = monthlyData.map(item => item.sent_count);
+    const costData = monthlyData.map(item => parseFloat(item.total_cost || 0));
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'SMS Sent',
+                data: sentData,
+                borderColor: 'rgb(13, 110, 253)',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                yAxisID: 'y',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Cost (₵)',
+                data: costData,
+                borderColor: 'rgb(25, 135, 84)',
+                backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                yAxisID: 'y1',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.datasetIndex === 0) {
+                                return context.dataset.label + ': ' + context.parsed.y + ' SMS';
+                            } else {
+                                return context.dataset.label + ': ₵' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'SMS Count'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Cost (₵)'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    }
+                }
+            }
+        }
+    });
+});
+{% endif %}
 <script>
 function showPaymentModal() {
     const amountInput = document.getElementById('amount');
@@ -433,6 +748,13 @@ document.getElementById('amount').addEventListener('input', function() {
     const isValid = amount && amount >= {{ min_payment_amount }} && amount <= {{ max_payment_amount }};
     btn.disabled = !isValid;
 });
+
+// Quick amount setter
+function setAmount(amount) {
+    document.getElementById('amount').value = amount.toFixed(2);
+    // Trigger input event to enable/disable button
+    document.getElementById('amount').dispatchEvent(new Event('input'));
+}
 
 // Initialize button state
 document.addEventListener('DOMContentLoaded', function() {

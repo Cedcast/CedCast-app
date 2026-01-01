@@ -244,8 +244,12 @@ def _process_login(request, template_name, allowed_roles=None):
 					# Organization was deleted
 					logout(request)
 					return redirect("login_org")
-				elif not request.user.organization.is_active:
+				elif request.user.organization.banned:
 					# Organization is banned
+					logout(request)
+					return redirect("login_org")
+				elif not request.user.organization.is_active:
+					# Organization is suspended
 					logout(request)
 					return redirect("login_org")
 			# already logged in and allowed here — send to their dashboard
@@ -296,8 +300,11 @@ def _process_login(request, template_name, allowed_roles=None):
 			elif user.role == User.SCHOOL_ADMIN and getattr(user, 'school', None):  # type: ignore
 				return redirect("school_dashboard", school_slug=user.school.slug)  # type: ignore
 			elif user.role == User.ORG_ADMIN and getattr(user, 'organization', None):  # type: ignore
-				# Check if organization is active before allowing login
-				if not user.organization.is_active:  # type: ignore
+				# Check if organization is active and not banned before allowing login
+				if user.organization.banned:  # type: ignore
+					logout(request)
+					return render(request, template_name, {"error": "Your organization account has been banned. Please contact support.", 'recaptcha_site_key': recaptcha_site})
+				elif not user.organization.is_active:  # type: ignore
 					logout(request)
 					return render(request, template_name, {"error": "Your organization account has been suspended. Please contact support.", 'recaptcha_site_key': recaptcha_site})
 				return redirect("org_dashboard", org_slug=user.organization.slug)  # type: ignore
@@ -608,6 +615,9 @@ def dashboard(request, school_slug=None):
 		total_enrollment_requests = EnrollmentRequest.objects.filter(created_at__gte=thirty_days_ago).count()
 		rejected_enrollment_requests = EnrollmentRequest.objects.filter(status='rejected', reviewed_at__gte=thirty_days_ago).count()
 
+		# Banned organizations count
+		banned_orgs = Organization.objects.filter(banned=True).count()
+
 		context = {"schools": schools, "school_stats": school_stats, "org_stats": org_stats, "notice": notice,
 			"total_messages": total_msgs, "total_sent": total_sent,
 			"messages_trend": messages_trend, "orgs_trend": orgs_trend, "delivery_trend": delivery_trend, "avg_delivery_rate": avg_delivery_rate,
@@ -641,6 +651,8 @@ def dashboard(request, school_slug=None):
 			"rejected_enrollment_requests": rejected_enrollment_requests,
 			# Recent payment transactions
 			"recent_payment_transactions": recent_payment_transactions,
+			# Banned organizations
+			"banned_orgs": banned_orgs,
 		}
 		return render(request, "super_admin_dashboard.html", context)
 
@@ -1196,6 +1208,80 @@ def onboarding_view(request):
 					# For schools, delete
 					tenant.delete()
 					notice = f"Removed {tenant.name}"
+			elif action == 'ban':
+				if is_org:
+					ban_reason = request.POST.get('ban_reason', '')
+					tenant.banned = True
+					tenant.ban_reason = ban_reason
+					tenant.banned_at = timezone.now()
+					tenant.banned_by = request.user
+					tenant.is_active = False  # Also deactivate when banned
+					tenant.save()
+					notice = f"Banned {tenant.name}"
+					try:
+						from django.contrib.admin.models import LogEntry
+						from django.contrib.contenttypes.models import ContentType
+						ct = ContentType.objects.get_for_model(tenant.__class__)
+						LogEntry.objects.log_action(
+							user_id=request.user.id,
+							content_type_id=ct.id,
+							object_id=getattr(tenant, 'id', None),
+							object_repr=str(tenant),
+							action_flag=2,
+							change_message=f"Banned tenant: {ban_reason}",
+						)
+					except Exception:
+						pass
+				else:
+					notice = "Cannot ban schools"
+			elif action == 'unban':
+				if is_org:
+					tenant.banned = False
+					tenant.ban_reason = None
+					tenant.banned_at = None
+					tenant.banned_by = None
+					tenant.is_active = True  # Reactivate when unbanned
+					tenant.save()
+					notice = f"Unbanned {tenant.name}"
+					try:
+						from django.contrib.admin.models import LogEntry
+						from django.contrib.contenttypes.models import ContentType
+						ct = ContentType.objects.get_for_model(tenant.__class__)
+						LogEntry.objects.log_action(
+							user_id=request.user.id,
+							content_type_id=ct.id,
+							object_id=getattr(tenant, 'id', None),
+							object_repr=str(tenant),
+							action_flag=2,
+							change_message="Unbanned tenant",
+						)
+					except Exception:
+						pass
+				else:
+					notice = "Cannot unban schools"
+			elif action == 'delete':
+				if is_org:
+					org_name = tenant.name
+					tenant.delete()
+					notice = f"Deleted organization: {org_name}"
+					try:
+						from django.contrib.admin.models import LogEntry
+						from django.contrib.contenttypes.models import ContentType
+						ct = ContentType.objects.get_for_model(Organization)
+						LogEntry.objects.log_action(
+							user_id=request.user.id,
+							content_type_id=ct.id,
+							object_id=None,  # Object is deleted
+							object_repr=f"Organization: {org_name}",
+							action_flag=3,  # delete
+							change_message="Deleted organization",
+						)
+					except Exception:
+						pass
+				else:
+					# For schools, delete (existing behavior)
+					tenant.delete()
+					notice = f"Removed {tenant.name}"
 			elif action == 'activate':
 				if is_org:
 					tenant.is_active = True
@@ -1229,6 +1315,9 @@ def onboarding_view(request):
 			'slug': org.slug,
 			'created_at': org.created_at,
 			'is_active': org.is_active,
+			'banned': getattr(org, 'banned', False),
+			'ban_reason': getattr(org, 'ban_reason', ''),
+			'banned_at': getattr(org, 'banned_at', None),
 			'approval_status': org.approval_status,
 			'org_type': getattr(org, 'org_type', ''),
 			'phone_primary': getattr(org, 'phone_primary', ''),
@@ -2566,7 +2655,7 @@ def org_billing(request, org_slug=None):
 	if request.method == 'POST':
 		action = request.POST.get('action')
 		is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-		
+
 		if action == 'top_up_balance':
 			amount = Decimal(request.POST.get('amount', '0'))
 			if amount > 0:
@@ -2582,7 +2671,52 @@ def org_billing(request, org_slug=None):
 				if is_ajax:
 					return JsonResponse({'success': False, 'message': message})
 
-	from .models import Package
+	from .models import Package, Payment, OrgAlertRecipient
+	from django.db.models import Sum, Count
+	from django.utils import timezone
+	import datetime
+
+	# Get payment history (last 10 payments)
+	payment_history = Payment.objects.filter(
+		organization=organization
+	).order_by('-created_at')[:10]
+
+	# Get SMS usage statistics for the last 30 days
+	thirty_days_ago = timezone.now() - datetime.timedelta(days=30)
+	sms_usage = OrgAlertRecipient.objects.filter(
+		message__organization=organization,
+		sent_at__gte=thirty_days_ago,
+		status='sent'
+	).aggregate(
+		total_sent=Count('id'),
+		total_cost=Sum('cost')
+	)
+
+	# Get monthly usage trend (last 6 months)
+	six_months_ago = timezone.now() - datetime.timedelta(days=180)
+	monthly_usage = OrgAlertRecipient.objects.filter(
+		message__organization=organization,
+		sent_at__gte=six_months_ago,
+		status='sent'
+	).annotate(
+		month=timezone.TruncMonth('sent_at')
+	).values('month').annotate(
+		sent_count=Count('id'),
+		total_cost=Sum('cost')
+	).order_by('month')
+
+	# Calculate projected monthly cost based on recent usage
+	recent_usage = OrgAlertRecipient.objects.filter(
+		message__organization=organization,
+		sent_at__gte=timezone.now() - datetime.timedelta(days=7),
+		status='sent'
+	).aggregate(
+		weekly_sent=Count('id'),
+		weekly_cost=Sum('cost')
+	)
+
+	projected_monthly_cost = (recent_usage['weekly_cost'] or Decimal('0')) * Decimal('4.3')  # Rough estimate
+
 	sms_customer_rate = getattr(settings, 'SMS_CUSTOMER_RATE', Decimal('0.10'))
 	sms_provider_cost = getattr(settings, 'SMS_PROVIDER_COST', Decimal('0.03'))
 	sms_min_balance = getattr(settings, 'SMS_MIN_BALANCE', Decimal('1.00'))
@@ -2599,6 +2733,11 @@ def org_billing(request, org_slug=None):
 		'total_sms_sent': organization.total_sms_sent,
 		'max_payment_amount': getattr(settings, 'MAX_PAYMENT_AMOUNT', Decimal('10000')),
 		'min_payment_amount': getattr(settings, 'MIN_PAYMENT_AMOUNT', Decimal('0.01')),
+		'payment_history': payment_history,
+		'sms_usage': sms_usage,
+		'monthly_usage': list(monthly_usage),
+		'projected_monthly_cost': projected_monthly_cost,
+		'recent_usage': recent_usage,
 	})
 
 

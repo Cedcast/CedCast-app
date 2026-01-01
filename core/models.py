@@ -336,6 +336,10 @@ class Organization(models.Model):
 	# administrative flags
 	is_active = models.BooleanField(default=True)
 	onboarded = models.BooleanField(default=False)
+	banned = models.BooleanField(default=False, help_text="Whether this organization is banned from the platform")
+	ban_reason = models.TextField(blank=True, null=True, help_text="Reason for banning the organization")
+	banned_at = models.DateTimeField(blank=True, null=True, help_text="When the organization was banned")
+	banned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='banned_organizations', help_text="User who banned this organization")
 	# approval workflow
 	APPROVAL_CHOICES = [
 		('pending', 'Pending Approval'),
@@ -363,18 +367,13 @@ class Organization(models.Model):
 	def get_current_sms_rate(self):
 		"""Calculate current SMS rate based on volume tiers"""
 		# Volume-based pricing: higher volume = lower rate
-		if self.total_sms_sent >= 10000:  # 10k+ SMS
+		# The more SMS sent, the more organizations save
+		if self.total_sms_sent >= 5000:   # 5k-10k SMS - maximum discount
 			return Decimal('0.14')
-		elif self.total_sms_sent >= 5000:  # 5k-10k SMS
-			return Decimal('0.16')
-		elif self.total_sms_sent >= 1000:  # 1k-5k SMS
+		elif self.total_sms_sent >= 500:  # 500-5k SMS
 			return Decimal('0.18')
-		elif self.total_sms_sent >= 500:   # 500-1k SMS
-			return Decimal('0.20')
-		elif self.total_sms_sent >= 100:   # 100-500 SMS
+		else:  # 0-500 SMS - starting price
 			return Decimal('0.22')
-		else:  # 0-100 SMS
-			return Decimal('0.25')
 
 	def update_sms_rate(self):
 		"""Update the stored SMS rate based on current volume"""
