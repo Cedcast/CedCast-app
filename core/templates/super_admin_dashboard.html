@@ -956,6 +956,8 @@ function viewRequestDetails(requestId) {
       showToast('Error loading request details', 'error');
     });
 
+  }
+
 function submitRejection() {
   const requestId = window.currentRejectRequestId;
   const reason = document.getElementById('rejectionReason').value.trim();
