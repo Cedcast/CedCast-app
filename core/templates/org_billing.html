@@ -758,7 +758,6 @@ function updateAmountButtonState() {
     
     const amount = parseFloat(amountInput.value);
     const isValid = amount && !isNaN(amount) && amount >= MIN_PAYMENT_AMOUNT && amount <= MAX_PAYMENT_AMOUNT;
-    console.log('Updating button state: amount=', amount, 'MIN=', MIN_PAYMENT_AMOUNT, 'MAX=', MAX_PAYMENT_AMOUNT, 'isValid=', isValid);
     btn.disabled = !isValid;
 }
 
@@ -774,7 +773,6 @@ function attachAmountEventListeners() {
     // Attach multiple event listeners to ensure updates
     ['input', 'change', 'keyup'].forEach(eventType => {
         amountInput.addEventListener(eventType, function() {
-            console.log('Amount input event:', eventType, 'value:', amountInput.value);
             updateAmountButtonState();
         });
     });
@@ -789,7 +787,6 @@ function setAmount(amount) {
     if (!amountInput) return;
     
     amountInput.value = amount.toFixed(2);
-    console.log('Set amount to:', amount);
     // Trigger input event to update button state
     amountInput.dispatchEvent(new Event('input', { bubbles: true }));
     // Also call directly to ensure
@@ -806,7 +803,6 @@ if (document.readyState === 'loading') {
 
 // Also attach on window load to ensure for all orgs
 window.addEventListener('load', function() {
-    console.log('Window loaded, attaching amount listeners');
     attachAmountEventListeners();
 });
 </script>
