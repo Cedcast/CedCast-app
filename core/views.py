@@ -501,7 +501,7 @@ def dashboard(request, school_slug=None):
 		import datetime
 		from django.db.models.functions import TruncDate
 		from django.db.models import Count
-		trend_days = 7
+		trend_days = 30  # Show 30 days of trends instead of 7
 		now = timezone.now()
 		start_date = (now - datetime.timedelta(days=trend_days - 1)).date()
 		# Aggregate sent counts by sent_at date for school and org recipients
