@@ -750,29 +750,25 @@ function updateAmountButtonState() {
     const amountInput = document.getElementById('amount');
     const btn = document.getElementById('addBalanceBtn');
     
-    if (!amountInput || !btn) return; // Elements not found yet
+    if (!amountInput || !btn) return;
     
     const amount = parseFloat(amountInput.value);
     const isValid = amount && !isNaN(amount) && amount >= MIN_PAYMENT_AMOUNT && amount <= MAX_PAYMENT_AMOUNT;
     btn.disabled = !isValid;
 }
 
-// Attach event listeners - check if DOM is ready
+// Attach event listeners to the amount input
 function attachAmountEventListeners() {
     const amountInput = document.getElementById('amount');
     
-    if (!amountInput) return; // Element not found
+    if (!amountInput) return;
     
-    // Remove any existing listener to avoid duplicates
-    const newInput = amountInput.cloneNode(true);
-    amountInput.parentNode.replaceChild(newInput, amountInput);
-    
-    // Add input event listener
-    newInput.addEventListener('input', function() {
+    // Attach input event listener
+    amountInput.addEventListener('input', function() {
         updateAmountButtonState();
     });
     
-    // Initialize button state on first load
+    // Initialize button state
     updateAmountButtonState();
 }
 
@@ -782,7 +778,7 @@ function setAmount(amount) {
     if (!amountInput) return;
     
     amountInput.value = amount.toFixed(2);
-    // Trigger input event to enable/disable button
+    // Trigger input event to update button state
     amountInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
