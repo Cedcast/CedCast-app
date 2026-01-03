@@ -109,12 +109,12 @@
                                                 <span class="font-monospace">{{ c.phone_number }}</span>
                                             </td>
                                             <td class="text-end">
-                                                <button class="btn btn-outline-primary btn-sm me-1"
-                                                        onclick="editContact({{ c.id }}, '{{ c.name }}', '{{ c.phone_number }}')">
+                                                <button type="button" class="btn btn-outline-primary btn-sm me-1"
+                                                    onclick="editContact({{ c.id }}, '{{ c.name }}', '{{ c.phone_number }}')">
                                                     <i class="fas fa-edit"></i> Edit
                                                 </button>
-                                                <button class="btn btn-outline-danger btn-sm"
-                                                        onclick="deleteContact({{ c.id }}, '{{ c.name }}')">
+                                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                                    onclick="deleteContact({{ c.id }}, '{{ c.name }}')">
                                                     <i class="fas fa-trash"></i> Delete
                                                 </button>
                                             </td>

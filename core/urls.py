@@ -39,6 +39,8 @@ urlpatterns = [
     # Hubtel delivery receipt webhook
     path('webhooks/hubtel/', views.hubtel_webhook, name='hubtel_webhook'),
     path('health/', views.health, name='health'),
+    # Alias for legacy test/name expectations
+    path('super/', views.dashboard, name='super_admin'),
     # Super-admin pages (use 'super/' prefix to avoid colliding with Django admin)
     path('super/enroll/', views.enroll_tenant_view, name='enroll_tenant'),
     path('super/system-logs/', views.system_logs_view, name='system_logs'),

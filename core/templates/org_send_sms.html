@@ -159,10 +159,14 @@
                                 </div>
                             </div>
 
+                            <!-- Hidden action and scheduled_time inputs -->
+                            <input type="hidden" name="action" id="action_input" value="send_now">
+                            <input type="hidden" name="scheduled_time" id="scheduled_datetime" value="">
+
                             <!-- Action Buttons -->
                             <div class="d-flex gap-3">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="fas fa-paper-plane me-2"></i>Send Message
+                                <button type="submit" id="sendBtn" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-paper-plane me-2"></i><span id="sendBtnText">Send Message</span>
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary btn-lg" onclick="previewMessage()">
                                     <i class="fas fa-eye me-2"></i>Preview
@@ -259,6 +263,18 @@ document.addEventListener('DOMContentLoaded', function() {
         radio.addEventListener('change', function() {
             const scheduleSection = document.getElementById('schedule_section');
             scheduleSection.style.display = this.value === 'schedule' ? 'block' : 'none';
+            // Update action hidden input and send button text
+            const actionInput = document.getElementById('action_input');
+            const sendBtnText = document.getElementById('sendBtnText');
+            if (actionInput) {
+                if (this.value === 'schedule') {
+                    actionInput.value = 'schedule';
+                    if (sendBtnText) sendBtnText.textContent = 'Schedule Message';
+                } else {
+                    actionInput.value = 'send_now';
+                    if (sendBtnText) sendBtnText.textContent = 'Send Message';
+                }
+            }
         });
     });
 
@@ -271,6 +287,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize counts
     updateCounts();
+
+    // Before form submit, if scheduling combine date+time into scheduled_time hidden field
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const actionInput = document.getElementById('action_input');
+            if (actionInput && actionInput.value === 'schedule') {
+                const date = document.getElementById('scheduled_date').value;
+                const time = document.getElementById('scheduled_time').value;
+                if (!date || !time) {
+                    e.preventDefault();
+                    alert('Please pick a date and time to schedule the message.');
+                    return false;
+                }
+                // Combine into ISO-like format expected by view: YYYY-MM-DDTHH:MM
+                const combined = date + 'T' + time.slice(0,5);
+                const sched = document.getElementById('scheduled_datetime');
+                if (sched) sched.value = combined;
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
