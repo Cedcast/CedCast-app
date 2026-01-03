@@ -1948,7 +1948,7 @@ def org_send_sms(request, org_slug=None):
 			msg = OrgMessage.objects.create(
 				organization=org,
 				content=sms_body,
-				scheduled_time=scheduled_dt,
+				scheduled_time=scheduled_dt.replace(second=0, microsecond=0),
 				sent=False,
 				created_by=request.user,
 			)
@@ -1982,10 +1982,41 @@ def org_send_sms(request, org_slug=None):
 						error = 'Failed to send any messages. Please try again.'
 				except Exception as e:
 					error = f'SMS sending failed: {str(e)}'
+			else:
+				# Scheduled for later
+				# Provide user feedback on successful scheduling
+				try:
+					display_ts = scheduled_dt.strftime('%B %d, %Y at %I:%M %p')
+				except Exception:
+					display_ts = str(scheduled_dt)
+				success = f"Message scheduled for {display_ts}. It will be sent at the scheduled time."
 		else:
 			error = 'Please provide a message and at least one recipient.'
 
-	return render(request, 'org_send_sms.html', {'organization': org, 'contacts': contacts, 'groups': groups, 'templates': templates, 'sms_body': request.POST.get('sms_body', ''), 'error': error, 'success': success, 'hubtel_dry_run': getattr(settings, 'HUBTEL_DRY_RUN', False), 'clicksend_dry_run': getattr(settings, 'CLICKSEND_DRY_RUN', False)})
+	# Check for any in-app sent notifications for this user stored by the scheduler
+	from django.core.cache import cache
+	sent_notifications = []
+	try:
+		if request.user and getattr(request.user, 'id', None):
+			key = f"sent_notifications_user_{request.user.id}"
+			sent_notifications = cache.get(key, []) or []
+			# Clear after reading so we don't show repeatedly
+			cache.delete(key)
+	except Exception:
+		sent_notifications = []
+
+	return render(request, 'org_send_sms.html', {
+		'organization': org,
+		'contacts': contacts,
+		'groups': groups,
+		'templates': templates,
+		'sms_body': request.POST.get('sms_body', ''),
+		'error': error,
+		'success': success,
+		'hubtel_dry_run': getattr(settings, 'HUBTEL_DRY_RUN', False),
+		'clicksend_dry_run': getattr(settings, 'CLICKSEND_DRY_RUN', False),
+		'sent_notifications': sent_notifications,
+	})
 
 
 @login_required

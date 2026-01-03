@@ -117,15 +117,15 @@
                                                 </div>
                                             </div>
                                             <div class="d-flex gap-2 ms-3">
-                                                <button class="btn btn-outline-primary btn-sm" onclick="useTemplate('{{ t.content|escapejs }}')">
-                                                    <i class="fas fa-copy"></i>
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="useTemplate('{{ t.content|escapejs }}')">
+                                                    Use
                                                 </button>
-                                                <a href="{% url 'org_template_edit' organization.slug t.id %}" class="btn btn-outline-warning btn-sm">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <a href="{% url 'org_template_delete' organization.slug t.id %}" class="btn btn-outline-danger btn-sm">
-                                                    <i class="fas fa-trash"></i>
-                                                </a>
+                                                <button type="button" class="btn btn-secondary btn-sm" onclick="location.href='{% url 'org_template_edit' organization.slug t.id %}'">
+                                                    Edit
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="if(confirm('Delete this template?')) { location.href='{% url 'org_template_delete' organization.slug t.id %}'; }">
+                                                    Delete
+                                                </button>
                                             </div>
                                         </div>
                                     </div>

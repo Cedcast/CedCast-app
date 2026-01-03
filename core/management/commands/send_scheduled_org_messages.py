@@ -2,6 +2,9 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from core.models import OrgMessage, OrgAlertRecipient
 from core.hubtel_utils import send_sms
+from django.core.mail import send_mail
+from django.conf import settings
+from django.core.cache import cache
 
 
 class Command(BaseCommand):
@@ -50,4 +53,27 @@ class Command(BaseCommand):
                     ar.save()
             message.sent = True
             message.save()
+            # Notify creator via email if available
+            try:
+                creator = getattr(message, 'created_by', None)
+                if creator and getattr(creator, 'email', None):
+                    subj = f"Scheduled message sent - {message.organization.name}"
+                    body = f"Your scheduled message (ID: {message.id}) was sent on {now.strftime('%B %d, %Y at %I:%M %p')}.\n\nContent:\n{message.content}\n\nOrganization: {message.organization.name}"
+                    send_mail(subj, body, getattr(settings, 'DEFAULT_FROM_EMAIL', None) or '', [creator.email], fail_silently=True)
+                    # Also add an in-app notification entry in cache for the creator
+                    try:
+                        if creator and getattr(creator, 'id', None):
+                            key = f"sent_notifications_user_{creator.id}"
+                            existing = cache.get(key, []) or []
+                            existing.append({
+                                'message_id': message.id,
+                                'content': message.content,
+                                'sent_at': now.strftime('%B %d, %Y at %I:%M %p'),
+                                'organization': message.organization.name,
+                            })
+                            cache.set(key, existing, timeout=60 * 60 * 24)  # keep for 24 hours
+                    except Exception:
+                        pass
+            except Exception:
+                pass
         self.stdout.write(self.style.SUCCESS('Scheduled organization messages processed.'))
