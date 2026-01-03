@@ -177,6 +177,37 @@
                 </div>
             </div>
 
+            <!-- Preview Modal -->
+            <div class="modal fade" id="previewModal" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Preview Message</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Message</label>
+                                <div id="previewModalMessage" class="p-3 bg-light rounded" style="white-space:pre-wrap;"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4"><strong>Characters:</strong> <span id="previewModalChars">0</span></div>
+                                <div class="col-md-4"><strong>SMS count:</strong> <span id="previewModalSms">1</span></div>
+                                <div class="col-md-4"><strong>Recipients:</strong> <span id="previewModalRecipients">All</span></div>
+                            </div>
+                            <div class="mt-3" id="previewModalScheduleInfo" style="display:none">
+                                <strong>Scheduled for:</strong> <span id="previewModalScheduled">-</span>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" id="previewScheduleBtn" class="btn btn-outline-primary" style="display:none">Schedule</button>
+                            <button type="button" id="previewSendBtn" class="btn btn-primary">Send Now</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="col-lg-4">
                 <!-- Balance Card -->
                 <div class="card shadow-sm mb-4">
@@ -284,9 +315,86 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Preview message
     window.previewMessage = function() {
-        const message = messageTextarea.value;
+        const message = messageTextarea.value || '';
         const preview = document.getElementById('message_preview');
         preview.textContent = message || 'Your message will appear here...';
+
+        // Populate modal
+        const modalMsg = document.getElementById('previewModalMessage');
+        const modalChars = document.getElementById('previewModalChars');
+        const modalSms = document.getElementById('previewModalSms');
+        const modalRecipients = document.getElementById('previewModalRecipients');
+        const modalScheduleInfo = document.getElementById('previewModalScheduleInfo');
+        const modalScheduled = document.getElementById('previewModalScheduled');
+        const previewScheduleBtn = document.getElementById('previewScheduleBtn');
+        const previewSendBtn = document.getElementById('previewSendBtn');
+
+        modalMsg.textContent = message || '(empty)';
+        modalChars.textContent = message.length;
+        const sms = Math.ceil((message.length || 1) / 160) || 1;
+        modalSms.textContent = sms;
+
+        // Recipients summary
+        try {
+            const allRadio = document.getElementById('all_contacts');
+            if (allRadio && allRadio.checked) {
+                modalRecipients.textContent = 'All';
+            } else {
+                // Count selected groups
+                const groupChecks = document.querySelectorAll('#groups_section input[type="checkbox"]:checked');
+                if (groupChecks.length > 0) {
+                    modalRecipients.textContent = groupChecks.length + ' group(s)';
+                } else {
+                    modalRecipients.textContent = 'Custom selection';
+                }
+            }
+        } catch (e) {
+            modalRecipients.textContent = 'Unknown';
+        }
+
+        // Scheduling info
+        const actionInput = document.getElementById('action_input');
+        const schedDate = document.getElementById('scheduled_date');
+        const schedTime = document.getElementById('scheduled_time');
+        if (actionInput && actionInput.value === 'schedule') {
+            previewScheduleBtn.style.display = '';
+            previewSendBtn.textContent = 'Send Now';
+            modalScheduleInfo.style.display = '';
+            const date = schedDate ? schedDate.value : '';
+            const time = schedTime ? schedTime.value : '';
+            modalScheduled.textContent = date && time ? (date + ' ' + time.slice(0,5)) : 'Not set';
+        } else {
+            previewScheduleBtn.style.display = 'none';
+            modalScheduleInfo.style.display = 'none';
+            previewSendBtn.textContent = 'Send Now';
+        }
+
+        // Show modal
+        const pm = new bootstrap.Modal(document.getElementById('previewModal'));
+        pm.show();
+
+        // Wire modal buttons
+        previewSendBtn.onclick = function() {
+            // Ensure action is send_now
+            const act = document.getElementById('action_input');
+            if (act) act.value = 'send_now';
+            document.querySelector('form').submit();
+        };
+
+        previewScheduleBtn.onclick = function() {
+            const date = schedDate ? schedDate.value : '';
+            const time = schedTime ? schedTime.value : '';
+            if (!date || !time) {
+                alert('Please choose a date and time to schedule the message.');
+                return;
+            }
+            const combined = date + 'T' + time.slice(0,5);
+            const sched = document.getElementById('scheduled_datetime');
+            const act = document.getElementById('action_input');
+            if (sched) sched.value = combined;
+            if (act) act.value = 'schedule';
+            document.querySelector('form').submit();
+        };
     };
 
     // Initialize counts
