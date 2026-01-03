@@ -552,102 +552,10 @@ document.head.appendChild(rippleStyle);
 
   <!-- Main Content Grid -->
   <div class="row g-4">
-    <!-- Recent Organizations -->
-    <div class="col-lg-8">
-      <div class="card h-100">
-        <div class="card-header bg-primary text-white">
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-              <i class="bi bi-building-fill fs-4 me-3"></i>
-              <h5 class="mb-0 fw-bold">Recent Organizations</h5>
-            </div>
-            <a href="{% url 'super_orgs' %}" class="btn btn-light btn-sm">
-              View All <i class="bi bi-arrow-right ms-1"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-body">
+    <!-- Recent Organizations removed per request -->
 
-        {% if orgs|length > 0 %}
-        <div class="table-responsive">
-          <table class="table table-hover-modern">
-            <thead>
-              <tr>
-                <th class="border-0 fw-bold text-white">Organization</th>
-                <th class="border-0 fw-bold text-white">Type</th>
-                <th class="border-0 fw-bold text-white">SMS Sent</th>
-                <th class="border-0 fw-bold text-white">Balance</th>
-                <th class="border-0 fw-bold text-white">Status</th>
-                <th class="border-0 fw-bold text-white">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for org in orgs|slice:":8" %}
-              <tr class="table-row-hover">
-                <td class="border-0">
-                  <div class="d-flex align-items-center">
-                    <div class="org-avatar rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3 fw-bold">
-                      {{ org.name|slice:":1"|upper }}
-                    </div>
-                    <div>
-                      <div class="fw-bold text-white">{{ org.name }}</div>
-                      <small class="text-white-50">{{ org.slug }}</small>
-                    </div>
-                  </div>
-                </td>
-                <td class="border-0">
-                  <span class="badge-modern bg-primary">{{ org.get_org_type_display }}</span>
-                </td>
-                <td class="border-0 fw-semibold text-white">{{ org.total_sms_sent|format_number }}</td>
-                <td class="border-0 fw-semibold text-white">₵{{ org.balance|floatformat:2 }}</td>
-                <td class="border-0">
-                  {% if org.is_active %}
-                    <span class="badge-modern bg-success">
-                      <i class="bi bi-check-circle-fill me-1"></i>Active
-                    </span>
-                  {% else %}
-                    <span class="badge-modern bg-danger">
-                      <i class="bi bi-x-circle-fill me-1"></i>Suspended
-                    </span>
-                  {% endif %}
-                </td>
-                <td class="border-0">
-                  <a href="{% url 'super_edit_org' org.slug %}" class="btn btn-sm btn-outline-primary rounded-pill">
-                    <i class="bi bi-pencil-fill"></i>
-                  </a>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-        {% if orgs|length > 8 %}
-        <div class="text-center mt-4">
-          <a href="{% url 'super_orgs' %}" class="btn btn-light btn-lg px-4">
-            <i class="bi bi-building me-2"></i>
-            View All Organizations ({{ orgs|length }})
-          </a>
-        </div>
-        {% endif %}
-
-        {% else %}
-        <div class="text-center py-5">
-          <div class="empty-state-icon mb-4">
-            <i class="bi bi-building display-1 text-white-50"></i>
-          </div>
-          <h4 class="text-white-50 mb-3">No Organizations Yet</h4>
-          <p class="text-muted mb-4">Start building your SMS network by enrolling your first organization.</p>
-          <a href="{% url 'enroll_tenant' %}" class="btn btn-primary btn-lg px-4">
-            <i class="bi bi-plus-circle-fill me-2"></i>Enroll First Organization
-          </a>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- System Status & Analytics -->
-    <div class="col-lg-4">
+    <!-- System Status & Analytics (expanded) -->
+    <div class="col-12">
       <div class="d-flex flex-column gap-4 h-100">
         <!-- System Status -->
         <div class="card">

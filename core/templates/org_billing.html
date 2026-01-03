@@ -16,18 +16,17 @@
             <div class="col-12">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <h1 class="mb-2 text-primary fw-bold">
-                            <i class="fas fa-credit-card me-3"></i>Billing & Payments
+                        <h1 class="mb-1 text-primary fw-bold">
+                            <i class="fas fa-credit-card me-2"></i>Billing
                         </h1>
-                        <p class="text-muted mb-0">Manage your account balance and payment history</p>
                     </div>
                     <div class="text-end">
                         <div class="d-flex align-items-center">
-                            <div class="badge bg-success me-3 px-3 py-2">
-                                <i class="fas fa-wallet me-1"></i>₵{{ organization.balance|floatformat:2 }}
+                            <div class="badge bg-success me-2 px-2 py-1 small">
+                                ₵{{ organization.balance|floatformat:2 }}
                             </div>
-                            <div class="badge bg-primary px-3 py-2">
-                                <i class="fas fa-building me-1"></i>{{ organization.name }}
+                            <div class="badge bg-primary px-2 py-1 small">
+                                {{ organization.name }}
                             </div>
                         </div>
                     </div>
@@ -48,19 +47,14 @@
             <div class="col-lg-6">
                 <div class="card h-100 shadow-sm">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-wallet me-2"></i>Current Balance
-                        </h5>
+                        <h6 class="mb-0">Balance</h6>
                     </div>
-                    <div class="card-body p-4 text-center">
-                        <div class="display-4 fw-bold mb-2 text-primary">₵{{ organization.balance|floatformat:2 }}</div>
-                        <p class="text-muted mb-0">Available SMS credits</p>
+                    <div class="card-body p-3 text-center">
+                        <div class="h3 fw-bold mb-1 text-primary">₵{{ organization.balance|floatformat:2 }}</div>
+                        <small class="text-muted">SMS credits</small>
 
                         {% if organization.balance < current_sms_rate %}
-                        <div class="alert alert-warning border-0 mt-3">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Low Balance!</strong> You need at least ₵{{ current_sms_rate|floatformat:4 }} to send one SMS.
-                        </div>
+                        <div class="alert alert-warning border-0 mt-2 py-2">Low balance: at least ₵{{ current_sms_rate|floatformat:4 }} required to send one SMS.</div>
                         {% endif %}
                     </div>
                 </div>
@@ -69,69 +63,24 @@
             <!-- SMS Usage & Pricing -->
             <div class="col-lg-6">
                 <div class="card h-100 shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-chart-line me-2"></i>SMS Usage & Pricing
-                        </h5>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row g-3 mb-4">
-                            <div class="col-12">
-                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                    <span class="fw-semibold">Current Rate:</span>
-                                    <span class="h4 mb-0 fw-bold text-primary">₵{{ current_sms_rate|floatformat:4 }}</span>
-                                </div>
-                                <small class="text-muted">per SMS (decreases with volume)</small>
-                            </div>
-
-                            <div class="col-12">
-                                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                    <span class="fw-semibold">Total SMS Sent:</span>
-                                    <span class="h5 mb-0 fw-bold">{{ total_sms_sent|format_number }}</span>
-                                </div>
-                            </div>
+                    <div class="card-header bg-primary text-white"><h6 class="mb-0">Rate & Usage</h6></div>
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Rate</small>
+                            <div class="fw-bold text-primary">₵{{ current_sms_rate|floatformat:4 }}</div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">Total sent</small>
+                            <div class="fw-bold">{{ total_sms_sent|format_number }}</div>
                         </div>
 
-                        <h6 class="fw-bold mb-3 text-primary">
-                            <i class="fas fa-tags me-2"></i>Pricing Tiers
-                        </h6>
                         <div class="row g-2">
-                            <div class="col-6">
-                                <div class="p-2 text-center bg-light rounded">
-                                    <div class="small fw-bold text-primary">0-99 SMS</div>
-                                    <div class="fw-semibold">₵0.25 each</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="p-2 text-center bg-light rounded">
-                                    <div class="small fw-bold text-primary">100-499 SMS</div>
-                                    <div class="fw-semibold">₵0.22 each</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="p-2 text-center bg-light rounded">
-                                    <div class="small fw-bold text-primary">500-999 SMS</div>
-                                    <div class="fw-semibold">₵0.20 each</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="p-2 text-center bg-light rounded">
-                                    <div class="small fw-bold text-primary">1,000-4,999 SMS</div>
-                                    <div class="fw-semibold">₵0.18 each</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="p-2 text-center bg-light rounded">
-                                    <div class="small fw-bold text-primary">5,000-9,999 SMS</div>
-                                    <div class="fw-semibold">₵0.16 each</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="p-2 text-center bg-primary text-white rounded">
-                                    <div class="small fw-bold">10,000+ SMS</div>
-                                    <div class="fw-semibold">₵0.14 each</div>
-                                </div>
-                            </div>
+                            <div class="col-6"><div class="small p-2 bg-light rounded text-center">0-99 — ₵0.25</div></div>
+                            <div class="col-6"><div class="small p-2 bg-light rounded text-center">100-499 — ₵0.22</div></div>
+                            <div class="col-6"><div class="small p-2 bg-light rounded text-center">500-999 — ₵0.20</div></div>
+                            <div class="col-6"><div class="small p-2 bg-light rounded text-center">1k-4.9k — ₵0.18</div></div>
+                            <div class="col-6"><div class="small p-2 bg-light rounded text-center">5k-9.9k — ₵0.16</div></div>
+                            <div class="col-6"><div class="small p-2 bg-primary text-white rounded text-center">10k+ — ₵0.14</div></div>
                         </div>
                     </div>
                 </div>
@@ -365,38 +314,27 @@
                             </div>
                         </div>
 
-                        <div class="text-center mt-4">
-                            <div class="badge bg-light text-muted px-4 py-2 rounded-pill">
-                                <i class="fas fa-shield-alt text-success me-2"></i>
-                                Secure payments powered by Paystack
-                            </div>
+                        <div class="text-center mt-3">
+                            <small class="text-muted"><i class="fas fa-shield-alt me-1"></i>Paystack</small>
                         </div>
 
                         <!-- Quick Amount Buttons -->
                         <div class="mt-4">
-                            <label class="form-label fw-semibold mb-3 text-primary">
-                                <i class="fas fa-bolt me-2"></i>Quick Amounts
+                            <label class="form-label fw-semibold mb-2 text-primary">
+                                Quick
                             </label>
                             <div class="row g-2">
                                 <div class="col-6 col-md-3">
-                                    <button type="button" class="btn btn-outline-primary w-100" onclick="setAmount(10)">
-                                        ₵10
-                                    </button>
+                                    <button type="button" class="btn btn-outline-primary w-100 btn-sm" onclick="setAmount(10)">₵10</button>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <button type="button" class="btn btn-outline-primary w-100" onclick="setAmount(25)">
-                                        ₵25
-                                    </button>
+                                    <button type="button" class="btn btn-outline-primary w-100 btn-sm" onclick="setAmount(25)">₵25</button>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <button type="button" class="btn btn-outline-primary w-100" onclick="setAmount(50)">
-                                        ₵50
-                                    </button>
+                                    <button type="button" class="btn btn-outline-primary w-100 btn-sm" onclick="setAmount(50)">₵50</button>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <button type="button" class="btn btn-outline-primary w-100" onclick="setAmount(100)">
-                                        ₵100
-                                    </button>
+                                    <button type="button" class="btn btn-outline-primary w-100 btn-sm" onclick="setAmount(100)">₵100</button>
                                 </div>
                             </div>
                         </div>
